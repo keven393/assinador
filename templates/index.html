@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assinador Rápido de PDFs</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --secondary-color: #6c757d;
+            --success-color: #198754;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --info-color: #0dcaf0;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .main-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            margin: 2rem auto;
+            max-width: 1200px;
+        }
+        
+        .header-section {
+            background: linear-gradient(135deg, var(--primary-color), #0056b3);
+            color: white;
+            padding: 3rem 0;
+            border-radius: 20px 20px 0 0;
+            text-align: center;
+        }
+        
+        .header-section h1 {
+            font-weight: 700;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header-section p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .content-section {
+            padding: 3rem;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, var(--primary-color), #0056b3);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            padding: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            padding: 0.75rem 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+        }
+        
+        .btn {
+            border-radius: 10px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), #0056b3);
+            border: none;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(13, 110, 253, 0.4);
+        }
+        
+        .signature-canvas-container {
+            background: white;
+            border: 3px dashed #dee2e6;
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .signature-canvas-container:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        #signatureCanvas {
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            background: white;
+            cursor: crosshair;
+            transition: all 0.3s ease;
+        }
+        
+        #signatureCanvas:hover {
+            border-color: var(--primary-color);
+        }
+        
+        .canvas-controls {
+            margin-top: 1rem;
+        }
+        
+        .canvas-controls .btn {
+            margin: 0.25rem;
+        }
+        
+        .status-message {
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            font-weight: 500;
+        }
+        
+        .status-success {
+            background-color: #d1e7dd;
+            color: #0f5132;
+            border: 1px solid #badbcc;
+        }
+        
+        .status-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c2c7;
+        }
+        
+        .status-info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .feature-card {
+            text-align: center;
+            padding: 2rem 1rem;
+        }
+        
+        .feature-icon {
+            font-size: 3rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+        
+        .loading-spinner {
+            display: none;
+        }
+        
+        .loading-spinner.show {
+            display: inline-block;
+        }
+        
+        .download-section {
+            display: none;
+            background: linear-gradient(135deg, var(--success-color), #146c43);
+            color: white;
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+            margin-top: 2rem;
+        }
+        
+        .download-section.show {
+            display: block;
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+        
+        .sidebar {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 15px;
+            padding: 2rem;
+        }
+        
+        .sidebar .form-label {
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+        
+        .logo-preview {
+            max-width: 200px;
+            max-height: 100px;
+            border-radius: 10px;
+            border: 2px solid #dee2e6;
+            margin-top: 1rem;
+        }
+        
+        .signature-type-info {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .main-container {
+                margin: 1rem;
+                border-radius: 15px;
+            }
+            
+            .content-section {
+                padding: 2rem 1rem;
+            }
+            
+            .header-section h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-file-signature me-2"></i>
+                Assinador Rápido de PDFs
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"><i class="fas fa-home me-1"></i>Início</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"><i class="fas fa-info-circle me-1"></i>Sobre</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"><i class="fas fa-question-circle me-1"></i>Ajuda</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="main-container">
+            <!-- Header -->
+            <div class="header-section">
+                <div class="container">
+                    <h1><i class="fas fa-file-signature me-3"></i>Assinador Rápido de PDFs</h1>
+                    <p class="mb-0">Assine seus documentos PDF de forma rápida, segura e profissional</p>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="content-section">
+                <div class="row">
+                    <!-- Main Content -->
+                    <div class="col-lg-8">
+                        <form id="signatureForm" enctype="multipart/form-data">
+                            <!-- Upload Section -->
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <i class="fas fa-upload me-2"></i>Upload do PDF
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label for="pdfFile" class="form-label">Selecione o arquivo PDF</label>
+                                        <input type="file" class="form-control" id="pdfFile" name="pdf_file" accept=".pdf" required>
+                                        <div class="form-text">Escolha o PDF que deseja assinar</div>
+                                    </div>
+                                    <div id="fileInfo" class="alert alert-info" style="display: none;">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        <span id="fileInfoText"></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Signature Section -->
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <i class="fas fa-signature me-2"></i>Assinatura (Obrigatório)
+                                </div>
+                                <div class="card-body">
+                                    <div class="signature-canvas-container">
+                                        <h5 class="mb-3"><i class="fas fa-paint-brush me-2"></i>Desenhe sua assinatura</h5>
+                                        <p class="text-muted mb-3">Use o mouse ou toque na tela para desenhar sua assinatura (obrigatório)</p>
+                                        
+                                        <canvas id="signatureCanvas" width="500" height="200"></canvas>
+                                        
+                                        <div class="canvas-controls">
+                                            <button type="button" class="btn btn-outline-danger" id="clearCanvas">
+                                                <i class="fas fa-trash me-2"></i>Limpar
+                                            </button>
+                                            <button type="button" class="btn btn-outline-success" id="saveSignature">
+                                                <i class="fas fa-save me-2"></i>Salvar Assinatura
+                                            </button>
+                                            <button type="button" class="btn btn-outline-primary" id="changeColor">
+                                                <i class="fas fa-palette me-2"></i>Mudar Cor
+                                            </button>
+                                        </div>
+                                        
+                                        <div id="signatureStatus" class="status-message" style="display: none;"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Personal Information -->
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <i class="fas fa-user me-2"></i>Informações Pessoais
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="nome" class="form-label">Nome Completo</label>
+                                            <input type="text" class="form-control" id="nome" name="nome" placeholder="Digite seu nome completo">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="dataNascimento" class="form-label">Data de Nascimento</label>
+                                            <input type="text" class="form-control" id="dataNascimento" name="data_nascimento" placeholder="DD/MM/AAAA">
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="cpf" class="form-label">CPF</label>
+                                        <input type="text" class="form-control" id="cpf" name="cpf" placeholder="000.000.000-00">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <div class="text-center">
+                                <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                                    <i class="fas fa-file-signature me-2"></i>Assinar PDF (Desenhe a Assinatura Primeiro)
+                                    <span class="loading-spinner ms-2">
+                                        <i class="fas fa-spinner fa-spin"></i>
+                                    </span>
+                                </button>
+                            </div>
+                        </form>
+
+                        <!-- Status Messages -->
+                        <div id="statusMessages"></div>
+
+                        <!-- Download Section -->
+                        <div id="downloadSection" class="download-section">
+                            <h4><i class="fas fa-download me-2"></i>PDF Assinado com Sucesso!</h4>
+                            <p id="downloadFilename" class="mb-3"></p>
+                            <a href="/download_pdf" class="btn btn-light btn-lg" id="downloadBtn">
+                                <i class="fas fa-download me-2"></i>Baixar PDF Assinado
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Sidebar -->
+                    <div class="col-lg-4">
+                        <div class="sidebar">
+                            <h5 class="mb-4"><i class="fas fa-cog me-2"></i>Configurações</h5>
+                            
+                            <div class="mb-3">
+                                <label for="signatureType" class="form-label">Tipo de Assinatura</label>
+                                <select class="form-select" id="signatureType" name="signature_type">
+                                    <option value="all_pages">Todas as Páginas (Logo + Info + Assinatura)</option>
+                                    <option value="end_page">Página Final</option>
+                                </select>
+                                <div class="signature-type-info">
+                                    <strong>Todas as Páginas:</strong> Adiciona logo, informações pessoais e assinatura lado a lado
+                                    <br><br>
+                                    <strong>Página Final:</strong> Adiciona uma página separada com a assinatura
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="signatureColor" class="form-label">Cor da Assinatura</label>
+                                <input type="color" class="form-control form-control-color" id="signatureColor" value="#0d6efd">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="signaturePosition" class="form-label">Posição da Assinatura</label>
+                                <select class="form-select" id="signaturePosition">
+                                    <option value="right">Lateral Direita</option>
+                                    <option value="left">Lateral Esquerda</option>
+                                </select>
+                            </div>
+
+                            <hr class="my-4">
+
+                            <h6 class="mb-3"><i class="fas fa-shield-alt me-2"></i>Segurança</h6>
+                            <ul class="list-unstyled small">
+                                <li><i class="fas fa-check text-success me-2"></i>Assinaturas digitais garantem autenticidade</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Timestamp automático em cada assinatura</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Integridade do documento preservada</li>
+                            </ul>
+
+                            <hr class="my-4">
+
+                            <h6 class="mb-3"><i class="fas fa-bolt me-2"></i>Recursos</h6>
+                            <ul class="list-unstyled small">
+                                <li><i class="fas fa-check text-success me-2"></i>Processamento instantâneo</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Interface intuitiva</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Download direto</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Logo padrão incluído</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Canvas de Assinatura
+        class SignatureCanvas {
+            constructor() {
+                this.canvas = document.getElementById('signatureCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.isDrawing = false;
+                this.lastX = 0;
+                this.lastY = 0;
+                this.signatureData = null;
+                
+                this.init();
+            }
+            
+            init() {
+                // Configuração do contexto
+                this.ctx.strokeStyle = '#0d6efd';
+                this.ctx.lineWidth = 3;
+                this.ctx.lineCap = 'round';
+                this.ctx.lineJoin = 'round';
+                
+                // Eventos do mouse
+                this.canvas.addEventListener('mousedown', this.startDrawing.bind(this));
+                this.canvas.addEventListener('mousemove', this.draw.bind(this));
+                this.canvas.addEventListener('mouseup', this.stopDrawing.bind(this));
+                this.canvas.addEventListener('mouseout', this.stopDrawing.bind(this));
+                
+                // Eventos de toque
+                this.canvas.addEventListener('touchstart', this.handleTouch.bind(this));
+                this.canvas.addEventListener('touchmove', this.handleTouch.bind(this));
+                this.canvas.addEventListener('touchend', this.stopDrawing.bind(this));
+                
+                // Botões
+                document.getElementById('clearCanvas').addEventListener('click', this.clear.bind(this));
+                document.getElementById('saveSignature').addEventListener('click', this.save.bind(this));
+                document.getElementById('changeColor').addEventListener('click', this.changeColor.bind(this));
+            }
+            
+            startDrawing(e) {
+                this.isDrawing = true;
+                const rect = this.canvas.getBoundingClientRect();
+                this.lastX = e.clientX - rect.left;
+                this.lastY = e.clientY - rect.top;
+            }
+            
+            draw(e) {
+                if (!this.isDrawing) return;
+                e.preventDefault();
+                
+                const rect = this.canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.lastX, this.lastY);
+                this.ctx.lineTo(x, y);
+                this.ctx.stroke();
+                
+                this.lastX = x;
+                this.lastY = y;
+            }
+            
+            handleTouch(e) {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const mouseEvent = new MouseEvent(
+                    e.type === 'touchstart' ? 'mousedown' : 
+                    e.type === 'touchmove' ? 'mousemove' : 'mouseup', {
+                        clientX: touch.clientX,
+                        clientY: touch.clientY
+                    }
+                );
+                this.canvas.dispatchEvent(mouseEvent);
+            }
+            
+            stopDrawing() {
+                this.isDrawing = false;
+            }
+            
+            clear() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                this.signatureData = null;
+                this.showStatus('Canvas limpo!', 'success');
+            }
+            
+            save() {
+                this.signatureData = this.canvas.toDataURL('image/png');
+                this.showStatus('Assinatura salva!', 'success');
+            }
+            
+            changeColor() {
+                const colors = ['#0d6efd', '#dc3545', '#198754', '#ffc107', '#6f42c1', '#fd7e14'];
+                const randomColor = colors[Math.floor(Math.random() * colors.length)];
+                this.ctx.strokeStyle = randomColor;
+                this.showStatus(`Cor alterada para ${randomColor}!`, 'info');
+            }
+            
+            showStatus(message, type) {
+                const status = document.getElementById('signatureStatus');
+                status.textContent = message;
+                status.className = `status-message status-${type}`;
+                status.style.display = 'block';
+                
+                setTimeout(() => {
+                    status.style.display = 'none';
+                }, 3000);
+            }
+            
+            getSignatureData() {
+                return this.signatureData;
+            }
+        }
+        
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            const signatureCanvas = new SignatureCanvas();
+            
+            // File upload info
+            document.getElementById('pdfFile').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const fileInfo = document.getElementById('fileInfo');
+                    const fileInfoText = document.getElementById('fileInfoText');
+                    fileInfoText.textContent = `Arquivo selecionado: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+                    fileInfo.style.display = 'block';
+                }
+            });
+            
+            // Form submission
+            document.getElementById('signatureForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Valida se a assinatura foi desenhada
+                const signatureData = signatureCanvas.getSignatureData();
+                if (!signatureData) {
+                    showStatus('Por favor, desenhe sua assinatura antes de continuar', 'error');
+                    return;
+                }
+                
+                const submitBtn = document.getElementById('submitBtn');
+                const loadingSpinner = submitBtn.querySelector('.loading-spinner');
+                
+                // Show loading
+                submitBtn.disabled = true;
+                loadingSpinner.classList.add('show');
+                
+                // Create FormData
+                const formData = new FormData(this);
+                
+                // Add signature image (obrigatório)
+                formData.append('signature_image', signatureData);
+                
+                // Submit form
+                fetch('/process_signature', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showStatus(data.message, 'success');
+                        showDownloadSection(data.filename);
+                    } else {
+                        showStatus(data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    showStatus('Erro ao processar a requisição', 'error');
+                    console.error('Error:', error);
+                })
+                .finally(() => {
+                    submitBtn.disabled = false;
+                    loadingSpinner.classList.remove('show');
+                });
+            });
+            
+            function showStatus(message, type) {
+                const statusMessages = document.getElementById('statusMessages');
+                const statusDiv = document.createElement('div');
+                statusDiv.className = `status-message status-${type} mt-3`;
+                statusDiv.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>${message}`;
+                
+                statusMessages.appendChild(statusDiv);
+                
+                setTimeout(() => {
+                    statusDiv.remove();
+                }, 5000);
+            }
+            
+            function showDownloadSection(filename) {
+                const downloadSection = document.getElementById('downloadSection');
+                const downloadFilename = document.getElementById('downloadFilename');
+                
+                downloadFilename.textContent = filename;
+                downloadSection.classList.add('show');
+                
+                // Scroll to download section
+                downloadSection.scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+    </script>
+</body>
+</html> 
