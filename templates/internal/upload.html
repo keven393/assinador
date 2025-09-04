@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nova Assinatura - Assinador Digital</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .upload-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 3rem 0;
+            margin-bottom: 2rem;
+        }
+        .upload-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .file-upload-area {
+            border: 2px dashed #dee2e6;
+            border-radius: 10px;
+            padding: 3rem;
+            text-align: center;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .file-upload-area:hover {
+            border-color: #667eea;
+            background: #e3f2fd;
+        }
+        .file-upload-area.dragover {
+            border-color: #667eea;
+            background: #e3f2fd;
+        }
+        .file-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-left: 4px solid #667eea;
+            transition: all 0.2s ease;
+        }
+        
+        .file-item:hover {
+            background: #e9ecef;
+            transform: translateX(2px);
+        }
+        
+        .file-item .btn-outline-danger {
+            opacity: 0.7;
+            transition: all 0.2s ease;
+        }
+        
+        .file-item:hover .btn-outline-danger {
+            opacity: 1;
+        }
+        .btn-custom {
+            border-radius: 10px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        .required {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="upload-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="mb-2">
+                        <i class="fas fa-upload me-3"></i>
+                        Nova Assinatura
+                    </h1>
+                    <p class="mb-0">Faça upload dos documentos e preencha os dados do cliente</p>
+                </div>
+                <div class="col-md-4 text-center">
+                    <a href="{{ url_for('index') }}" class="btn btn-outline-light">
+                        <i class="fas fa-arrow-left me-2"></i>Voltar ao Início
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HUD: Validação -->
+    <div class="modal fade" id="validationModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-triangle-exclamation text-warning me-2"></i>
+                        Verifique os dados
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <ul id="validationIssues" class="mb-0"></ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ok</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HUD: Confirmação de Envio -->
+    <div class="modal fade" id="confirmModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-paper-plane me-2"></i>
+                        Confirmar Envio
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="confirmText" class="mb-0"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" id="confirmBtn" class="btn btn-primary">
+                        <i class="fas fa-check me-1"></i>Confirmar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <!-- Mensagens Flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" enctype="multipart/form-data" id="uploadForm">
+            <!-- Upload de Arquivos -->
+            <div class="upload-card">
+                <h4 class="mb-4">
+                    <i class="fas fa-file-pdf me-2 text-danger"></i>
+                    Upload de Documentos
+                </h4>
+                
+                <div class="file-upload-area" id="uploadArea">
+                    <div class="mb-3">
+                        <i class="fas fa-cloud-upload-alt fa-3x text-muted"></i>
+                    </div>
+                                         <h5>Arraste e solte arquivos PDF aqui</h5>
+                     <p class="text-muted">ou clique para selecionar múltiplos PDFs</p>
+                     <p class="text-muted small">💡 Dica: Use Ctrl+Click para selecionar arquivos individuais ou Shift+Click para um intervalo</p>
+                    <input type="file" id="pdfFiles" name="pdf_files" multiple accept=".pdf" style="display: none;" required>
+                                         <button type="button" class="btn btn-primary btn-custom" id="selectFilesBtn">
+                         <i class="fas fa-folder-open me-2"></i>Selecionar PDFs
+                     </button>
+                </div>
+                
+                                 <div id="fileList" class="mt-3" style="display: none;">
+                     <div class="d-flex justify-content-between align-items-center mb-3">
+                         <h6 class="mb-0">Arquivos Selecionados:</h6>
+                         <div>
+                             <button type="button" class="btn btn-sm btn-outline-primary me-2" onclick="addMoreFiles()">
+                                 <i class="fas fa-plus me-1"></i>Adicionar Mais
+                             </button>
+                             <button type="button" class="btn btn-sm btn-outline-info me-2" onclick="debugFiles()">
+                                 <i class="fas fa-bug me-1"></i>Debug
+                             </button>
+                             <button type="button" class="btn btn-sm btn-outline-warning me-2" onclick="testFormSubmission()">
+                                 <i class="fas fa-test me-1"></i>Testar Envio
+                             </button>
+                             <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearAllFiles()">
+                                 <i class="fas fa-trash me-1"></i>Limpar Todos
+                             </button>
+                         </div>
+                     </div>
+                     <div id="fileItems"></div>
+                 </div>
+            </div>
+
+            <!-- Dados do Cliente -->
+            <div class="upload-card">
+                <h4 class="mb-4">
+                    <i class="fas fa-user me-2 text-primary"></i>
+                    Dados do Cliente
+                </h4>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="client_name" class="form-label">
+                            Nome Completo <span class="required">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="client_name" name="client_name" 
+                               value="{{ client_info.nome if client_info else '' }}" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="client_cpf" class="form-label">
+                            CPF <span class="required">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="client_cpf" name="client_cpf" 
+                               value="{{ client_info.cpf if client_info else '' }}" 
+                               placeholder="000.000.000-00" required>
+                        <div class="invalid-feedback" id="cpfError"></div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="client_email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="client_email" name="client_email" 
+                               value="{{ client_info.email if client_info else '' }}">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="client_phone" class="form-label">Telefone</label>
+                        <input type="tel" class="form-control" id="client_phone" name="client_phone" 
+                               value="{{ client_info.telefone if client_info else '' }}">
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="client_birth_date" class="form-label">Data de Nascimento</label>
+                        <input type="date" class="form-control" id="client_birth_date" name="client_birth_date" 
+                               value="{{ client_info.data_nascimento if client_info else '' }}">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="client_address" class="form-label">Endereço</label>
+                        <input type="text" class="form-control" id="client_address" name="client_address" 
+                               value="{{ client_info.endereco if client_info else '' }}">
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="client_notes" class="form-label">Observações</label>
+                    <textarea class="form-control" id="client_notes" name="client_notes" rows="3" 
+                              placeholder="Informações adicionais sobre o cliente ou documento">{{ client_info.observacoes if client_info else '' }}</textarea>
+                </div>
+            </div>
+
+            <!-- Botões de Ação -->
+            <div class="upload-card">
+                <div class="row">
+                    <div class="col-md-6">
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary btn-custom w-100">
+                            <i class="fas fa-times me-2"></i>Cancelar
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <button type="submit" class="btn btn-primary btn-custom w-100" id="submitBtn" disabled>
+                            <i class="fas fa-paper-plane me-2"></i>Enviar para Assinatura
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Validação de CPF
+        function validarCPF(cpf) {
+            cpf = cpf.replace(/[^\d]/g, '');
+            
+            if (cpf.length !== 11) return false;
+            
+            // Verifica se todos os dígitos são iguais
+            if (/^(\d)\1+$/.test(cpf)) return false;
+            
+            // Validação do primeiro dígito verificador
+            let soma = 0;
+            for (let i = 0; i < 9; i++) {
+                soma += parseInt(cpf.charAt(i)) * (10 - i);
+            }
+            let resto = 11 - (soma % 11);
+            let dv1 = resto < 2 ? 0 : resto;
+            
+            // Validação do segundo dígito verificador
+            soma = 0;
+            for (let i = 0; i < 10; i++) {
+                soma += parseInt(cpf.charAt(i)) * (11 - i);
+            }
+            resto = 11 - (soma % 11);
+            let dv2 = resto < 2 ? 0 : resto;
+            
+            return parseInt(cpf.charAt(9)) === dv1 && parseInt(cpf.charAt(10)) === dv2;
+        }
+        
+        // Formatação de CPF
+        function formatarCPF(cpf) {
+            cpf = cpf.replace(/[^\d]/g, '');
+            return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+        }
+        
+        // Validação em tempo real do CPF
+        document.getElementById('client_cpf').addEventListener('input', function(e) {
+            let cpf = e.target.value.replace(/[^\d]/g, '');
+            if (cpf.length <= 11) {
+                e.target.value = formatarCPF(cpf);
+            }
+            
+            const cpfError = document.getElementById('cpfError');
+            if (cpf.length === 11) {
+                if (validarCPF(cpf)) {
+                    e.target.classList.remove('is-invalid');
+                    e.target.classList.add('is-valid');
+                    cpfError.style.display = 'none';
+                } else {
+                    e.target.classList.remove('is-valid');
+                    e.target.classList.add('is-invalid');
+                    cpfError.textContent = 'CPF inválido';
+                    cpfError.style.display = 'block';
+                }
+            } else {
+                e.target.classList.remove('is-valid', 'is-invalid');
+                cpfError.style.display = 'none';
+            }
+            
+            validarFormulario();
+        });
+        
+        // Upload de arquivos
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('pdfFiles');
+        const fileList = document.getElementById('fileList');
+        const fileItems = document.getElementById('fileItems');
+        const submitBtn = document.getElementById('submitBtn');
+        const selectFilesBtn = document.getElementById('selectFilesBtn');
+        
+        // Array global para armazenar todos os arquivos selecionados
+        let allSelectedFiles = [];
+        
+        // Drag and drop
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            handleFiles(files);
+        });
+        
+        // Botão de seleção de arquivos
+        selectFilesBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            fileInput.click();
+        });
+        
+        // Adiciona suporte para seleção de múltiplos arquivos
+        fileInput.addEventListener('change', function() {
+            const selectedFiles = Array.from(this.files);
+            if (selectedFiles.length > 0) {
+                // Filtra apenas arquivos PDF
+                const pdfFiles = selectedFiles.filter(file => {
+                    return file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+                });
+                
+                if (pdfFiles.length === 0) {
+                    alert('Por favor, selecione apenas arquivos PDF.');
+                    return;
+                }
+                
+                // Adiciona novos arquivos ao array global
+                allSelectedFiles = [...allSelectedFiles, ...pdfFiles];
+                
+                // Remove duplicatas baseado no nome
+                allSelectedFiles = allSelectedFiles.filter((file, index, self) => 
+                    index === self.findIndex(f => f.name === file.name)
+                );
+                
+                // Atualiza o input de arquivos e a lista visual
+                updateFileInput(allSelectedFiles);
+                updateFileList();
+                
+                console.log('Arquivos selecionados:', selectedFiles.length);
+                console.log('Total no array global:', allSelectedFiles.length);
+                console.log('Nomes dos arquivos únicos:', allSelectedFiles.map(f => f.name));
+            }
+        });
+        
+        // Clique na área de upload (sem o botão)
+        uploadArea.addEventListener('click', function(e) {
+            // Não abre o seletor se clicou no botão
+            if (e.target.closest('#selectFilesBtn')) {
+                return;
+            }
+            fileInput.click();
+        });
+        
+        // Event listener removido para evitar conflito - agora está acima
+        
+        function handleFiles(files) {
+            // Filtra apenas arquivos PDF
+            const pdfFiles = Array.from(files).filter(file => {
+                return file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+            });
+            
+            if (pdfFiles.length === 0) {
+                alert('Por favor, selecione apenas arquivos PDF.');
+                return;
+            }
+            
+            // Adiciona novos arquivos ao array global
+            allSelectedFiles = [...allSelectedFiles, ...pdfFiles];
+            
+            // Remove duplicatas baseado no nome
+            allSelectedFiles = allSelectedFiles.filter((file, index, self) => 
+                index === self.findIndex(f => f.name === file.name)
+            );
+            
+            // Atualiza o input de arquivos e a lista visual
+            updateFileInput(allSelectedFiles);
+            updateFileList();
+            
+            console.log('Arquivos recebidos via drag and drop:', pdfFiles.length);
+            console.log('Total no array global:', allSelectedFiles.length);
+        }
+        
+        // Função para remover arquivo específico
+        function removeFile(index) {
+            // Remove o arquivo do array global
+            allSelectedFiles.splice(index, 1);
+            
+            // Atualiza o input de arquivos
+            updateFileInput(allSelectedFiles);
+            
+            // Atualiza a lista visual
+            updateFileList();
+            
+            console.log('Arquivo removido. Total restante:', allSelectedFiles.length);
+        }
+        
+        // Função para atualizar apenas a lista visual (sem validação)
+        function updateFileList(files = null) {
+            // Usa o array global para garantir sincronização
+            const currentFiles = allSelectedFiles;
+            
+            if (currentFiles.length === 0) {
+                fileItems.innerHTML = '';
+                fileList.style.display = 'none';
+            } else {
+                fileItems.innerHTML = '';
+                currentFiles.forEach((file, index) => {
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'file-item';
+                    fileItem.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-file-pdf me-2 text-danger"></i>
+                                <strong>${file.name}</strong>
+                                <br>
+                                <small class="text-muted">${(file.size / 1024).toFixed(1)} KB</small>
+                                <br>
+                                <small class="text-muted">Posição: ${index + 1} de ${currentFiles.length}</small>
+                            </div>
+                            <div>
+                                <span class="button-group">
+                                    <span class="badge bg-success me-2">PDF Válido</span>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeFile(${index})">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                    fileItems.appendChild(fileItem);
+                });
+                fileList.style.display = 'block';
+                
+                // Atualiza o contador no cabeçalho
+                const headerElement = document.querySelector('#fileList h6');
+                if (headerElement) {
+                    headerElement.textContent = `Arquivos Selecionados: ${currentFiles.length}`;
+                }
+            }
+            
+            validarFormulario();
+        }
+        
+        // Função para atualizar o input de arquivos
+        function updateFileInput(files) {
+            try {
+                const dt = new DataTransfer();
+                files.forEach(file => dt.items.add(file));
+                fileInput.files = dt.files;
+                console.log('Arquivos atualizados:', fileInput.files.length, 'arquivos');
+                console.log('Nomes dos arquivos:', Array.from(fileInput.files).map(f => f.name));
+                
+                // Verifica se a atualização foi bem-sucedida
+                if (fileInput.files.length !== files.length) {
+                    console.error('Erro: Número de arquivos não corresponde');
+                    console.error('Esperado:', files.length, 'Atual:', fileInput.files.length);
+                }
+            } catch (error) {
+                console.error('Erro ao atualizar input de arquivos:', error);
+            }
+        }
+        
+        // Função para limpar todos os arquivos
+        function clearAllFiles() {
+            // Limpa o array global
+            allSelectedFiles = [];
+            
+            // Limpa o input de arquivos
+            const dt = new DataTransfer();
+            fileInput.files = dt.files;
+            
+            // Limpa a lista visual
+            fileItems.innerHTML = '';
+            fileList.style.display = 'none';
+            
+            // Revalida o formulário
+            validarFormulario();
+            
+            console.log('Todos os arquivos foram removidos');
+        }
+        
+        // Função para adicionar mais arquivos
+        function addMoreFiles() {
+            fileInput.click();
+        }
+        
+        // Função para debug - verificar estado dos arquivos
+        function debugFiles() {
+            console.log('=== DEBUG ARQUIVOS ===');
+            console.log('Input files:', fileInput.files);
+            console.log('Input files length:', fileInput.files.length);
+            console.log('Array from files:', Array.from(fileInput.files));
+            console.log('Array global:', allSelectedFiles);
+            console.log('Array global length:', allSelectedFiles.length);
+            console.log('=====================');
+        }
+        
+        // Função para testar o envio do formulário
+        function testFormSubmission() {
+            console.log('=== TESTE DE ENVIO ===');
+            console.log('Formulário:', document.getElementById('uploadForm'));
+            console.log('Input de arquivos:', fileInput);
+            console.log('Arquivos no array global:', allSelectedFiles.length);
+            console.log('Nomes dos arquivos:', allSelectedFiles.map(f => f.name));
+            console.log('Tamanho dos arquivos:', allSelectedFiles.map(f => f.size));
+            console.log('Tipo dos arquivos:', allSelectedFiles.map(f => f.type));
+            
+            // Simula o envio do formulário
+            const formData = new FormData();
+            allSelectedFiles.forEach((file, index) => {
+                formData.append('pdf_files', file);
+                console.log(`Arquivo ${index + 1}:`, file.name, file.size, file.type);
+            });
+            
+            console.log('FormData criado:', formData);
+            console.log('=====================');
+        }
+        
+
+        
+        // Validação do formulário
+        function validarFormulario() {
+            const nome = document.getElementById('client_name').value.trim();
+            const cpf = document.getElementById('client_cpf').value.replace(/[^\d]/g, '');
+            const files = allSelectedFiles;
+            
+            const isValid = nome.length > 0 && cpf.length === 11 && validarCPF(cpf) && files.length > 0;
+            submitBtn.disabled = !isValid;
+            
+            // Atualiza texto do botão baseado no número de arquivos
+            if (files.length > 0) {
+                submitBtn.innerHTML = `<i class="fas fa-paper-plane me-2"></i>Enviar ${files.length} Documento(s) para Assinatura`;
+            } else {
+                submitBtn.innerHTML = `<i class="fas fa-paper-plane me-2"></i>Enviar para Assinatura`;
+            }
+        }
+        
+        // Validação em tempo real dos campos obrigatórios
+        document.getElementById('client_name').addEventListener('input', validarFormulario);
+        
+        // Validação do formulário antes do envio
+        document.getElementById('uploadForm').addEventListener('submit', function(e) {
+            const nome = document.getElementById('client_name').value.trim();
+            const cpf = document.getElementById('client_cpf').value.replace(/[^\d]/g, '');
+            const files = allSelectedFiles;
+            
+            console.log('=== ENVIO DO FORMULÁRIO ===');
+            console.log('Nome:', nome);
+            console.log('CPF:', cpf);
+            console.log('Arquivos no array global:', files.length);
+            console.log('Nomes dos arquivos:', files.map(f => f.name));
+            
+            if (!nome || !cpf || !validarCPF(cpf) || files.length === 0) {
+                e.preventDefault();
+                // Preenche e abre o HUD de validação
+                const issues = [];
+                if (!nome) issues.push('Nome do cliente é obrigatório.');
+                if (!cpf || !validarCPF(cpf)) issues.push('CPF válido é obrigatório.');
+                if (files.length === 0) issues.push('Selecione pelo menos um arquivo PDF.');
+                document.getElementById('validationIssues').innerHTML = issues.map(t => `<li>${t}</li>`).join('');
+                new bootstrap.Modal(document.getElementById('validationModal')).show();
+                return;
+            }
+            
+            // Confirmação final via HUD
+            const fileNames = files.map(f => f.name).join('<br>• ');
+            document.getElementById('confirmText').innerHTML = `Confirmar envio de ${files.length} documento(s) para assinatura do cliente <strong>${nome}</strong>?<br><br><strong>Documentos:</strong><br>• ${fileNames}`;
+            
+            e.preventDefault();
+            const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+            confirmModal.show();
+            
+            const onConfirm = () => {
+                confirmModal.hide();
+                document.getElementById('confirmBtn').removeEventListener('click', onConfirm);
+                // Submete de fato
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Enviando...';
+                e.target.submit();
+            };
+            document.getElementById('confirmBtn').addEventListener('click', onConfirm);
+            
+            // Desabilita botão para evitar duplo envio
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Enviando...';
+            
+            console.log('Formulário enviado com sucesso!');
+        });
+    </script>
+</body>
+</html>

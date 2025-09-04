@@ -1,0 +1,98 @@
+from flask_wtf import FlaskForm
+from wtforms import StringField, PasswordField, SubmitField, BooleanField, SelectField, TextAreaField, DateField
+from wtforms.validators import DataRequired, Email, Length, EqualTo, ValidationError, Optional
+from models import User
+
+class LoginForm(FlaskForm):
+    username = StringField('Usuário', validators=[DataRequired(), Length(min=3, max=80)])
+    password = PasswordField('Senha', validators=[DataRequired()])
+    remember_me = BooleanField('Lembrar de mim')
+    submit = SubmitField('Entrar')
+
+class RegistrationForm(FlaskForm):
+    username = StringField('Usuário', validators=[DataRequired(), Length(min=3, max=80)])
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    full_name = StringField('Nome Completo', validators=[DataRequired(), Length(min=2, max=120)])
+    password = PasswordField('Senha', validators=[DataRequired(), Length(min=6)])
+    confirm_password = PasswordField('Confirmar Senha', validators=[DataRequired(), EqualTo('password')])
+    submit = SubmitField('Registrar')
+    
+    def validate_username(self, username):
+        user = User.query.filter_by(username=username.data).first()
+        if user:
+            raise ValidationError('Este nome de usuário já está em uso.')
+    
+    def validate_email(self, email):
+        user = User.query.filter_by(email=email.data).first()
+        if user:
+            raise ValidationError('Este email já está registrado.')
+
+class UserEditForm(FlaskForm):
+    username = StringField('Usuário', validators=[DataRequired(), Length(min=3, max=80)])
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    full_name = StringField('Nome Completo', validators=[DataRequired(), Length(min=2, max=120)])
+    role = SelectField('Função', choices=[('user', 'Usuário'), ('admin', 'Administrador')])
+    is_active = BooleanField('Usuário Ativo')
+    submit = SubmitField('Atualizar')
+
+class ChangePasswordForm(FlaskForm):
+    current_password = PasswordField('Senha Atual', validators=[DataRequired()])
+    new_password = PasswordField('Nova Senha', validators=[DataRequired(), Length(min=6)])
+    confirm_new_password = PasswordField('Confirmar Nova Senha', validators=[DataRequired(), EqualTo('new_password')])
+    submit = SubmitField('Alterar Senha')
+
+class AdminUserForm(FlaskForm):
+    username = StringField('Usuário', validators=[DataRequired(), Length(min=3, max=80)])
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    full_name = StringField('Nome Completo', validators=[DataRequired(), Length(min=2, max=120)])
+    password = PasswordField('Senha', validators=[DataRequired(), Length(min=6)])
+    role = SelectField('Função', choices=[('user', 'Usuário'), ('admin', 'Administrador')])
+    is_active = BooleanField('Usuário Ativo')
+    submit = SubmitField('Criar Usuário')
+    
+    def validate_username(self, username):
+        user = User.query.filter_by(username=username.data).first()
+        if user:
+            raise ValidationError('Este nome de usuário já está em uso.')
+    
+    def validate_email(self, email):
+        user = User.query.filter_by(email=email.data).first()
+        if user:
+            raise ValidationError('Este email já está registrado.')
+
+class ReportFilterForm(FlaskForm):
+    # Filtros de Data
+    date_from = DateField('Data Inicial', validators=[Optional()])
+    date_to = DateField('Data Final', validators=[Optional()])
+    
+    # Filtros de Usuário e Cliente
+    user_id = SelectField('Atendente', coerce=int, validators=[Optional()])
+    client_name = StringField('Nome do Cliente', validators=[Optional(), Length(max=255)])
+    client_cpf = StringField('CPF do Cliente', validators=[Optional(), Length(max=14)])
+    
+    # Filtros Técnicos
+    device_type = SelectField('Tipo de Dispositivo', 
+                             choices=[('', 'Todos'), ('Desktop', 'Desktop'), ('Mobile', 'Mobile'), ('Tablet', 'Tablet')],
+                             validators=[Optional()])
+    browser_name = SelectField('Navegador',
+                              choices=[('', 'Todos'), ('Chrome', 'Chrome'), ('Firefox', 'Firefox'), 
+                                     ('Safari', 'Safari'), ('Edge', 'Edge'), ('Opera', 'Opera')],
+                              validators=[Optional()])
+    operating_system = SelectField('Sistema Operacional',
+                                  choices=[('', 'Todos'), ('Windows', 'Windows'), ('macOS', 'macOS'), 
+                                         ('Linux', 'Linux'), ('Android', 'Android'), ('iOS', 'iOS')],
+                                  validators=[Optional()])
+    
+    # Filtros de Status
+    verification_status = SelectField('Status de Verificação',
+                                    choices=[('', 'Todos'), ('verified', 'Verificado'), 
+                                           ('pending', 'Pendente'), ('failed', 'Falhou')],
+                                    validators=[Optional()])
+    signature_method = SelectField('Método de Assinatura',
+                                  choices=[('', 'Todos'), ('drawing', 'Desenho'), ('upload', 'Upload')],
+                                  validators=[Optional()])
+    
+    # Botões
+    submit = SubmitField('Aplicar Filtros')
+    export = SubmitField('Exportar JSON')
+    clear = SubmitField('Limpar Filtros')

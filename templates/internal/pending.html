@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assinaturas Pendentes - Assinador Digital</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .pending-header {
+            background: linear-gradient(135deg, #ffc107, #fd7e14);
+            color: white;
+            padding: 3rem 0;
+            margin-bottom: 2rem;
+        }
+        .pending-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .client-header {
+            background: #e3f2fd;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid #2196f3;
+        }
+        .document-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid #ffc107;
+            transition: all 0.3s ease;
+        }
+        .document-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+        .btn-custom {
+            border-radius: 10px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+        }
+        .status-badge {
+            font-size: 0.9rem;
+        }
+        .client-info {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .qr-code-section {
+            background: #fff3cd;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid #ffc107;
+            text-align: center;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #6c757d;
+        }
+        .empty-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="pending-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="mb-2">
+                        <i class="fas fa-clock me-3"></i>
+                        Assinaturas Pendentes
+                    </h1>
+                    <p class="mb-0">Gerencie documentos aguardando assinatura dos clientes</p>
+                </div>
+                <div class="col-md-4 text-center">
+                    <a href="{{ url_for('index') }}" class="btn btn-outline-light me-2">
+                        <i class="fas fa-arrow-left me-2"></i>Voltar ao Início
+                    </a>
+                    <a href="{{ url_for('internal_signature_upload') }}" class="btn btn-outline-light">
+                        <i class="fas fa-plus me-2"></i>Nova Assinatura
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Mensagens Flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% if clients %}
+        <!-- Lista de Clientes com Documentos Pendentes -->
+        {% for client_key, client_data in clients.items() %}
+        <div class="pending-card">
+            <!-- Cabeçalho do Cliente -->
+            <div class="client-header">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h4 class="mb-2">
+                            <i class="fas fa-user me-2"></i>
+                            {{ client_data.client_name }}
+                        </h4>
+                        <div class="client-info">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>CPF:</strong> 
+                                    {{ client_data.client_cpf[:3] }}.{{ client_data.client_cpf[3:6] }}.{{ client_data.client_cpf[6:9] }}-{{ client_data.client_cpf[9:11] }}
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Email:</strong> 
+                                    {{ client_data.client_email or 'Não informado' }}
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-md-6">
+                                    <strong>Telefone:</strong> 
+                                    {{ client_data.client_phone or 'Não informado' }}
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Documentos:</strong> 
+                                    <span class="badge bg-warning">{{ client_data.signatures|length }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <div class="qr-code-section">
+                            <h6 class="mb-2">
+                                <i class="fas fa-qrcode me-2"></i>
+                                Acesso do Cliente
+                            </h6>
+                            <p class="mb-2">
+                                <small>O cliente deve acessar:</small>
+                            </p>
+                            <a href="{{ url_for('client_select_document') }}" class="btn btn-warning btn-sm" target="_blank">
+                                <i class="fas fa-external-link-alt me-2"></i>
+                                Tela de Assinatura
+                            </a>
+                            <p class="mt-2 mb-0">
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Informe o CPF: {{ client_data.client_cpf }}
+                                </small>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de Documentos -->
+            <div class="documents-list">
+                <h5 class="mb-3">
+                    <i class="fas fa-file-pdf me-2 text-danger"></i>
+                    Documentos Pendentes
+                </h5>
+                
+                {% for signature in client_data.signatures %}
+                <div class="document-item">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-file-pdf fa-2x text-danger me-3"></i>
+                                <div>
+                                    <strong>{{ signature.original_filename }}</strong>
+                                    <br>
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar me-1"></i>
+                                        Enviado em: {{ signature.timestamp.strftime('%d/%m/%Y %H:%M') }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <span class="badge bg-warning status-badge">
+                                    <i class="fas fa-clock me-1"></i>Aguardando
+                                </span>
+                                <br>
+                                <small class="text-muted">
+                                    {{ (signature.file_size / 1024)|round(1) }} KB
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-end">
+                            <div class="btn-group" role="group">
+                                <a href="{{ url_for('internal_edit_signature', signature_id=signature.id) }}" 
+                                   class="btn btn-outline-warning btn-sm">
+                                    <i class="fas fa-edit me-1"></i>Editar
+                                </a>
+                                <button type="button" class="btn btn-outline-info btn-sm" 
+                                        onclick="copyClientInfo('{{ client_data.client_name }}', '{{ client_data.client_cpf }}')">
+                                    <i class="fas fa-copy me-1"></i>Copiar Dados
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" 
+                                        onclick="showInstructions('{{ signature.original_filename }}', '{{ client_data.client_name }}')">
+                                    <i class="fas fa-question-circle me-1"></i>Ajuda
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-sm" 
+                                        onclick="confirmCancelSignature('{{ signature.id }}', '{{ signature.original_filename }}', '{{ client_data.client_name }}')">
+                                    <i class="fas fa-times me-1"></i>Cancelar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Ações do Cliente -->
+            <div class="text-center mt-3">
+                <div class="alert alert-info">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    <strong>Dica:</strong> Compartilhe a tela de assinatura com o cliente ou oriente-o a acessar via tablet/celular
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        {% else %}
+        <!-- Estado Vazio -->
+        <div class="pending-card">
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="fas fa-inbox"></i>
+                </div>
+                <h4>Nenhuma Assinatura Pendente</h4>
+                <p class="text-muted">
+                    Todos os documentos foram processados ou você ainda não iniciou nenhuma assinatura.
+                </p>
+                <a href="{{ url_for('internal_signature_upload') }}" class="btn btn-primary btn-custom">
+                    <i class="fas fa-plus me-2"></i>Iniciar Primeira Assinatura
+                </a>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Links Rápidos -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="pending-card">
+                    <h5 class="mb-3">
+                        <i class="fas fa-link me-2"></i>
+                        Acesso Rápido
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-2 mb-2">
+                            <a href="{{ url_for('internal_signature_upload') }}" class="btn btn-primary w-100">
+                                <i class="fas fa-upload me-2"></i>Nova Assinatura
+                            </a>
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <a href="{{ url_for('internal_completed_signatures') }}" class="btn btn-success w-100">
+                                <i class="fas fa-check me-2"></i>Concluídas
+                            </a>
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <a href="{{ url_for('internal_cancelled_signatures') }}" class="btn btn-danger w-100">
+                                <i class="fas fa-times me-2"></i>Canceladas
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('client_select_document') }}" class="btn btn-warning w-100" target="_blank">
+                                <i class="fas fa-tablet-alt me-2"></i>Tela Cliente
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('index') }}" class="btn btn-outline-secondary w-100">
+                                <i class="fas fa-home me-2"></i>Início
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Instruções -->
+    <div class="modal fade" id="instructionsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-question-circle me-2"></i>
+                        Instruções para o Cliente
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="instructionsContent"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmação de Cancelamento -->
+    <div class="modal fade" id="cancelModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Confirmar Cancelamento
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Atenção!</strong> Esta ação não pode ser desfeita.
+                    </div>
+                    <p>Tem certeza que deseja cancelar a assinatura do documento:</p>
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 id="cancelFileName" class="mb-2"></h6>
+                            <p class="mb-1"><strong>Cliente:</strong> <span id="cancelClientName"></span></p>
+                            <p class="mb-0"><strong>Status:</strong> <span class="badge bg-warning">Pendente</span></p>
+                        </div>
+                    </div>
+                    <div class="alert alert-info mt-3">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>O que acontece ao cancelar:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>A assinatura será marcada como cancelada</li>
+                            <li>O documento não poderá mais ser assinado</li>
+                            <li>Os arquivos temporários serão removidos</li>
+                            <li>O cliente não poderá mais acessar este documento</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Não, Manter
+                    </button>
+                    <form id="cancelForm" method="POST" style="display: inline;">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-check me-2"></i>Sim, Cancelar
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Função para copiar dados do cliente
+        function copyClientInfo(clientName, clientCpf) {
+            const text = `Cliente: ${clientName}\nCPF: ${clientCpf}`;
+            
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(text).then(() => {
+                    alert('Dados copiados para a área de transferência!');
+                }).catch(() => {
+                    fallbackCopyTextToClipboard(text);
+                });
+            } else {
+                fallbackCopyTextToClipboard(text);
+            }
+        }
+        
+        // Fallback para navegadores antigos
+        function fallbackCopyTextToClipboard(text) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                alert('Dados copiados para a área de transferência!');
+            } catch (err) {
+                alert('Erro ao copiar dados. Selecione e copie manualmente:\n\n' + text);
+            }
+            
+            document.body.removeChild(textArea);
+        }
+        
+        // Função para mostrar instruções
+        function showInstructions(filename, clientName) {
+            const content = `
+                <h6>Como orientar o cliente para assinar o documento:</h6>
+                <ol>
+                    <li><strong>${filename}</strong></li>
+                    <li>Cliente: <strong>${clientName}</strong></li>
+                </ol>
+                
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-mobile-alt me-2"></i>Passos para o Cliente:</h6>
+                    <ol>
+                        <li>Acesse a <strong>Tela de Assinatura</strong> (botão laranja acima)</li>
+                        <li>Digite o CPF: <strong>${clientCpf}</strong></li>
+                        <li>Confirme os dados e aceite os termos</li>
+                        <li>Desenhe a assinatura no campo indicado</li>
+                        <li>Clique em "Finalizar Assinatura"</li>
+                    </ol>
+                </div>
+                
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-exclamation-triangle me-2"></i>Importante:</h6>
+                    <ul>
+                        <li>O cliente deve usar um dispositivo com tela touch (tablet/celular)</li>
+                        <li>A assinatura deve ser clara e legível</li>
+                        <li>Após a assinatura, o documento ficará disponível para download</li>
+                    </ul>
+                </div>
+            `;
+            
+            document.getElementById('instructionsContent').innerHTML = content;
+            new bootstrap.Modal(document.getElementById('instructionsModal')).show();
+        }
+        
+        // Função para confirmar cancelamento de assinatura
+        function confirmCancelSignature(signatureId, fileName, clientName) {
+            // Preenche os dados no modal
+            document.getElementById('cancelFileName').textContent = fileName;
+            document.getElementById('cancelClientName').textContent = clientName;
+            
+            // Atualiza o action do formulário
+            document.getElementById('cancelForm').action = `/internal/signature/cancel/${signatureId}`;
+            
+            // Mostra o modal
+            new bootstrap.Modal(document.getElementById('cancelModal')).show();
+        }
+        
+        // Auto-refresh a cada 30 segundos para verificar atualizações
+        setInterval(function() {
+            // Verifica se há mudanças na página
+            if (document.visibilityState === 'visible') {
+                // Pode implementar uma verificação AJAX aqui se necessário
+                console.log('Verificando atualizações...');
+            }
+        }, 30000);
+    </script>
+</body>
+</html>

@@ -2,7 +2,7 @@
 
 # Comandos principais
 install: ## Instalar dependências
-	uv add flask PyPDF2 reportlab pillow
+	uv add flask PyPDF2 reportlab pillow cryptography pycryptodome
 
 install-dev: ## Instalar dependências de desenvolvimento
 	uv add --dev pytest black flake8
@@ -12,6 +12,9 @@ run: ## Executar a aplicação
 
 test: ## Executar testes
 	uv run pytest
+
+test-crypto: ## Testar funcionalidades criptográficas
+	uv run python test_crypto.py
 
 format: ## Formatar código
 	uv run black .

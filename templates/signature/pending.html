@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Revisão de Informações - Assinador Digital</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .step-indicator {
+            margin-bottom: 2rem;
+        }
+        .step {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e9ecef;
+            color: #6c757d;
+            line-height: 40px;
+            text-align: center;
+            margin: 0 10px;
+            font-weight: bold;
+        }
+        .step.active {
+            background: #007bff;
+            color: white;
+        }
+        .step.completed {
+            background: #28a745;
+            color: white;
+        }
+        .info-card {
+            border-left: 4px solid #007bff;
+            background: #f8f9fa;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        .info-value {
+            color: #212529;
+        }
+        .file-preview {
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 1rem;
+        }
+        .warning-box {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 1rem;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <!-- User Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-signature me-2"></i>Assinador Digital
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3">
+                    <i class="fas fa-user me-1"></i>{{ current_user.full_name }}
+                    {% if current_user.is_admin() %}
+                        <span class="badge bg-warning ms-2">Admin</span>
+                    {% endif %}
+                </span>
+                <a class="nav-link" href="{{ url_for('profile') }}">
+                    <i class="fas fa-user-circle me-1"></i>Perfil
+                </a>
+                {% if current_user.is_admin() %}
+                <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
+                    <i class="fas fa-cog me-1"></i>Admin
+                </a>
+                {% endif %}
+                <a class="nav-link" href="{{ url_for('logout') }}">
+                    <i class="fas fa-sign-out-alt me-1"></i>Sair
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Progress Steps -->
+        <div class="step-indicator text-center">
+            <div class="step completed">1</div>
+            <div class="step completed">2</div>
+            <div class="step active">3</div>
+            <div class="step">4</div>
+            <div class="step">5</div>
+        </div>
+        
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">
+                            <i class="fas fa-clipboard-check me-2"></i>
+                            Etapa 3: Revisão das Informações
+                        </h4>
+                        <small>Confirme todos os dados antes de prosseguir com a assinatura</small>
+                    </div>
+                    <div class="card-body p-4">
+                        
+                        <!-- Aviso Importante -->
+                        <div class="warning-box mb-4">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-exclamation-triangle text-warning me-3" style="font-size: 1.5rem;"></i>
+                                <div>
+                                    <h6 class="mb-1">Atenção: Verifique Todas as Informações</h6>
+                                    <small class="text-muted">
+                                        Após a assinatura, não será possível alterar os dados. Confira se todas as informações estão corretas.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Informações do Documento -->
+                            <div class="col-lg-6 mb-4">
+                                <div class="card info-card">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            <i class="fas fa-file-pdf me-2 text-danger"></i>
+                                            Documento
+                                        </h6>
+                                        <div class="file-preview">
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-file-pdf text-danger me-3" style="font-size: 2.5rem;"></i>
+                                                <div>
+                                                    <h6 class="mb-1">{{ filename }}</h6>
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-check-circle text-success me-1"></i>
+                                                        Arquivo carregado com sucesso
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Informações do Atendente -->
+                            <div class="col-lg-6 mb-4">
+                                <div class="card info-card">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            <i class="fas fa-user-tie me-2 text-primary"></i>
+                                            Atendente
+                                        </h6>
+                                        <div class="row g-2">
+                                            <div class="col-6">
+                                                <span class="info-label">Nome:</span>
+                                            </div>
+                                            <div class="col-6">
+                                                <span class="info-value">{{ current_user.full_name }}</span>
+                                            </div>
+                                            <div class="col-6">
+                                                <span class="info-label">Email:</span>
+                                            </div>
+                                            <div class="col-6">
+                                                <span class="info-value">{{ current_user.email }}</span>
+                                            </div>
+                                            <div class="col-12 mt-2">
+                                                <small class="text-muted">
+                                                    <i class="fas fa-shield-alt me-1"></i>
+                                                    Assinatura digital certificada
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Dados do Assinante -->
+                        <div class="card info-card mb-4">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="fas fa-user me-2 text-info"></i>
+                                    Dados do Assinante
+                                </h6>
+                                <div class="row g-3">
+                                    {% if client_info.nome %}
+                                    <div class="col-md-6">
+                                        <div class="d-flex">
+                                            <span class="info-label me-3" style="min-width: 120px;">Nome Completo:</span>
+                                            <span class="info-value">{{ client_info.nome }}</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if client_info.cpf %}
+                                    <div class="col-md-6">
+                                        <div class="d-flex">
+                                            <span class="info-label me-3" style="min-width: 120px;">CPF:</span>
+                                            <span class="info-value">{{ client_info.cpf }}</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+
+                                    {% if client_info.email %}
+                                    <div class="col-md-6">
+                                        <div class="d-flex">
+                                            <span class="info-label me-3" style="min-width: 120px;">Email:</span>
+                                            <span class="info-value">{{ client_info.email }}</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+
+                                    {% if client_info.telefone %}
+                                    <div class="col-md-6">
+                                        <div class="d-flex">
+                                            <span class="info-label me-3" style="min-width: 120px;">Telefone:</span>
+                                            <span class="info-value">{{ client_info.telefone }}</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+
+                                    {% if client_info.data_nascimento %}
+                                    <div class="col-md-6">
+                                        <div class="d-flex">
+                                            <span class="info-label me-3" style="min-width: 120px;">Data de Nascimento:</span>
+                                            <span class="info-value">{{ client_info.data_nascimento }}</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+
+                                    {% if client_info.endereco %}
+                                    <div class="col-12">
+                                        <div class="d-flex">
+                                            <span class="info-label me-3" style="min-width: 120px;">Endereço:</span>
+                                            <span class="info-value">{{ client_info.endereco }}</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+
+                                    {% if client_info.observacoes %}
+                                    <div class="col-12">
+                                        <div class="d-flex">
+                                            <span class="info-label me-3" style="min-width: 120px;">Observações:</span>
+                                            <span class="info-value">{{ client_info.observacoes }}</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Informações da Assinatura -->
+                        <div class="card info-card mb-4">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="fas fa-certificate me-2 text-success"></i>
+                                    Detalhes da Assinatura Digital
+                                </h6>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="d-flex">
+                                            <span class="info-label me-3" style="min-width: 120px;">Algoritmo:</span>
+                                            <span class="info-value">RSA-SHA256</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="d-flex">
+                                            <span class="info-label me-3" style="min-width: 120px;">Timestamp:</span>
+                                            <span class="info-value" id="currentTimestamp">-</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <small class="text-muted">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            A assinatura será aplicada em todas as páginas do documento no canto inferior direito.
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Etapa 1: Confirmação das Informações -->
+                        <div id="confirmationStep" class="mb-4">
+                            <div class="card border-primary">
+                                <div class="card-header bg-primary text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-check-circle me-2"></i>
+                                        Etapa 1: Confirmação das Informações
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <p class="mb-3">
+                                        Por favor, revise cuidadosamente todas as informações acima. Após a assinatura, 
+                                        não será possível alterar os dados.
+                                    </p>
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" id="confirmAllInfo" required>
+                                        <label class="form-check-label fw-bold" for="confirmAllInfo">
+                                            Confirmo que revisei e todas as informações estão corretas
+                                        </label>
+                                    </div>
+                                    <div class="d-grid gap-2 d-md-flex justify-content-md-between">
+                                        <a href="{{ url_for('signature_client_info') }}" class="btn btn-outline-secondary">
+                                            <i class="fas fa-arrow-left me-2"></i>Editar Informações
+                                        </a>
+                                        <button type="button" class="btn btn-primary" id="confirmInfoBtn" disabled>
+                                            <i class="fas fa-check me-2"></i>
+                                            Confirmar Informações
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Etapa 2: Termo de Aceite (Inicialmente oculto) -->
+                        <div id="termsStep" class="mb-4" style="display: none;">
+                            <div class="card border-success">
+                                <div class="card-header bg-success text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-file-contract me-2"></i>
+                                        Etapa 2: Termo de Aceite da Assinatura Digital
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="terms-content mb-3" style="max-height: 300px; overflow-y: auto; border: 1px solid #dee2e6; padding: 1rem; border-radius: 5px; background: #f8f9fa;">
+                                        <h6 class="text-primary">TERMO DE ACEITE PARA ASSINATURA DIGITAL</h6>
+                                        
+                                        <p><strong>1. DEFINIÇÕES</strong></p>
+                                        <p>Este documento estabelece os termos e condições para uso do sistema de assinatura digital, que utiliza certificado digital X.509 com criptografia RSA-SHA256.</p>
+                                        
+                                        <p><strong>2. VALIDADE JURÍDICA</strong></p>
+                                        <p>A assinatura digital possui validade jurídica equivalente à assinatura manuscrita, conforme estabelecido pela Medida Provisória nº 2.200-2/2001 e legislação correlata.</p>
+                                        
+                                        <p><strong>3. RESPONSABILIDADES DO SIGNATÁRIO</strong></p>
+                                        <ul>
+                                            <li>Garantir a veracidade de todas as informações fornecidas</li>
+                                            <li>Confirmar que possui autorização para assinar o documento</li>
+                                            <li>Manter sigilo sobre credenciais de acesso</li>
+                                            <li>Comunicar imediatamente qualquer uso indevido</li>
+                                        </ul>
+                                        
+                                        <p><strong>4. CARACTERÍSTICAS TÉCNICAS</strong></p>
+                                        <ul>
+                                            <li>Algoritmo de criptografia: RSA-SHA256</li>
+                                            <li>Certificado digital X.509</li>
+                                            <li>Timestamp certificado</li>
+                                            <li>Verificação de integridade</li>
+                                        </ul>
+                                        
+                                        <p><strong>5. SEGURANÇA E INTEGRIDADE</strong></p>
+                                        <p>O sistema garante a autenticidade, integridade e não repúdio do documento assinado através de tecnologias criptográficas avançadas.</p>
+                                        
+                                        <p><strong>6. ACEITE</strong></p>
+                                        <p>Ao prosseguir com a assinatura digital, o signatário declara ter lido, compreendido e aceito integralmente os termos deste documento.</p>
+                                        
+                                        <p class="small text-muted mt-3">
+                                            <strong>Data de última atualização:</strong> <span id="currentDate"></span>
+                                        </p>
+                                    </div>
+                                    
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" id="acceptTerms" required>
+                                        <label class="form-check-label fw-bold" for="acceptTerms">
+                                            Li, compreendi e aceito integralmente os termos acima
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" id="confirmAuthority" required>
+                                        <label class="form-check-label fw-bold" for="confirmAuthority">
+                                            Confirmo que tenho autorização para assinar este documento
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" id="confirmResponsibility" required>
+                                        <label class="form-check-label fw-bold" for="confirmResponsibility">
+                                            Assumo total responsabilidade pelas consequências desta assinatura
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        <strong>Atenção:</strong> Após clicar em "Prosseguir para Assinatura", o processo não poderá ser cancelado.
+                                    </div>
+                                    
+                                    <div class="d-grid gap-2 d-md-flex justify-content-md-between">
+                                        <button type="button" class="btn btn-outline-secondary" id="backToInfoBtn">
+                                            <i class="fas fa-arrow-left me-2"></i>Voltar para Informações
+                                        </button>
+                                        <button type="button" class="btn btn-success btn-lg" id="proceedBtn" disabled>
+                                            <i class="fas fa-pen-nib me-2"></i>
+                                            Prosseguir para Assinatura
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Avisos Legais -->
+                <div class="card mt-4">
+                    <div class="card-body">
+                        <h6 class="card-title">
+                            <i class="fas fa-gavel me-2 text-dark"></i>
+                            Validade Jurídica
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <ul class="list-unstyled small">
+                                    <li><i class="fas fa-check text-success me-2"></i>Assinatura com validade jurídica</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Certificado digital X.509</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Conformidade com MP 2.200-2/2001</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <ul class="list-unstyled small">
+                                    <li><i class="fas fa-shield-alt text-info me-2"></i>Integridade garantida</li>
+                                    <li><i class="fas fa-shield-alt text-info me-2"></i>Não repúdio</li>
+                                    <li><i class="fas fa-shield-alt text-info me-2"></i>Autenticidade verificável</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Elementos
+        const confirmationStep = document.getElementById('confirmationStep');
+        const termsStep = document.getElementById('termsStep');
+        const confirmInfoBtn = document.getElementById('confirmInfoBtn');
+        const proceedBtn = document.getElementById('proceedBtn');
+        const backToInfoBtn = document.getElementById('backToInfoBtn');
+        
+        // Checkboxes da primeira etapa
+        const confirmAllInfo = document.getElementById('confirmAllInfo');
+        
+        // Checkboxes da segunda etapa
+        const acceptTerms = document.getElementById('acceptTerms');
+        const confirmAuthority = document.getElementById('confirmAuthority');
+        const confirmResponsibility = document.getElementById('confirmResponsibility');
+
+        // Controla o botão da primeira etapa
+        confirmAllInfo.addEventListener('change', function() {
+            confirmInfoBtn.disabled = !this.checked;
+        });
+
+        // Primeira etapa: Confirmar informações
+        confirmInfoBtn.addEventListener('click', function() {
+            if (confirmAllInfo.checked) {
+                // Anima a transição
+                confirmationStep.style.display = 'none';
+                termsStep.style.display = 'block';
+                
+                // Scroll suave para o termo
+                termsStep.scrollIntoView({ behavior: 'smooth' });
+                
+                // Feedback visual
+                this.disabled = true;
+                this.innerHTML = '<i class="fas fa-check me-2"></i>Informações Confirmadas';
+                this.classList.remove('btn-primary');
+                this.classList.add('btn-success');
+            }
+        });
+
+        // Controla o botão da segunda etapa
+        function checkTermsCompleted() {
+            const allTermsChecked = acceptTerms.checked && confirmAuthority.checked && confirmResponsibility.checked;
+            proceedBtn.disabled = !allTermsChecked;
+        }
+
+        // Adiciona listeners aos checkboxes dos termos
+        [acceptTerms, confirmAuthority, confirmResponsibility].forEach(checkbox => {
+            checkbox.addEventListener('change', checkTermsCompleted);
+        });
+
+        // Botão voltar para informações
+        backToInfoBtn.addEventListener('click', function() {
+            termsStep.style.display = 'none';
+            confirmationStep.style.display = 'block';
+            
+            // Reset dos checkboxes dos termos
+            acceptTerms.checked = false;
+            confirmAuthority.checked = false;
+            confirmResponsibility.checked = false;
+            proceedBtn.disabled = true;
+            
+            // Scroll para a primeira etapa
+            confirmationStep.scrollIntoView({ behavior: 'smooth' });
+        });
+
+        // Prosseguir para assinatura
+        proceedBtn.addEventListener('click', function() {
+            if (acceptTerms.checked && confirmAuthority.checked && confirmResponsibility.checked) {
+                this.disabled = true;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Redirecionando...';
+                
+                // Pequeno delay para feedback visual
+                setTimeout(() => {
+                    window.location.href = "{{ url_for('signature_draw') }}";
+                }, 1000);
+            }
+        });
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            // Data atual no termo
+            const now = new Date();
+            const currentDate = now.toLocaleDateString('pt-BR');
+            const currentTimestamp = now.toLocaleString('pt-BR');
+            
+            document.getElementById('currentDate').textContent = currentDate;
+            document.getElementById('currentTimestamp').textContent = currentTimestamp;
+            
+            // Timestamp elements (se existirem)
+            const timestampElements = document.querySelectorAll('.current-timestamp');
+            timestampElements.forEach(element => {
+                element.textContent = currentTimestamp;
+            });
+            
+            // Estado inicial
+            confirmInfoBtn.disabled = true;
+            proceedBtn.disabled = true;
+        });
+
+        // Efeito visual para o scroll do termo
+        const termsContent = document.querySelector('.terms-content');
+        if (termsContent) {
+            termsContent.addEventListener('scroll', function() {
+                const isScrolledToBottom = this.scrollTop + this.clientHeight >= this.scrollHeight - 10;
+                if (isScrolledToBottom) {
+                    // Visual feedback quando o usuário leu todo o termo
+                    this.style.borderColor = '#28a745';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatórios - Assinador de PDFs</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .admin-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+        .reports-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .filters-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            padding: 0.75rem 1rem;
+            transition: all 0.3s ease;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .btn-filter {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-filter:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+        .stats-summary {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .export-section {
+            background: #e3f2fd;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="admin-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="mb-2">
+                        <i class="fas fa-chart-line me-3"></i>
+                        Relatórios
+                    </h1>
+                    <p class="mb-0">Visualize e analise dados do sistema</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-light me-2">
+                        <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                    </a>
+                    <a href="{{ url_for('index') }}" class="btn btn-outline-light">
+                        <i class="fas fa-home me-2"></i>Início
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Mensagens Flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Filtros -->
+        <div class="filters-card">
+            <h5 class="mb-3">
+                <i class="fas fa-filter me-2"></i>
+                Filtros de Relatório
+            </h5>
+            
+            <form method="POST" action="{{ url_for('admin_reports') }}">
+                {{ form.hidden_tag() }}
+                
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label for="{{ form.date_from.id }}" class="form-label">
+                            <i class="fas fa-calendar me-2"></i>Data Inicial
+                        </label>
+                        {{ form.date_from(class="form-control", type="date") }}
+                    </div>
+                    
+                    <div class="col-md-3 mb-3">
+                        <label for="{{ form.date_to.id }}" class="form-label">
+                            <i class="fas fa-calendar me-2"></i>Data Final
+                        </label>
+                        {{ form.date_to(class="form-control", type="date") }}
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <label for="{{ form.user_id.id }}" class="form-label">
+                            <i class="fas fa-user me-2"></i>Usuário
+                        </label>
+                        {{ form.user_id(class="form-select") }}
+                    </div>
+                    
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-grid">
+                            {{ form.submit(class="btn btn-primary btn-filter") }}
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Resumo Estatístico -->
+        <div class="stats-summary">
+            <div class="row text-center">
+                <div class="col-md-3">
+                    <h4 class="text-primary mb-1">{{ signatures|length }}</h4>
+                    <small class="text-muted">Total de Registros</small>
+                </div>
+                <div class="col-md-3">
+                    <h4 class="text-success mb-1">
+                        {{ signatures|selectattr('signature_valid', 'equalto', true)|list|length }}
+                    </h4>
+                    <small class="text-muted">Assinaturas Válidas</small>
+                </div>
+                <div class="col-md-3">
+                    <h4 class="text-info mb-1">
+                        {% if signatures %}
+                            {{ (signatures|map(attribute='file_size')|sum / 1024)|round(1) }}
+                        {% else %}
+                            0
+                        {% endif %}
+                    </h4>
+                    <small class="text-muted">Total (MB)</small>
+                </div>
+                <div class="col-md-3">
+                    <h4 class="text-warning mb-1">
+                        {% if signatures %}
+                            {{ signatures|map(attribute='user_id')|unique|list|length }}
+                        {% else %}
+                            0
+                        {% endif %}
+                    </h4>
+                    <small class="text-muted">Usuários Únicos</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção de Exportação -->
+        <div class="export-section">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h6 class="mb-1">
+                        <i class="fas fa-download me-2"></i>
+                        Exportar Dados
+                    </h6>
+                    <p class="mb-0 text-muted">
+                        Baixe os dados filtrados em formato JSON para análise externa
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <a href="{{ url_for('admin_export_reports') }}" class="btn btn-success">
+                        <i class="fas fa-file-download me-2"></i>Exportar JSON
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabela de Relatórios -->
+        <div class="reports-card">
+            <h5 class="mb-3">
+                <i class="fas fa-table me-2"></i>
+                Dados das Assinaturas
+            </h5>
+            
+            {% if signatures %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ID</th>
+                                <th>Usuário</th>
+                                <th>Arquivo</th>
+                                <th>Data/Hora</th>
+                                <th>Algoritmo</th>
+                                <th>Tamanho</th>
+                                <th>Status</th>
+                                <th>Hash</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for signature in signatures %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-secondary">{{ signature.id }}</span>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-user-circle me-2 text-primary"></i>
+                                        <strong>{{ signature.user.username if signature.user else 'N/A' }}</strong>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-file-pdf me-2 text-danger"></i>
+                                        <span title="{{ signature.original_filename }}">
+                                            {{ signature.original_filename[:30] }}{% if signature.original_filename|length > 30 %}...{% endif %}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        {{ signature.timestamp.strftime('%d/%m/%Y %H:%M') }}
+                                    </small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ signature.signature_algorithm }}</span>
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        {{ (signature.file_size / 1024)|round(1) }} KB
+                                    </small>
+                                </td>
+                                <td>
+                                    {% if signature.signature_valid %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check me-1"></i>Válida
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-times me-1"></i>Inválida
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small class="text-muted" title="{{ signature.signature_hash }}">
+                                        {{ signature.signature_hash[:16] }}...
+                                    </small>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="text-center mt-3">
+                    <small class="text-muted">
+                        Mostrando {{ signatures|length }} registros
+                        {% if form.date_from.data or form.date_to.data or form.user_id.data %}
+                            com filtros aplicados
+                        {% endif %}
+                    </small>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Nenhum registro encontrado</h5>
+                    <p class="text-muted">
+                        Tente ajustar os filtros ou verificar se há dados no sistema
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

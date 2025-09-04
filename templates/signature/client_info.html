@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dados do Assinante - Assinador Digital</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .step-indicator {
+            margin-bottom: 2rem;
+        }
+        .step {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e9ecef;
+            color: #6c757d;
+            line-height: 40px;
+            text-align: center;
+            margin: 0 10px;
+            font-weight: bold;
+        }
+        .step.active {
+            background: #007bff;
+            color: white;
+        }
+        .step.completed {
+            background: #28a745;
+            color: white;
+        }
+        .form-floating {
+            margin-bottom: 1rem;
+        }
+        .required-field::after {
+            content: " *";
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <!-- User Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-signature me-2"></i>Assinador Digital
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3">
+                    <i class="fas fa-user me-1"></i>{{ current_user.full_name }}
+                    {% if current_user.is_admin() %}
+                        <span class="badge bg-warning ms-2">Admin</span>
+                    {% endif %}
+                </span>
+                <a class="nav-link" href="{{ url_for('profile') }}">
+                    <i class="fas fa-user-circle me-1"></i>Perfil
+                </a>
+                {% if current_user.is_admin() %}
+                <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
+                    <i class="fas fa-cog me-1"></i>Admin
+                </a>
+                {% endif %}
+                <a class="nav-link" href="{{ url_for('logout') }}">
+                    <i class="fas fa-sign-out-alt me-1"></i>Sair
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Progress Steps -->
+        <div class="step-indicator text-center">
+            <div class="step completed">1</div>
+            <div class="step active">2</div>
+            <div class="step">3</div>
+            <div class="step">4</div>
+            <div class="step">5</div>
+        </div>
+        
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">
+                            <i class="fas fa-user-edit me-2"></i>
+                            Etapa 2: Dados do Assinante
+                        </h4>
+                    </div>
+                    <div class="card-body p-4">
+                        <!-- Flash Messages -->
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                            {% if messages %}
+                                {% for category, message in messages %}
+                                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                        {{ message }}
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endwith %}
+
+                        <form method="POST" id="clientForm">
+                            <div class="row">
+                                <!-- Informações Pessoais -->
+                                <div class="col-md-6">
+                                    <h6 class="text-muted mb-3">
+                                        <i class="fas fa-user me-2"></i>Dados Pessoais
+                                    </h6>
+                                    
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="nome" name="nome" 
+                                               placeholder="Nome completo" value="{{ client_info.nome if client_info else '' }}" required>
+                                        <label for="nome" class="required-field">Nome Completo</label>
+                                    </div>
+
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="cpf" name="cpf" 
+                                               placeholder="000.000.000-00" value="{{ client_info.cpf if client_info else '' }}"
+                                               pattern="\d{3}\.\d{3}\.\d{3}-\d{2}" maxlength="14">
+                                        <label for="cpf">CPF</label>
+                                        <div class="form-text">Formato: 000.000.000-00</div>
+                                    </div>
+
+                                    <div class="form-floating">
+                                        <input type="date" class="form-control" id="data_nascimento" name="data_nascimento" 
+                                               value="{{ client_info.data_nascimento if client_info else '' }}">
+                                        <label for="data_nascimento">Data de Nascimento</label>
+                                    </div>
+                                </div>
+
+                                <!-- Informações de Contato -->
+                                <div class="col-md-6">
+                                    <h6 class="text-muted mb-3">
+                                        <i class="fas fa-address-book me-2"></i>Contato
+                                    </h6>
+
+                                    <div class="form-floating">
+                                        <input type="email" class="form-control" id="email" name="email" 
+                                               placeholder="email@exemplo.com" value="{{ client_info.email if client_info else '' }}">
+                                        <label for="email">Email</label>
+                                    </div>
+
+                                    <div class="form-floating">
+                                        <input type="tel" class="form-control" id="telefone" name="telefone" 
+                                               placeholder="(00) 00000-0000" value="{{ client_info.telefone if client_info else '' }}"
+                                               pattern="\(\d{2}\) \d{4,5}-\d{4}" maxlength="15">
+                                        <label for="telefone">Telefone</label>
+                                        <div class="form-text">Formato: (00) 00000-0000</div>
+                                    </div>
+
+                                    <div class="form-floating">
+                                        <textarea class="form-control" id="endereco" name="endereco" 
+                                                  placeholder="Endereço completo" style="height: 80px;">{{ client_info.endereco if client_info else '' }}</textarea>
+                                        <label for="endereco">Endereço</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Observações -->
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <h6 class="text-muted mb-3">
+                                        <i class="fas fa-comment me-2"></i>Informações Adicionais
+                                    </h6>
+                                    
+                                    <div class="form-floating">
+                                        <textarea class="form-control" id="observacoes" name="observacoes" 
+                                                  placeholder="Observações adicionais..." style="height: 100px;">{{ client_info.observacoes if client_info else '' }}</textarea>
+                                        <label for="observacoes">Observações</label>
+                                        <div class="form-text">Campo opcional para informações complementares</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Buttons -->
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-between mt-4">
+                                <a href="{{ url_for('signature_upload') }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>Voltar
+                                </a>
+                                <button type="submit" class="btn btn-primary" id="continueBtn">
+                                    <i class="fas fa-arrow-right me-2"></i>
+                                    Continuar para Revisão
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Dicas -->
+                <div class="card mt-4">
+                    <div class="card-body">
+                        <h6 class="card-title">
+                            <i class="fas fa-lightbulb me-2 text-warning"></i>
+                            Dicas de Preenchimento
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <ul class="list-unstyled small">
+                                    <li><i class="fas fa-check text-success me-2"></i>Preencha apenas os campos necessários</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>O nome completo é obrigatório</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Use formatos válidos para CPF e telefone</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <ul class="list-unstyled small">
+                                    <li><i class="fas fa-shield-alt text-info me-2"></i>Suas informações são protegidas</li>
+                                    <li><i class="fas fa-shield-alt text-info me-2"></i>Dados não são compartilhados</li>
+                                    <li><i class="fas fa-shield-alt text-info me-2"></i>Armazenamento seguro</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Validador de CPF
+        function validarCPF(cpf) {
+            // Remove caracteres não numéricos
+            cpf = cpf.replace(/[^\d]/g, '');
+            
+            // Verifica se tem 11 dígitos
+            if (cpf.length !== 11) return false;
+            
+            // Verifica se todos os dígitos são iguais
+            if (/^(\d)\1{10}$/.test(cpf)) return false;
+            
+            // Validação do primeiro dígito verificador
+            let soma = 0;
+            for (let i = 0; i < 9; i++) {
+                soma += parseInt(cpf[i]) * (10 - i);
+            }
+            let resto = soma % 11;
+            let digitoVerificador1 = resto < 2 ? 0 : 11 - resto;
+            
+            if (parseInt(cpf[9]) !== digitoVerificador1) return false;
+            
+            // Validação do segundo dígito verificador
+            soma = 0;
+            for (let i = 0; i < 10; i++) {
+                soma += parseInt(cpf[i]) * (11 - i);
+            }
+            resto = soma % 11;
+            let digitoVerificador2 = resto < 2 ? 0 : 11 - resto;
+            
+            return parseInt(cpf[10]) === digitoVerificador2;
+        }
+
+        // Format CPF
+        document.getElementById('cpf').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length <= 11) {
+                value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+                e.target.value = value;
+            }
+            
+            // Validação em tempo real
+            if (e.target.value.length === 14) { // CPF completo formatado
+                if (validarCPF(e.target.value)) {
+                    e.target.style.borderColor = '#28a745';
+                    e.target.style.backgroundColor = '#f8fff8';
+                } else {
+                    e.target.style.borderColor = '#dc3545';
+                    e.target.style.backgroundColor = '#fff8f8';
+                }
+            } else {
+                e.target.style.borderColor = '';
+                e.target.style.backgroundColor = '';
+            }
+        });
+
+        // Format Phone
+        document.getElementById('telefone').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length <= 11) {
+                if (value.length <= 10) {
+                    value = value.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+                } else {
+                    value = value.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+                }
+                e.target.value = value;
+            }
+        });
+
+        // Form validation
+        document.getElementById('clientForm').addEventListener('submit', function(e) {
+            const nome = document.getElementById('nome').value.trim();
+            const cpf = document.getElementById('cpf').value.trim();
+            const continueBtn = document.getElementById('continueBtn');
+            
+            if (!nome) {
+                e.preventDefault();
+                alert('Por favor, preencha o nome completo.');
+                document.getElementById('nome').focus();
+                return;
+            }
+            
+            // Validação do CPF (se preenchido)
+            if (cpf && !validarCPF(cpf)) {
+                e.preventDefault();
+                alert('CPF inválido. Por favor, verifique o número digitado.');
+                document.getElementById('cpf').focus();
+                document.getElementById('cpf').style.borderColor = '#dc3545';
+                return;
+            } else if (cpf) {
+                document.getElementById('cpf').style.borderColor = '#28a745';
+            }
+            
+            continueBtn.disabled = true;
+            continueBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Salvando...';
+        });
+
+        // Auto-save (opcional)
+        let saveTimeout;
+        const inputs = document.querySelectorAll('input, textarea');
+        inputs.forEach(input => {
+            input.addEventListener('input', function() {
+                clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(() => {
+                    // Auto-save logic could be implemented here
+                    console.log('Auto-saving...');
+                }, 2000);
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload de PDF - Assinador Digital</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            padding: 60px 20px;
+            text-align: center;
+            background: #fafafa;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .upload-area.dragover {
+            border-color: #007bff;
+            background: #f0f7ff;
+        }
+        .upload-area:hover {
+            border-color: #007bff;
+            background: #f8f9fa;
+        }
+        .upload-icon {
+            font-size: 3rem;
+            color: #6c757d;
+            margin-bottom: 1rem;
+        }
+        .step-indicator {
+            margin-bottom: 2rem;
+        }
+        .step {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e9ecef;
+            color: #6c757d;
+            line-height: 40px;
+            text-align: center;
+            margin: 0 10px;
+            font-weight: bold;
+        }
+        .step.active {
+            background: #007bff;
+            color: white;
+        }
+        .step.completed {
+            background: #28a745;
+            color: white;
+        }
+        .file-info {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <!-- User Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-signature me-2"></i>Assinador Digital
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3">
+                    <i class="fas fa-user me-1"></i>{{ current_user.full_name }}
+                    {% if current_user.is_admin() %}
+                        <span class="badge bg-warning ms-2">Admin</span>
+                    {% endif %}
+                </span>
+                <a class="nav-link" href="{{ url_for('profile') }}">
+                    <i class="fas fa-user-circle me-1"></i>Perfil
+                </a>
+                {% if current_user.is_admin() %}
+                <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
+                    <i class="fas fa-cog me-1"></i>Admin
+                </a>
+                {% endif %}
+                <a class="nav-link" href="{{ url_for('logout') }}">
+                    <i class="fas fa-sign-out-alt me-1"></i>Sair
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Progress Steps -->
+        <div class="step-indicator text-center">
+            <div class="step active">1</div>
+            <div class="step">2</div>
+            <div class="step">3</div>
+            <div class="step">4</div>
+            <div class="step">5</div>
+        </div>
+        
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">
+                            <i class="fas fa-cloud-upload-alt me-2"></i>
+                            Etapa 1: Upload do PDF
+                        </h4>
+                    </div>
+                    <div class="card-body p-5">
+                        <!-- Flash Messages -->
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                            {% if messages %}
+                                {% for category, message in messages %}
+                                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                        {{ message }}
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endwith %}
+
+                        <form id="uploadForm" method="POST" enctype="multipart/form-data">
+                            <div class="upload-area" id="uploadArea">
+                                <div class="upload-icon">
+                                    <i class="fas fa-file-pdf"></i>
+                                </div>
+                                <h5>Arraste o PDF aqui ou clique para selecionar</h5>
+                                <p class="text-muted mb-3">
+                                    Formatos aceitos: PDF (máximo 10MB)
+                                </p>
+                                <input type="file" name="pdf_file" id="pdfFile" accept=".pdf" style="display: none;" required>
+                                <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('pdfFile').click()">
+                                    <i class="fas fa-folder-open me-2"></i>Selecionar Arquivo
+                                </button>
+                            </div>
+
+                            <div class="file-info" id="fileInfo">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-file-pdf text-danger me-3" style="font-size: 2rem;"></i>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1" id="fileName">arquivo.pdf</h6>
+                                        <small class="text-muted" id="fileSize">Tamanho: 0 KB</small>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearFile()">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="d-grid gap-2 mt-4">
+                                <button type="submit" class="btn btn-primary btn-lg" id="uploadBtn" disabled>
+                                    <i class="fas fa-arrow-right me-2"></i>
+                                    Continuar para Dados do Assinante
+                                </button>
+                                <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>Voltar ao Início
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Informações Adicionais -->
+                <div class="card mt-4">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-info-circle me-2 text-info"></i>
+                            Processo de Assinatura Digital
+                        </h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <ul class="list-unstyled">
+                                    <li><i class="fas fa-check text-success me-2"></i>Upload do documento PDF</li>
+                                    <li><i class="fas fa-user text-primary me-2"></i>Preenchimento dos dados do cliente</li>
+                                    <li><i class="fas fa-eye text-warning me-2"></i>Revisão das informações</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <ul class="list-unstyled">
+                                    <li><i class="fas fa-signature text-info me-2"></i>Assinatura digital</li>
+                                    <li><i class="fas fa-download text-success me-2"></i>Download do documento assinado</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('pdfFile');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const uploadBtn = document.getElementById('uploadBtn');
+
+        // Drag and Drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type === 'application/pdf') {
+                fileInput.files = files;
+                handleFileSelect();
+            } else {
+                alert('Por favor, selecione apenas arquivos PDF.');
+            }
+        });
+
+        // Click to upload (only if not clicking the button)
+        uploadArea.addEventListener('click', (e) => {
+            // Don't trigger if clicking the button
+            if (e.target.tagName !== 'BUTTON' && !e.target.closest('button')) {
+                fileInput.click();
+            }
+        });
+
+        // File selection
+        fileInput.addEventListener('change', handleFileSelect);
+
+        function handleFileSelect() {
+            const file = fileInput.files[0];
+            if (file) {
+                if (file.type !== 'application/pdf') {
+                    alert('Por favor, selecione apenas arquivos PDF.');
+                    clearFile();
+                    return;
+                }
+
+                if (file.size > 10 * 1024 * 1024) { // 10MB
+                    alert('Arquivo muito grande. Máximo permitido: 10MB');
+                    clearFile();
+                    return;
+                }
+
+                fileName.textContent = file.name;
+                fileSize.textContent = `Tamanho: ${(file.size / 1024).toFixed(1)} KB`;
+                fileInfo.style.display = 'block';
+                uploadBtn.disabled = false;
+            }
+        }
+
+        function clearFile() {
+            fileInput.value = '';
+            fileInfo.style.display = 'none';
+            uploadBtn.disabled = true;
+        }
+
+        // Form submission
+        document.getElementById('uploadForm').addEventListener('submit', function(e) {
+            if (!fileInput.files[0]) {
+                e.preventDefault();
+                alert('Por favor, selecione um arquivo PDF.');
+                return;
+            }
+            
+            uploadBtn.disabled = true;
+            uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Carregando...';
+        });
+    </script>
+</body>
+</html>

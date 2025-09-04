@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assinatura - Assinador Digital</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .client-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            margin: 2rem auto;
+            max-width: 700px;
+            overflow: hidden;
+        }
+        .client-header {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        .client-body {
+            padding: 2rem;
+        }
+        .document-info {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid #28a745;
+        }
+        .signature-area {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 2px dashed #dee2e6;
+        }
+        .canvas-container {
+            position: relative;
+            margin: 1rem 0;
+        }
+        #signatureCanvas {
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            cursor: crosshair;
+            background: white;
+            touch-action: none;
+        }
+        .canvas-controls {
+            margin-top: 1rem;
+            text-align: center;
+        }
+        .btn-client {
+            border-radius: 10px;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+        .btn-client:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        .btn-client:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .logo-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        .signature-instructions {
+            background: #e3f2fd;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid #2196f3;
+        }
+        .progress-indicator {
+            background: #fff3cd;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid #ffc107;
+        }
+        .btn-group-signature {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .btn-group-signature .btn {
+            flex: 1;
+            min-width: 120px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="client-container">
+            <!-- Header -->
+            <div class="client-header">
+                <div class="logo-icon">
+                    <i class="fas fa-pen-fancy"></i>
+                </div>
+                <h2 class="mb-2">Assinatura Digital</h2>
+                <p class="mb-0">Desenhe sua assinatura no campo abaixo</p>
+            </div>
+
+            <!-- Body -->
+            <div class="client-body">
+                <!-- Informações do Documento -->
+                <div class="document-info">
+                    <h5 class="mb-3">
+                        <i class="fas fa-file-pdf me-2 text-danger"></i>
+                        Documento para Assinatura
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-8">
+                            <strong>{{ signature.original_filename }}</strong>
+                            <br>
+                            <small class="text-muted">
+                                Cliente: {{ signature.client_name }} | 
+                                CPF: {{ signature.client_cpf[:3] }}.{{ signature.client_cpf[3:6] }}.{{ signature.client_cpf[6:9] }}-{{ signature.client_cpf[9:11] }}
+                            </small>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <span class="badge bg-warning">
+                                <i class="fas fa-clock me-1"></i>Aguardando Assinatura
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Instruções -->
+                <div class="signature-instructions">
+                    <h6 class="mb-2">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Instruções para Assinatura
+                    </h6>
+                    <ul class="mb-0">
+                        <li>Use o dedo ou caneta para desenhar sua assinatura no campo abaixo</li>
+                        <li>Certifique-se de que a assinatura esteja clara e legível</li>
+                        <li>Você pode apagar e refazer quantas vezes quiser</li>
+                        <li>Clique em "Finalizar Assinatura" quando estiver satisfeito</li>
+                    </ul>
+                </div>
+
+                <!-- Área de Assinatura -->
+                <div class="signature-area">
+                    <h5 class="mb-3 text-center">
+                        <i class="fas fa-signature me-2 text-primary"></i>
+                        Sua Assinatura
+                    </h5>
+                    
+                    <div class="canvas-container">
+                        <canvas id="signatureCanvas" width="600" height="200"></canvas>
+                    </div>
+                    
+                    <div class="canvas-controls">
+                        <div class="btn-group-signature">
+                            <button type="button" class="btn btn-outline-secondary" id="clearBtn">
+                                <i class="fas fa-eraser me-2"></i>Limpar
+                            </button>
+                            <button type="button" class="btn btn-outline-primary" id="undoBtn">
+                                <i class="fas fa-undo me-2"></i>Desfazer
+                            </button>
+                            <button type="button" class="btn btn-success" id="signBtn" disabled>
+                                <i class="fas fa-check me-2"></i>Finalizar Assinatura
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Indicador de Progresso -->
+                <div class="progress-indicator">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-clipboard-check me-2 text-warning"></i>
+                        <div class="flex-grow-1">
+                            <strong>Etapa 3 de 3:</strong> Assinatura do Documento
+                        </div>
+                        <span class="badge bg-success">75%</span>
+                    </div>
+                </div>
+
+                <!-- Botões de Navegação -->
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('client_confirm_document', signature_id=signature.id) }}" class="btn btn-outline-secondary btn-client">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Voltar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- HUDs: validação, confirmação, sucesso e erro -->
+    <div class="modal fade" id="signValidationModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-triangle-exclamation text-warning me-2"></i> Atenção</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="signValidationText" class="mb-0"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ok</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="signConfirmModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-question-circle text-primary me-2"></i> Confirmar</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    Tem certeza que deseja finalizar a assinatura? Esta ação não pode ser desfeita.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="signConfirmBtn"><i class="fas fa-check me-1"></i>Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="signSuccessModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-check-circle text-success me-2"></i> Sucesso</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="signSuccessText" class="mb-0"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="signErrorModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-times-circle text-danger me-2"></i> Erro</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="signErrorText" class="mb-0"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Configuração do canvas
+        const canvas = document.getElementById('signatureCanvas');
+        const ctx = canvas.getContext('2d');
+        const clearBtn = document.getElementById('clearBtn');
+        const undoBtn = document.getElementById('undoBtn');
+        const signBtn = document.getElementById('signBtn');
+        
+        let isDrawing = false;
+        let hasSignature = false;
+        let signatureHistory = [];
+        let currentPath = [];
+        
+        // Configurações do canvas
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        
+        // Função para coletar informações do dispositivo
+        function collectDeviceInfo() {
+            return {
+                screenResolution: `${screen.width}x${screen.height}`,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                language: navigator.language,
+                platform: navigator.platform,
+                userAgent: navigator.userAgent,
+                cookieEnabled: navigator.cookieEnabled,
+                onlineStatus: navigator.onLine
+            };
+        }
+        
+        // Eventos de mouse
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+        
+        // Eventos de touch para dispositivos móveis
+        canvas.addEventListener('touchstart', handleTouchStart);
+        canvas.addEventListener('touchmove', handleTouchMove);
+        canvas.addEventListener('touchend', handleTouchEnd);
+        
+        function startDrawing(e) {
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            currentPath = [{x, y}];
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+        }
+        
+        function draw(e) {
+            if (!isDrawing) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            currentPath.push({x, y});
+            ctx.lineTo(x, y);
+            ctx.stroke();
+        }
+        
+        function stopDrawing() {
+            if (isDrawing) {
+                isDrawing = false;
+                if (currentPath.length > 0) {
+                    signatureHistory.push([...currentPath]);
+                    currentPath = [];
+                    hasSignature = true;
+                    updateSignButton();
+                }
+            }
+        }
+        
+        // Funções para touch
+        function handleTouchStart(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent('mousedown', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        }
+        
+        function handleTouchMove(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent('mousemove', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        }
+        
+        function handleTouchEnd(e) {
+            e.preventDefault();
+            const mouseEvent = new MouseEvent('mouseup', {});
+            canvas.dispatchEvent(mouseEvent);
+        }
+        
+        // Botão Limpar
+        clearBtn.addEventListener('click', function() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            signatureHistory = [];
+            hasSignature = false;
+            updateSignButton();
+        });
+        
+        // Botão Desfazer
+        undoBtn.addEventListener('click', function() {
+            if (signatureHistory.length > 0) {
+                signatureHistory.pop();
+                redrawCanvas();
+                hasSignature = signatureHistory.length > 0;
+                updateSignButton();
+            }
+        });
+        
+        // Função para redesenhar o canvas
+        function redrawCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            signatureHistory.forEach(path => {
+                if (path.length > 0) {
+                    ctx.beginPath();
+                    ctx.moveTo(path[0].x, path[0].y);
+                    
+                    for (let i = 1; i < path.length; i++) {
+                        ctx.lineTo(path[i].x, path[i].y);
+                    }
+                    ctx.stroke();
+                }
+            });
+        }
+        
+        // Função para atualizar estado do botão de assinatura
+        function updateSignButton() {
+            signBtn.disabled = !hasSignature;
+        }
+        
+        // Botão Finalizar Assinatura
+        signBtn.addEventListener('click', function() {
+            if (!hasSignature) {
+                // HUD de validação
+                document.getElementById('signValidationText').textContent = 'Por favor, desenhe sua assinatura antes de continuar.';
+                new bootstrap.Modal(document.getElementById('signValidationModal')).show();
+                return;
+            }
+
+            // Mostra HUD de confirmação
+            const confirmModal = new bootstrap.Modal(document.getElementById('signConfirmModal'));
+            confirmModal.show();
+
+            const doSign = () => {
+                confirmModal.hide();
+                document.getElementById('signConfirmBtn').removeEventListener('click', doSign);
+
+                // Desabilita botão para evitar duplo envio
+                signBtn.disabled = true;
+                signBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processando...';
+                
+                // Converte canvas para base64
+                const signatureData = canvas.toDataURL('image/png');
+                
+                // Coleta informações do dispositivo
+                const deviceInfo = collectDeviceInfo();
+                
+                // Envia assinatura para o servidor
+                fetch("{{ url_for('client_sign_document', signature_id=signature.id) }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Screen-Resolution': deviceInfo.screenResolution,
+                        'X-Timezone': deviceInfo.timezone
+                    },
+                    body: JSON.stringify({
+                        signature_image: signatureData,
+                        device_info: deviceInfo
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // HUD de sucesso
+                        const successModal = new bootstrap.Modal(document.getElementById('signSuccessModal'));
+                        document.getElementById('signSuccessText').textContent = 'Assinatura realizada com sucesso!';
+                        successModal.show();
+                        setTimeout(() => { window.location.href = data.redirect; }, 800);
+                    } else {
+                        // HUD de erro
+                        const errorModal = new bootstrap.Modal(document.getElementById('signErrorModal'));
+                        document.getElementById('signErrorText').textContent = 'Erro ao processar assinatura: ' + (data.message || 'Tente novamente.');
+                        errorModal.show();
+                        signBtn.disabled = false;
+                        signBtn.innerHTML = '<i class="fas fa-check me-2"></i>Finalizar Assinatura';
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    const errorModal = new bootstrap.Modal(document.getElementById('signErrorModal'));
+                    document.getElementById('signErrorText').textContent = 'Erro ao processar assinatura. Tente novamente.';
+                    errorModal.show();
+                    signBtn.disabled = false;
+                    signBtn.innerHTML = '<i class="fas fa-check me-2"></i>Finalizar Assinatura';
+                });
+            };
+            document.getElementById('signConfirmBtn').addEventListener('click', doSign);
+        });
+        
+        // Inicialização
+        updateSignButton();
+        
+        // Previne zoom em dispositivos móveis
+        document.addEventListener('gesturestart', function(e) {
+            e.preventDefault();
+        });
+        
+        document.addEventListener('gesturechange', function(e) {
+            e.preventDefault();
+        });
+        
+        document.addEventListener('gestureend', function(e) {
+            e.preventDefault();
+        });
+    </script>
+</body>
+</html>

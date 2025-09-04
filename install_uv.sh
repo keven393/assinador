@@ -16,7 +16,7 @@ if ! command -v uv &> /dev/null; then
 fi
 
 echo "UV encontrado. Instalando dependencias..."
-uv add flask PyPDF2 reportlab pillow
+uv add flask PyPDF2 reportlab pillow cryptography pycryptodome
 
 if [ $? -ne 0 ]; then
     echo "ERRO: Falha ao instalar dependencias!"

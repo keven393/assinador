@@ -1,269 +1,185 @@
-# 📄 Assinador Rápido de PDFs
+# Assinador de PDFs com Sistema de Usuários
 
-Uma aplicação web moderna e intuitiva para assinar documentos PDF de forma rápida e segura, desenvolvida com Flask e Bootstrap.
+Sistema completo de assinatura digital de PDFs com controle de usuários, sessões e permissões administrativas.
 
-## ✨ Funcionalidades
+## 🚀 Funcionalidades
 
-- **Upload de PDFs**: Suporte a qualquer arquivo PDF
-- **Assinatura Digital Obrigatória**: Desenhe sua assinatura usando o mouse (obrigatório)
-- **Assinatura em Todas as Páginas**: Adiciona logo, informações pessoais e assinatura desenhada lado a lado no canto inferior direito de cada página
-- **Logo Padrão**: Logo da empresa incluído automaticamente nas assinaturas
-- **Informações Pessoais**: Inclua nome, data de nascimento e CPF
-- **Interface Moderna**: Design responsivo e intuitivo com Bootstrap
-- **Download Direto**: Baixe o PDF assinado instantaneamente
-- **Configurações Flexíveis**: Personalize tipo, cor e posição da assinatura
-- **Segurança**: Garantia de autenticidade e integridade do documento
+### Sistema de Autenticação
+- **Login/Logout** com sessões seguras
+- **Apenas Administradores** podem criar novas contas de usuário
+- **Controle de permissões** (Usuário normal vs Administrador)
+- **Gerenciamento de perfis** com alteração de senha
+- **Sessões com expiração** automática
 
-## 🚀 Instalação
+### Assinatura de PDFs
+- **Assinatura digital** com certificado X.509
+- **Assinatura desenhada** com canvas interativo
+- **Múltiplas opções** de posicionamento da assinatura
+- **Verificação de integridade** dos documentos
+- **Metadados embutidos** para rastreabilidade
 
-### Pré-requisitos
-
-- Python 3.9 ou superior
-- uv (gerenciador de pacotes Python) - **Recomendado**
-- ou pip (gerenciador de pacotes Python)
-
-### Passos de Instalação
-
-#### Usando UV (Recomendado)
-
-1. **Clone o repositório**:
-   ```bash
-   git clone <url-do-repositorio>
-   cd Assinaturas
-   ```
-
-2. **Instale as dependências com UV**:
-   ```bash
-   uv add flask PyPDF2 reportlab pillow
-   ```
-
-   Ou use o script de instalação:
-   ```bash
-   # Windows
-   install_uv.bat
-   
-   # Linux/Mac
-   ./install_uv.sh
-   ```
-
-#### Usando pip
-
-1. **Clone o repositório**:
-   ```bash
-   git clone <url-do-repositorio>
-   cd Assinaturas
-   ```
-
-2. **Instale as dependências**:
-   ```bash
-   pip install -e .
-   ```
-
-   Ou instale manualmente:
-   ```bash
-   pip install flask PyPDF2 reportlab pillow
-   ```
-
-## 🎯 Como Usar
-
-### Executar a Aplicação
-
-#### Usando UV (Recomendado)
-
-1. **Inicie o servidor Flask**:
-   ```bash
-   uv run python app.py
-   ```
-
-2. **Acesse no navegador**:
-   - A aplicação será aberta automaticamente em `http://localhost:5000`
-   - Ou acesse manualmente o endereço mostrado no terminal
-
-#### Usando pip
-
-1. **Inicie o servidor Flask**:
-   ```bash
-   python app.py
-   ```
-
-2. **Acesse no navegador**:
-   - A aplicação será aberta automaticamente em `http://localhost:5000`
-   - Ou acesse manualmente o endereço mostrado no terminal
-
-### Processo de Assinatura
-
-1. **Upload do PDF**:
-   - Clique em "Escolha um arquivo PDF" na seção de upload
-   - Selecione o arquivo PDF que deseja assinar
-
-2. **Desenhe a Assinatura**:
-   - Use o mouse para desenhar sua assinatura no canvas (obrigatório)
-   - Clique em "Salvar Assinatura" após desenhar
-   - A assinatura é obrigatória para prosseguir
-
-3. **Informações Pessoais**:
-   - Preencha os campos: Nome Completo, Data de Nascimento e CPF
-   - Estas informações serão incluídas no PDF assinado
-
-4. **Configure o Tipo de Assinatura**:
-   - **Todas as Páginas (Logo + Info + Assinatura)**: Adiciona logo, informações pessoais e assinatura lado a lado no canto inferior direito de cada página
-   - **Página Final**: Adiciona uma página separada com a assinatura
-
-5. **Assine o Documento**:
-   - Clique no botão "🔐 ASSINAR PDF"
-   - Aguarde o processamento
-
-6. **Download**:
-   - Clique em "📥 BAIXAR PDF ASSINADO" para baixar o documento assinado
-
-## 🆕 Novas Funcionalidades
-
-### Assinatura em Todas as Páginas
-
-A aplicação agora suporta adicionar assinaturas em todas as páginas do PDF:
-
-- **Logo + Info + Assinatura**: Cada página terá o logo da empresa, informações pessoais e a assinatura desenhada lado a lado no canto inferior direito
-- **Informações Pessoais**: Nome, CPF e data de nascimento são posicionados entre o logo e a assinatura
-- **Timestamp**: Data e hora da assinatura são automaticamente adicionadas abaixo
-- **Posicionamento**: Logo, informações pessoais e assinatura posicionados horizontalmente
-- **Assinatura Obrigatória**: Apenas assinaturas desenhadas são aceitas
-
-### Logo Padrão
-
-- **Logo Automático**: Um logo padrão é automaticamente incluído em cada página
-- **Redimensionamento Responsivo**: O logo é redimensionado proporcionalmente à altura da assinatura
-- **Posicionamento**: Logo posicionado à esquerda, seguido pelas informações pessoais e assinatura
+### Painel Administrativo
+- **Dashboard** com estatísticas em tempo real
+- **Gerenciamento de usuários** (criar, editar, deletar)
+- **Relatórios detalhados** com filtros
+- **Exportação de dados** em formato JSON
+- **Monitoramento de atividade** do sistema
 
 ## 🛠️ Tecnologias Utilizadas
 
-- **Flask**: Framework web para aplicações Python
-- **Bootstrap**: Framework CSS para interface responsiva
-- **PyPDF2**: Manipulação de arquivos PDF
-- **ReportLab**: Geração de PDFs com assinaturas
-- **Pillow**: Processamento de imagens para assinaturas desenhadas
-- **Python**: Linguagem de programação principal
-- **UV**: Gerenciador de pacotes Python (recomendado)
+- **Backend**: Flask (Python)
+- **Banco de Dados**: SQLite com SQLAlchemy
+- **Autenticação**: Flask-Login com bcrypt
+- **Frontend**: Bootstrap 5 + Font Awesome
+- **Criptografia**: PyCryptodome + Cryptography
+- **PDF**: PyPDF2 + ReportLab
 
-## 📋 Estrutura do Projeto
+## 📋 Pré-requisitos
+
+- Python 3.9 ou superior
+- pip ou uv (gerenciador de pacotes)
+
+## 🔧 Instalação
+
+### 1. Clone o repositório
+```bash
+git clone <url-do-repositorio>
+cd Assinaturas
+```
+
+### 2. Instale as dependências
+```bash
+# Usando uv (recomendado)
+uv sync
+
+# Ou usando pip
+pip install -r requirements.txt
+```
+
+### 3. Inicialize o banco de dados
+```bash
+python init_db.py
+```
+
+### 4. Execute a aplicação
+```bash
+python app.py
+```
+
+A aplicação estará disponível em `http://localhost:5000`
+
+## 👤 Usuários Padrão
+
+### Administrador
+- **Usuário**: `admin`
+- **Senha**: `admin123`
+- **⚠️ IMPORTANTE**: Altere a senha padrão após o primeiro login!
+
+## 🔐 Estrutura de Usuários
+
+### Usuário Normal
+- Acesso ao sistema de assinatura
+- Visualização do próprio perfil
+- Histórico de assinaturas pessoais
+
+### Administrador
+- Todas as funcionalidades do usuário normal
+- Painel administrativo completo
+- Gerenciamento de usuários
+- Relatórios e estatísticas
+- Exportação de dados
+
+## 📱 Como Usar
+
+### 1. Login
+- Acesse a aplicação
+- Faça login com suas credenciais
+- Ou registre uma nova conta
+
+### 2. Assinar PDF
+- Faça upload do arquivo PDF
+- Desenhe sua assinatura no canvas
+- Preencha informações pessoais (opcional)
+- Clique em "Assinar PDF"
+
+### 3. Download
+- Após a assinatura, o arquivo estará disponível para download
+- O sistema gera um hash único para verificação
+
+### 4. Verificar Assinatura
+- Use a funcionalidade de verificação para validar documentos
+- O sistema verifica integridade e autenticidade
+
+## 🏗️ Estrutura do Projeto
 
 ```
 Assinaturas/
 ├── app.py                 # Aplicação principal Flask
-├── templates/
-│   └── index.html        # Template HTML principal
-├── static/
-│   └── images/           # Diretório para logos
-├── temp_files/           # Arquivos temporários (não versionado)
-├── pyproject.toml        # Configurações e dependências
-├── Makefile              # Comandos de desenvolvimento
-├── install_uv.bat        # Script de instalação UV (Windows)
-├── install_uv.sh         # Script de instalação UV (Linux/Mac)
-├── install.bat           # Script de instalação pip (Windows)
-├── install.sh            # Script de instalação pip (Linux/Mac)
-└── README.md            # Este arquivo
-```
-
-## 🔧 Configurações Avançadas
-
-### Usando UV para Desenvolvimento
-
-O projeto está configurado para usar `uv` como gerenciador de pacotes principal. Alguns comandos úteis:
-
-```bash
-# Adicionar uma nova dependência
-uv add nome-do-pacote
-
-# Adicionar dependência de desenvolvimento
-uv add --dev nome-do-pacote
-
-# Executar comando no ambiente virtual
-uv run python script.py
-
-# Executar testes
-uv run pytest
-
-# Formatar código
-uv run black .
-
-# Verificar estilo de código
-uv run flake8
-```
-
-### Usando Makefile (Linux/Mac)
-
-Para facilitar o desenvolvimento, você pode usar o Makefile incluído:
-
-```bash
-# Instalar dependências
-make install
-
-# Executar aplicação
-make run
-
-# Executar testes
-make test
-
-# Formatar código
-make format
-
-# Verificar estilo
-make lint
-
-# Ver todos os comandos disponíveis
-make help
-```
-
-### Personalização de Estilos
-
-Você pode modificar os estilos CSS no arquivo `templates/index.html` para personalizar a aparência:
-
-```css
-:root {
-    --primary-color: #0d6efd;
-    --secondary-color: #6c757d;
-    /* ... outras variáveis */
-}
-```
-
-### Adicionando Novos Tipos de Assinatura
-
-Para adicionar novos tipos de assinatura, modifique a função `add_signature_to_all_pages()`:
-
-```python
-def add_signature_to_all_pages(pdf_file, signature_text, output_path, signature_image=None, personal_info=None, logo_path=None):
-    # Lógica personalizada para diferentes tipos de assinatura
-    pass
+├── models.py              # Modelos do banco de dados
+├── forms.py               # Formulários WTForms
+├── auth.py                # Sistema de autenticação
+├── init_db.py             # Inicialização do banco
+├── crypto_utils.py        # Utilitários de criptografia
+├── certificate_manager.py  # Gerenciamento de certificados
+├── templates/             # Templates HTML
+│   ├── index.html         # Página principal
+│   ├── login.html         # Página de login
+│   ├── register.html      # Página de registro
+│   ├── profile.html       # Perfil do usuário
+│   ├── change_password.html # Alteração de senha
+│   └── admin/             # Templates administrativos
+│       ├── dashboard.html # Dashboard admin
+│       ├── users.html     # Gerenciar usuários
+│       ├── new_user.html  # Criar usuário
+│       ├── edit_user.html # Editar usuário
+│       └── reports.html   # Relatórios
+├── static/                # Arquivos estáticos
+├── signatures/            # Armazenamento de assinaturas
+├── temp_files/            # Arquivos temporários
+└── keys/                  # Chaves criptográficas
 ```
 
 ## 🔒 Segurança
 
-- **Assinaturas Digitais**: Cada assinatura inclui timestamp automático
-- **Integridade**: O documento original é preservado
-- **Autenticidade**: Nota de autenticidade incluída no PDF final
-- **Processamento Local**: Todos os arquivos são processados localmente
-- **Limpeza Automática**: Arquivos temporários são removidos automaticamente
+- **Senhas**: Hash bcrypt com salt único
+- **Sessões**: Expiração automática em 24 horas
+- **CSRF**: Proteção contra ataques Cross-Site Request Forgery
+- **Validação**: Validação de entrada em todos os formulários
+- **Permissões**: Controle granular de acesso por função
 
-## 🐛 Solução de Problemas
+## 📊 Banco de Dados
 
-### Erro ao Carregar PDF
-- Verifique se o arquivo é um PDF válido
-- Certifique-se de que o arquivo não está corrompido
+### Tabelas Principais
+- **users**: Informações dos usuários
+- **signatures**: Registro de assinaturas
+- **user_sessions**: Controle de sessões ativas
 
-### Erro ao Processar Assinatura
-- Verifique se há espaço suficiente no disco
-- Certifique-se de que todas as dependências estão instaladas
+### Relacionamentos
+- Usuário → Muitas assinaturas
+- Usuário → Muitas sessões
 
-### Problemas com Logo
-- O logo padrão é criado automaticamente
-- Se houver problemas, o sistema continuará funcionando sem o logo
+## 🚨 Solução de Problemas
 
-### Problemas de Performance
-- Para PDFs muito grandes, o processamento pode demorar
-- Considere dividir documentos muito extensos
+### Erro de Banco de Dados
+```bash
+# Recrie o banco de dados
+rm assinador.db
+python init_db.py
+```
+
+### Erro de Dependências
+```bash
+# Atualize as dependências
+uv sync --upgrade
+```
+
+### Problemas de Permissão
+- Verifique se o usuário tem acesso de escrita nas pastas
+- Certifique-se de que as chaves criptográficas estão acessíveis
 
 ## 🤝 Contribuição
 
-1. Faça um fork do projeto
+1. Fork o projeto
 2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
 3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
 4. Push para a branch (`git push origin feature/AmazingFeature`)
@@ -275,19 +191,24 @@ Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalh
 
 ## 📞 Suporte
 
-Se você encontrar algum problema ou tiver sugestões, por favor:
+Para suporte ou dúvidas:
+- Abra uma issue no repositório
+- Entre em contato com a equipe de desenvolvimento
 
-1. Abra uma issue no GitHub
-2. Descreva o problema detalhadamente
-3. Inclua informações sobre seu sistema operacional e versão do Python
+## 🔄 Atualizações
 
-## 🎉 Agradecimentos
+### v2.0.0
+- ✅ Sistema de usuários e autenticação
+- ✅ Controle de permissões
+- ✅ Painel administrativo
+- ✅ Relatórios e estatísticas
+- ✅ Interface moderna e responsiva
 
-- Flask pela excelente framework web
-- Bootstrap pela interface responsiva
-- Comunidade Python pelo suporte contínuo
-- Todos os contribuidores que ajudaram a melhorar este projeto
+### v1.0.0
+- ✅ Assinatura digital básica
+- ✅ Verificação de integridade
+- ✅ Suporte a certificados X.509
 
 ---
 
-**Desenvolvido com ❤️ usando Flask e Bootstrap**
+**Desenvolvido com ❤️ para facilitar a assinatura digital de documentos**

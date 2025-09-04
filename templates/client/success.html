@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sucesso - Assinatura Digital</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .client-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            margin: 2rem auto;
+            max-width: 600px;
+            overflow: hidden;
+        }
+        .client-header {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        .client-body {
+            padding: 2rem;
+        }
+        .success-icon {
+            font-size: 4rem;
+            color: #28a745;
+            margin-bottom: 1rem;
+        }
+        .success-message {
+            background: #d4edda;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid #28a745;
+        }
+        .info-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid #17a2b8;
+        }
+        .btn-client {
+            border-radius: 10px;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+        .btn-client:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        .logo-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        .next-steps {
+            background: #e3f2fd;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid #2196f3;
+        }
+        .step-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        .step-number {
+            background: #2196f3;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-right: 1rem;
+        }
+        .security-badge {
+            background: rgba(40, 167, 69, 0.1);
+            border: 1px solid #28a745;
+            border-radius: 20px;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            color: #28a745;
+            text-align: center;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="client-container">
+            <!-- Header -->
+            <div class="client-header">
+                <div class="logo-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h2 class="mb-2">Assinatura Concluída!</h2>
+                <p class="mb-0">Seu documento foi assinado com sucesso</p>
+            </div>
+
+            <!-- Body -->
+            <div class="client-body">
+                <!-- Mensagem de Sucesso -->
+                <div class="success-message text-center">
+                    <div class="success-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <h4 class="text-success mb-2">Parabéns!</h4>
+                    <p class="mb-0">Sua assinatura digital foi processada com sucesso e possui total validade jurídica.</p>
+                </div>
+
+                <!-- Informações da Assinatura -->
+                <div class="info-card">
+                    <h5 class="mb-3">
+                        <i class="fas fa-info-circle me-2 text-info"></i>
+                        Detalhes da Assinatura
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Status:</strong>
+                            <span class="badge bg-success ms-2">
+                                <i class="fas fa-check me-1"></i>Assinado
+                            </span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Data/Hora:</strong>
+                            <br>
+                            <small class="text-muted">{{ current_time }}</small>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-6">
+                            <strong>Método:</strong>
+                            <br>
+                            <small class="text-muted">Assinatura Digital (Rubrica)</small>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Validade:</strong>
+                            <br>
+                            <small class="text-muted">Permanente</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Próximos Passos -->
+                <div class="next-steps">
+                    <h5 class="mb-3">
+                        <i class="fas fa-arrow-right me-2 text-primary"></i>
+                        O que acontece agora?
+                    </h5>
+                    
+                    <div class="step-item">
+                        <div class="step-number">1</div>
+                        <div>Seu documento assinado foi salvo no sistema</div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-number">2</div>
+                        <div>O atendente será notificado da conclusão</div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-number">3</div>
+                        <div>O PDF assinado estará disponível para download</div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-number">4</div>
+                        <div>Você pode fechar esta tela com segurança</div>
+                    </div>
+                </div>
+
+                <!-- Badge de Segurança -->
+                <div class="security-badge">
+                    <i class="fas fa-shield-alt me-2"></i>
+                    <strong>Assinatura Segura:</strong> Criptografia RSA-SHA256 + Timestamp Certificado
+                </div>
+
+                <!-- Botões de Ação -->
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('client_select_document') }}" class="btn btn-outline-primary btn-client">
+                        <i class="fas fa-plus me-2"></i>
+                        Assinar Outro Documento
+                    </a>
+                    
+                    <button type="button" class="btn btn-success btn-client" onclick="window.close()">
+                        <i class="fas fa-times me-2"></i>
+                        Fechar Tela
+                    </button>
+                </div>
+
+                <!-- Informações Adicionais -->
+                <div class="text-center mt-4">
+                    <small class="text-muted">
+                        <i class="fas fa-mobile-alt me-1"></i>
+                        Esta tela pode ser fechada com segurança
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Auto-close após 30 segundos (opcional)
+        setTimeout(function() {
+            if (confirm('Deseja fechar esta tela automaticamente?')) {
+                window.close();
+            }
+        }, 30000);
+        
+        // Suporte a tecla Escape para fechar
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                window.close();
+            }
+        });
+        
+        // Foco automático no botão principal
+        window.addEventListener('load', function() {
+            document.querySelector('.btn-success').focus();
+        });
+    </script>
+</body>
+</html>

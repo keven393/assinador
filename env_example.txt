@@ -1,0 +1,21 @@
+# Configurações da Aplicação
+FLASK_CONFIG=development
+FLASK_DEBUG=True
+SECRET_KEY=sua_chave_secreta_aqui_2024
+
+# Configurações do Banco de Dados
+DATABASE_URL=sqlite:///assinador.db
+
+# Configurações de Log
+LOG_LEVEL=INFO
+
+# Configurações de Segurança
+SESSION_COOKIE_SECURE=False
+WTF_CSRF_TIME_LIMIT=3600
+
+# Configurações de Upload
+MAX_CONTENT_LENGTH=52428800  # 50MB em bytes
+
+# Configurações de Limpeza
+CLEANUP_INTERVAL=3600  # 1 hora
+FILE_RETENTION=86400   # 24 horas

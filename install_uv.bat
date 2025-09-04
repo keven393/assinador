@@ -17,7 +17,7 @@ if errorlevel 1 (
 )
 
 echo UV encontrado. Instalando dependencias...
-uv add flask PyPDF2 reportlab pillow
+uv add flask PyPDF2 reportlab pillow cryptography pycryptodome
 
 if errorlevel 1 (
     echo ERRO: Falha ao instalar dependencias!

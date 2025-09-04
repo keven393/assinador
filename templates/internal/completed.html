@@ -1,0 +1,558 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assinaturas Concluídas - Assinador Digital</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .completed-header {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 3rem 0;
+            margin-bottom: 2rem;
+        }
+        .completed-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .signature-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid #28a745;
+            transition: all 0.3s ease;
+        }
+        .signature-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+        .btn-custom {
+            border-radius: 10px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+        }
+        .status-badge {
+            font-size: 0.9rem;
+        }
+        .client-info {
+            background: #e3f2fd;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .signature-details {
+            background: #d4edda;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid #28a745;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #6c757d;
+        }
+        .empty-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+        .filter-section {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .stats-card {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        .stats-number {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        .stats-label {
+            opacity: 0.9;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="completed-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="mb-2">
+                        <i class="fas fa-check-circle me-3"></i>
+                        Assinaturas Concluídas
+                    </h1>
+                    <p class="mb-0">Documentos assinados e disponíveis para download</p>
+                </div>
+                <div class="col-md-4 text-center">
+                    <a href="{{ url_for('index') }}" class="btn btn-outline-light me-2">
+                        <i class="fas fa-arrow-left me-2"></i>Voltar ao Início
+                    </a>
+                    <a href="{{ url_for('internal_signature_upload') }}" class="btn btn-outline-light">
+                        <i class="fas fa-plus me-2"></i>Nova Assinatura
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        {% if not store_pdfs %}
+        <div class="alert alert-warning d-flex align-items-center" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            O armazenamento de PDFs no servidor está desativado. Ao baixar, o arquivo será excluído. Salve no sistema 1doc.
+        </div>
+        {% endif %}
+        <!-- Mensagens Flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Estatísticas -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number">{{ signatures|length }}</div>
+                    <div class="stats-label">Total Concluídas</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number">{{ today_count }}</div>
+                    <div class="stats-label">Hoje</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number">{{ week_count }}</div>
+                    <div class="stats-label">Última Semana</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number">{{ month_count }}</div>
+                    <div class="stats-label">Último Mês</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="filter-section">
+            <h5 class="mb-3">
+                <i class="fas fa-filter me-2"></i>
+                Filtros e Busca
+            </h5>
+            <div class="row">
+                <div class="col-md-4 mb-2">
+                    <input type="text" class="form-control" id="searchInput" placeholder="Buscar por cliente ou arquivo...">
+                </div>
+                <div class="col-md-3 mb-2">
+                    <select class="form-select" id="statusFilter">
+                        <option value="">Todos os Status</option>
+                        <option value="completed">Concluídas</option>
+                        <option value="verified">Verificadas</option>
+                    </select>
+                </div>
+                <div class="col-md-3 mb-2">
+                    <select class="form-select" id="dateFilter">
+                        <option value="">Todas as Datas</option>
+                        <option value="today">Hoje</option>
+                        <option value="week">Última Semana</option>
+                        <option value="month">Último Mês</option>
+                    </select>
+                </div>
+                <div class="col-md-2 mb-2">
+                    <button class="btn btn-primary w-100" onclick="applyFilters()">
+                        <i class="fas fa-search me-1"></i>Filtrar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        {% if signatures %}
+        <!-- Lista de Assinaturas Concluídas -->
+        <div class="completed-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="mb-0">
+                    <i class="fas fa-list me-2"></i>
+                    Documentos Assinados ({{ signatures|length }})
+                </h4>
+                <div>
+                    <a href="{{ url_for('admin_settings') }}" class="btn btn-outline-secondary btn-sm me-2">
+                        <i class="fas fa-cog me-1"></i>Configurações
+                    </a>
+                    <button class="btn btn-outline-success btn-sm" onclick="exportToCSV()">
+                        <i class="fas fa-download me-1"></i>Exportar CSV
+                    </button>
+                </div>
+            </div>
+            
+            {% for signature in signatures %}
+            <div class="signature-item" data-client="{{ signature.client_name|lower }}" data-filename="{{ signature.original_filename|lower }}" data-status="{{ signature.verification_status }}" data-date="{{ signature.updated_at.strftime('%Y-%m-%d') }}">
+                <div class="row">
+                    <!-- Informações do Cliente -->
+                    <div class="col-md-4">
+                        <div class="client-info">
+                            <h6 class="mb-2">
+                                <i class="fas fa-user me-2"></i>
+                                {{ signature.client_name }}
+                            </h6>
+                            <div class="row">
+                                <div class="col-6">
+                                    <small class="text-muted">
+                                        <strong>CPF:</strong><br>
+                                        {{ signature.client_cpf[:3] }}.{{ signature.client_cpf[3:6] }}.{{ signature.client_cpf[6:9] }}-{{ signature.client_cpf[9:11] }}
+                                    </small>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">
+                                        <strong>Email:</strong><br>
+                                        {{ signature.client_email or 'Não informado' }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Informações do Documento -->
+                    <div class="col-md-4">
+                        <div class="signature-details">
+                            <h6 class="mb-2">
+                                <i class="fas fa-file-pdf me-2 text-danger"></i>
+                                {{ signature.original_filename }}
+                            </h6>
+                            <div class="row">
+                                <div class="col-6">
+                                    <small class="text-muted">
+                                        <strong>Enviado:</strong><br>
+                                        {{ signature.timestamp.strftime('%d/%m/%Y %H:%M') }}
+                                    </small>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">
+                                        <strong>Assinado:</strong><br>
+                                        {{ signature.updated_at.strftime('%d/%m/%Y %H:%M') }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Status e Ações -->
+                    <div class="col-md-4">
+                        <div class="text-center mb-2">
+                            <span class="badge bg-success status-badge">
+                                <i class="fas fa-check me-1"></i>{{ signature.verification_status|title }}
+                            </span>
+                        </div>
+                        
+                        <div class="text-center mb-2">
+                            <small class="text-muted">
+                                {{ (signature.file_size / 1024)|round(1) }} KB
+                            </small>
+                        </div>
+                        
+                        <div class="d-grid gap-1">
+                            <a href="{{ url_for('client_download_signed', signature_id=signature.id) }}" 
+                               class="btn btn-success btn-sm download-btn"
+                               data-store="{{ '1' if store_pdfs else '0' }}"
+                               data-filename="{{ signature.original_filename }}">
+                                <i class="fas fa-download me-1"></i>Download
+                            </a>
+                            
+                            <button type="button" class="btn btn-outline-info btn-sm" 
+                                    onclick="showSignatureDetails({{ signature.id }})">
+                                <i class="fas fa-info-circle me-1"></i>Detalhes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% else %}
+        <!-- Estado Vazio -->
+        <div class="completed-card">
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h4>Nenhuma Assinatura Concluída</h4>
+                <p class="text-muted">
+                    Ainda não há documentos assinados ou todos estão pendentes.
+                </p>
+                <a href="{{ url_for('internal_signature_upload') }}" class="btn btn-primary btn-custom">
+                    <i class="fas fa-plus me-2"></i>Iniciar Primeira Assinatura
+                </a>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Links Rápidos -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="completed-card">
+                    <h5 class="mb-3">
+                        <i class="fas fa-link me-2"></i>
+                        Acesso Rápido
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('internal_signature_upload') }}" class="btn btn-primary w-100">
+                                <i class="fas fa-upload me-2"></i>Nova Assinatura
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('internal_pending_signatures') }}" class="btn btn-warning w-100">
+                                <i class="fas fa-clock me-2"></i>Pendentes
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('client_select_document') }}" class="btn btn-success w-100" target="_blank">
+                                <i class="fas fa-tablet-alt me-2"></i>Tela Cliente
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('index') }}" class="btn btn-outline-secondary w-100">
+                                <i class="fas fa-home me-2"></i>Início
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Detalhes -->
+    <div class="modal fade" id="detailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Detalhes da Assinatura
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="detailsContent"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmação de Download -->
+    <div class="modal fade" id="confirmDownloadModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
+                        Confirmar Download
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0" id="confirmDownloadText"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="confirmDownloadBtn">
+                        <i class="fas fa-check me-1"></i>Confirmar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Confirmação antes do download quando não armazenamos PDFs (HUD modal)
+        (function() {
+            let pendingHref = null;
+            const modalEl = document.getElementById('confirmDownloadModal');
+            const confirmTextEl = document.getElementById('confirmDownloadText');
+            const confirmBtn = document.getElementById('confirmDownloadBtn');
+            const bsModal = new bootstrap.Modal(modalEl);
+
+            document.addEventListener('click', function(e) {
+                const link = e.target.closest('a.download-btn');
+                if (!link) return;
+                const store = link.getAttribute('data-store') === '1';
+                const filename = link.getAttribute('data-filename') || 'documento_assinado.pdf';
+                if (!store) {
+                    e.preventDefault();
+                    pendingHref = link.getAttribute('href');
+                    confirmTextEl.textContent = `Ao baixar, o arquivo '${filename}' será excluído do servidor. Confirme que você irá salvar no 1doc.`;
+                    bsModal.show();
+                }
+            });
+
+            confirmBtn.addEventListener('click', function() {
+                if (pendingHref) {
+                    const go = pendingHref;
+                    pendingHref = null;
+                    bsModal.hide();
+                    window.location.href = go;
+                }
+            });
+        })();
+        // Função para aplicar filtros
+        function applyFilters() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+            const dateFilter = document.getElementById('dateFilter').value;
+            
+            const items = document.querySelectorAll('.signature-item');
+            
+            items.forEach(item => {
+                let show = true;
+                
+                // Filtro de busca
+                if (searchTerm) {
+                    const client = item.dataset.client;
+                    const filename = item.dataset.filename;
+                    if (!client.includes(searchTerm) && !filename.includes(searchTerm)) {
+                        show = false;
+                    }
+                }
+                
+                // Filtro de status
+                if (statusFilter && item.dataset.status !== statusFilter) {
+                    show = false;
+                }
+                
+                // Filtro de data
+                if (dateFilter) {
+                    const itemDate = item.dataset.date;
+                    const today = new Date().toISOString().split('T')[0];
+                    
+                    if (dateFilter === 'today' && itemDate !== today) {
+                        show = false;
+                    } else if (dateFilter === 'week') {
+                        const weekAgo = new Date();
+                        weekAgo.setDate(weekAgo.getDate() - 7);
+                        const weekAgoStr = weekAgo.toISOString().split('T')[0];
+                        if (itemDate < weekAgoStr) {
+                            show = false;
+                        }
+                    } else if (dateFilter === 'month') {
+                        const monthAgo = new Date();
+                        monthAgo.setDate(monthAgo.getDate() - 30);
+                        const monthAgoStr = monthAgo.toISOString().split('T')[0];
+                        if (itemDate < monthAgoStr) {
+                            show = false;
+                        }
+                    }
+                }
+                
+                item.style.display = show ? 'block' : 'none';
+            });
+        }
+        
+        // Busca em tempo real
+        document.getElementById('searchInput').addEventListener('input', applyFilters);
+        document.getElementById('statusFilter').addEventListener('change', applyFilters);
+        document.getElementById('dateFilter').addEventListener('change', applyFilters);
+        
+        // Função para mostrar detalhes da assinatura
+        function showSignatureDetails(signatureId) {
+            // Aqui você pode implementar uma chamada AJAX para buscar detalhes
+            // Por enquanto, mostra um placeholder
+            const content = `
+                <div class="text-center">
+                    <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
+                    <p>Carregando detalhes da assinatura...</p>
+                </div>
+            `;
+            
+            document.getElementById('detailsContent').innerHTML = content;
+            new bootstrap.Modal(document.getElementById('detailsModal')).show();
+            
+            // Simula carregamento de dados
+            setTimeout(() => {
+                const content = `
+                    <div class="alert alert-info">
+                        <h6>Detalhes da Assinatura #${signatureId}</h6>
+                        <p>Esta funcionalidade pode ser expandida para mostrar informações detalhadas sobre a assinatura, incluindo:</p>
+                        <ul>
+                            <li>Hash da assinatura</li>
+                            <li>Algoritmo utilizado</li>
+                            <li>Informações do dispositivo</li>
+                            <li>Timestamp da assinatura</li>
+                            <li>Dados de auditoria</li>
+                        </ul>
+                    </div>
+                `;
+                document.getElementById('detailsContent').innerHTML = content;
+            }, 1000);
+        }
+        
+        // Função para exportar CSV
+        function exportToCSV() {
+            const items = document.querySelectorAll('.signature-item:not([style*="display: none"])');
+            let csv = 'Cliente,CPF,Arquivo,Data Envio,Data Assinatura,Status,Tamanho\n';
+            
+            items.forEach(item => {
+                const client = item.querySelector('.client-info h6').textContent.trim();
+                const cpf = item.querySelector('.client-info small').textContent.split(':')[1].trim();
+                const filename = item.querySelector('.signature-details h6').textContent.trim();
+                const sentDate = item.querySelector('.signature-details small').textContent.split(':')[1].trim();
+                const signedDate = item.querySelectorAll('.signature-details small')[1].textContent.split(':')[1].trim();
+                const status = item.querySelector('.status-badge').textContent.trim();
+                const size = item.querySelector('.text-muted').textContent.trim();
+                
+                csv += `"${client}","${cpf}","${filename}","${sentDate}","${signedDate}","${status}","${size}"\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `assinaturas_concluidas_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        // Suporte a tecla Enter na busca
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                applyFilters();
+            }
+        });
+    </script>
+</body>
+</html>
