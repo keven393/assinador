@@ -18,12 +18,12 @@ class Config:
     
     # Configurações de sessão
     PERMANENT_SESSION_LIFETIME = timedelta(hours=24)
-    SESSION_COOKIE_SECURE = False  # True em produção com HTTPS
+    SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'False').lower() == 'true'
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
     
     # Configurações de upload
-    MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50MB
+    MAX_CONTENT_LENGTH = int(os.environ.get('MAX_CONTENT_LENGTH', str(50 * 1024 * 1024)))  # bytes
     UPLOAD_FOLDER = 'temp_files'
     ALLOWED_EXTENSIONS = {'pdf'}
     
@@ -35,8 +35,10 @@ class Config:
     KEYS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'keys')
     
     # Configurações de limpeza automática
-    CLEANUP_INTERVAL = 3600  # 1 hora em segundos
-    FILE_RETENTION = 86400  # 24 horas em segundos
+    CLEANUP_INTERVAL = int(os.environ.get('CLEANUP_INTERVAL', '3600'))  # segundos
+    FILE_RETENTION = int(os.environ.get('FILE_RETENTION', '86400'))  # segundos
+    CLEANUP_TIME = os.environ.get('CLEANUP_TIME', '02:00')  # HH:MM
+    CLEANUP_TZ = os.environ.get('CLEANUP_TZ', 'America/Sao_Paulo')
     
     # Configurações de logging
     LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')

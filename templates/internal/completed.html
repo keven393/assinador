@@ -228,7 +228,7 @@
                                 <div class="col-6">
                                     <small class="text-muted">
                                         <strong>CPF:</strong><br>
-                                        {{ signature.client_cpf[:3] }}.{{ signature.client_cpf[3:6] }}.{{ signature.client_cpf[6:9] }}-{{ signature.client_cpf[9:11] }}
+                                        {{ signature.client_cpf|cpf }}
                                     </small>
                                 </div>
                                 <div class="col-6">

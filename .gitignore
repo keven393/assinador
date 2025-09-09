@@ -53,3 +53,5 @@ signatures/
 
 # Digital certificates (contains sensitive information)
 certificates/
+temp_files/
+pdf_assinados/

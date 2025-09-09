@@ -17,5 +17,7 @@ WTF_CSRF_TIME_LIMIT=3600
 MAX_CONTENT_LENGTH=52428800  # 50MB em bytes
 
 # Configurações de Limpeza
-CLEANUP_INTERVAL=3600  # 1 hora
-FILE_RETENTION=86400   # 24 horas
+CLEANUP_INTERVAL=3600           # 1 hora (segundos) [opcional]
+FILE_RETENTION=86400            # 24 horas (segundos) [opcional]
+CLEANUP_TIME=02:00              # Horário diário da limpeza (HH:MM)
+CLEANUP_TZ=America/Sao_Paulo    # Timezone para a limpeza diária

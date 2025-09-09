@@ -33,6 +33,7 @@ class UserEditForm(FlaskForm):
     full_name = StringField('Nome Completo', validators=[DataRequired(), Length(min=2, max=120)])
     role = SelectField('Função', choices=[('user', 'Usuário'), ('admin', 'Administrador')])
     is_active = BooleanField('Usuário Ativo')
+    must_change_password = BooleanField('Exigir alteração de senha no próximo login')
     submit = SubmitField('Atualizar')
 
 class ChangePasswordForm(FlaskForm):
@@ -46,6 +47,7 @@ class AdminUserForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
     full_name = StringField('Nome Completo', validators=[DataRequired(), Length(min=2, max=120)])
     password = PasswordField('Senha', validators=[DataRequired(), Length(min=6)])
+    must_change_password = BooleanField('Exigir alteração de senha no primeiro login')
     role = SelectField('Função', choices=[('user', 'Usuário'), ('admin', 'Administrador')])
     is_active = BooleanField('Usuário Ativo')
     submit = SubmitField('Criar Usuário')

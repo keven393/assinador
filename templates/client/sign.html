@@ -130,7 +130,7 @@
                             <br>
                             <small class="text-muted">
                                 Cliente: {{ signature.client_name }} | 
-                                CPF: {{ signature.client_cpf[:3] }}.{{ signature.client_cpf[3:6] }}.{{ signature.client_cpf[6:9] }}-{{ signature.client_cpf[9:11] }}
+                                CPF: {{ signature.client_cpf|cpf }}
                             </small>
                         </div>
                         <div class="col-md-4 text-end">

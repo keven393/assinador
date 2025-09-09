@@ -17,6 +17,7 @@ class User(UserMixin, db.Model):
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.now)
     last_login = db.Column(db.DateTime)
+    must_change_password = db.Column(db.Boolean, default=False)
     
     # Relacionamentos
     signatures = db.relationship('Signature', backref='user', lazy=True)

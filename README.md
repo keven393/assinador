@@ -67,6 +67,33 @@ python app.py
 ```
 
 A aplicação estará disponível em `http://localhost:5000`
+## ⚙️ Configuração via .env
+
+Crie um arquivo `.env` (baseado em `env_example.txt`) para configurar a aplicação sem editar código.
+
+Principais variáveis:
+
+- `FLASK_CONFIG`: development | production | testing
+- `FLASK_DEBUG`: True | False
+- `SECRET_KEY`: chave secreta da aplicação
+- `DATABASE_URL`: URL do banco (ex.: sqlite:///assinador.db)
+- `LOG_LEVEL`: nível de log (INFO, DEBUG, WARNING, ...)
+- `SESSION_COOKIE_SECURE`: True (produção HTTPS) | False
+- `MAX_CONTENT_LENGTH`: limite de upload em bytes (padrão 50MB)
+
+### Limpeza automática de arquivos
+
+- `CLEANUP_TIME`: horário diário de limpeza no timezone definido (formato HH:MM). Ex.: `02:00`
+- `CLEANUP_TZ`: timezone da limpeza. Ex.: `America/Sao_Paulo`
+- `CLEANUP_INTERVAL` e `FILE_RETENTION`: intervalos em segundos (opcionais, legado)
+
+O que a limpeza faz:
+- Remove todos os arquivos da pasta `temp_files/`
+- Remove todos os PDFs `*_TEMP.pdf` na pasta `pdf_assinados/`
+- Mantém os PDFs `*_KEEP.pdf`
+
+Observação: a limpeza roda em um thread daemon em background e é iniciada automaticamente no boot da aplicação.
+
 
 ## 👤 Usuários Padrão
 
@@ -203,6 +230,8 @@ Para suporte ou dúvidas:
 - ✅ Painel administrativo
 - ✅ Relatórios e estatísticas
 - ✅ Interface moderna e responsiva
+ - ✅ Rotina diária de limpeza com agendamento configurável via `.env` (CLEANUP_TIME/CLEANUP_TZ)
+ - ✅ Armazenamento de PDFs assinados em `pdf_assinados/` com retenção `_KEEP`/_`TEMP`
 
 ### v1.0.0
 - ✅ Assinatura digital básica

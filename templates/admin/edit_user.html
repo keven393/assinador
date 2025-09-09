@@ -213,10 +213,15 @@
                     </div>
                 </div>
 
-                <div class="mb-4">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>
-                        <strong>Nota:</strong> Para alterar a senha do usuário, use a funcionalidade de alteração de senha no perfil do usuário.
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="form-check">
+                            {{ form.must_change_password(class="form-check-input") }}
+                            <label class="form-check-label" for="{{ form.must_change_password.id }}">
+                                Exigir alteração de senha no próximo login
+                            </label>
+                        </div>
+                        <small class="text-muted">Quando marcado, o usuário será forçado a criar uma nova senha ao entrar.</small>
                     </div>
                 </div>
 

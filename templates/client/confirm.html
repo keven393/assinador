@@ -149,7 +149,7 @@
                     </h5>
                     <div class="client-name">{{ client_data.client_name }}</div>
                     <div class="client-cpf mb-2">
-                        CPF: {{ client_cpf[:3] }}.{{ client_cpf[3:6] }}.{{ client_cpf[6:9] }}-{{ client_cpf[9:11] }}
+                        CPF: {{ client_cpf|cpf }}
                     </div>
                     
                     {% if client_data.client_email %}

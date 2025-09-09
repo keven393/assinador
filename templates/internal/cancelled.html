@@ -128,7 +128,7 @@
                             <div class="row">
                                 <div class="col-md-6">
                                     <strong>CPF:</strong> 
-                                    {{ signature.client_cpf[:3] }}.{{ signature.client_cpf[3:6] }}.{{ signature.client_cpf[6:9] }}-{{ signature.client_cpf[9:11] }}
+                                    {{ signature.client_cpf|cpf }}
                                 </div>
                                 <div class="col-md-6">
                                     <strong>Email:</strong> 
