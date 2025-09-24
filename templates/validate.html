@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validador de PDF - Sistema de Assinaturas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .validation-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .upload-area {
+            border: 3px dashed #007bff;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9ff;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .upload-area:hover {
+            border-color: #0056b3;
+            background: #e3f2fd;
+            transform: translateY(-2px);
+        }
+        
+        .upload-area.dragover {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+        
+        .result-card {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: none;
+            overflow: hidden;
+        }
+        
+        .status-valid {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+        }
+        
+        .status-invalid {
+            background: linear-gradient(135deg, #dc3545, #fd7e14);
+            color: white;
+        }
+        
+        .status-warning {
+            background: linear-gradient(135deg, #ffc107, #fd7e14);
+            color: #212529;
+        }
+        
+        .hash-display {
+            font-family: 'Courier New', monospace;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 10px;
+            word-break: break-all;
+            font-size: 0.9em;
+        }
+        
+        .metadata-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 5px 0;
+            border-left: 4px solid #007bff;
+        }
+        
+        .btn-custom {
+            border-radius: 25px;
+            padding: 12px 30px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .icon-large {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+        
+        .loading {
+            display: none;
+        }
+        
+        .spinner-border-custom {
+            width: 3rem;
+            height: 3rem;
+            border-width: 0.3em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="validation-container p-4">
+                    <!-- Header -->
+                    <div class="text-center mb-5">
+                        <h1 class="display-4 fw-bold text-primary mb-3">
+                            <i class="fas fa-shield-alt me-3"></i>
+                            Validador de PDF
+                        </h1>
+                        <p class="lead text-muted">
+                            Verifique a integridade e autenticidade de documentos assinados pelo sistema
+                        </p>
+                    </div>
+
+                    <!-- Upload Form -->
+                    <form method="POST" enctype="multipart/form-data" id="validationForm">
+                        <div class="upload-area" id="uploadArea">
+                            <div class="upload-content">
+                                <i class="fas fa-cloud-upload-alt icon-large text-primary"></i>
+                                <h4 class="mb-3">Arraste e solte seu PDF aqui</h4>
+                                <p class="text-muted mb-4">ou clique para selecionar um arquivo</p>
+                                <input type="file" name="pdf_file" id="pdfFile" accept=".pdf" class="d-none" required>
+                                <button type="button" class="btn btn-primary btn-custom" id="selectFileBtn">
+                                    <i class="fas fa-file-pdf me-2"></i>
+                                    Selecionar PDF
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-success btn-custom" id="validateBtn" disabled>
+                                <i class="fas fa-check-circle me-2"></i>
+                                Validar Documento
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Loading -->
+                    <div class="loading text-center py-5" id="loading">
+                        <div class="spinner-border spinner-border-custom text-primary" role="status">
+                            <span class="visually-hidden">Validando...</span>
+                        </div>
+                        <p class="mt-3 text-muted">Validando documento...</p>
+                    </div>
+
+                    <!-- Results -->
+                    {% if result %}
+                    <div class="mt-5">
+                        <div class="card result-card">
+                            <div class="card-header {% if result.valid %}status-valid{% else %}status-invalid{% endif %}">
+                                <h3 class="mb-0">
+                                    <i class="fas {% if result.valid %}fa-check-circle{% else %}fa-times-circle{% endif %} me-2"></i>
+                                    {% if result.valid %}
+                                        Documento Válido
+                                    {% else %}
+                                        Documento Inválido
+                                    {% endif %}
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <!-- Status Summary -->
+                                <div class="row mb-4">
+                                    <div class="col-md-6">
+                                        <div class="metadata-item">
+                                            <strong><i class="fas fa-hashtag me-2"></i>Hash Atual:</strong>
+                                            <div class="hash-display mt-2">{{ result.current_hash }}</div>
+                                        </div>
+                                    </div>
+                                    {% if result.stored_hash %}
+                                    <div class="col-md-6">
+                                        <div class="metadata-item">
+                                            <strong><i class="fas fa-database me-2"></i>Hash Armazenado:</strong>
+                                            <div class="hash-display mt-2">{{ result.stored_hash }}</div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Validation Details -->
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h5 class="mb-3">Verificações de Integridade</h5>
+                                        <div class="list-group list-group-flush">
+                                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                <span><i class="fas fa-hashtag me-2"></i>Hash Match</span>
+                                                <span class="badge {% if result.hash_match %}bg-success{% else %}bg-danger{% endif %}">
+                                                    {% if result.hash_match %}✓ Válido{% else %}✗ Inválido{% endif %}
+                                                </span>
+                                            </div>
+                                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                <span><i class="fas fa-key me-2"></i>Assinatura Digital</span>
+                                                <span class="badge {% if result.digital_signature_valid %}bg-success{% else %}bg-danger{% endif %}">
+                                                    {% if result.digital_signature_valid %}✓ Válida{% else %}✗ Inválida{% endif %}
+                                                </span>
+                                            </div>
+                                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                <span><i class="fas fa-certificate me-2"></i>Certificado</span>
+                                                <span class="badge {% if result.certificate_signature_valid %}bg-success{% else %}bg-danger{% endif %}">
+                                                    {% if result.certificate_signature_valid %}✓ Válido{% else %}✗ Inválido{% endif %}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h5 class="mb-3">Informações do Documento</h5>
+                                        {% if result.file_id %}
+                                        <div class="metadata-item">
+                                            <strong>File ID:</strong> {{ result.file_id }}
+                                        </div>
+                                        {% endif %}
+                                        {% if result.filename %}
+                                        <div class="metadata-item">
+                                            <strong>Arquivo:</strong> {{ result.filename }}
+                                        </div>
+                                        {% endif %}
+                                        {% if result.signature_info %}
+                                        <div class="metadata-item">
+                                            <strong>Algoritmo:</strong> {{ result.signature_info.algorithm }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- Errors -->
+                                {% if result.errors %}
+                                <div class="mt-4">
+                                    <h5 class="text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Erros Encontrados</h5>
+                                    <div class="alert alert-danger">
+                                        <ul class="mb-0">
+                                            {% for error in result.errors %}
+                                            <li>{{ error }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                <!-- Metadata -->
+                                {% if result.metadata %}
+                                <div class="mt-4">
+                                    <h5><i class="fas fa-info-circle me-2"></i>Metadados do PDF</h5>
+                                    <div class="metadata-item">
+                                        <pre class="mb-0">{{ result.metadata }}</pre>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Navigation -->
+                    <div class="text-center mt-4">
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-primary btn-custom me-3">
+                            <i class="fas fa-home me-2"></i>
+                            Voltar ao Início
+                        </a>
+                        <button type="button" class="btn btn-outline-secondary btn-custom" onclick="location.reload()">
+                            <i class="fas fa-redo me-2"></i>
+                            Validar Outro
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Elementos do DOM
+        let uploadArea = document.getElementById('uploadArea');
+        let fileInput = document.getElementById('pdfFile');
+        let selectFileBtn = document.getElementById('selectFileBtn');
+        let validateBtn = document.getElementById('validateBtn');
+        let validationForm = document.getElementById('validationForm');
+        let loading = document.getElementById('loading');
+
+        // Função para configurar event listeners
+        function setupEventListeners() {
+            // Re-obter elementos após modificação do DOM
+            uploadArea = document.getElementById('uploadArea');
+            fileInput = document.getElementById('pdfFile');
+            selectFileBtn = document.getElementById('selectFileBtn');
+            validateBtn = document.getElementById('validateBtn');
+            validationForm = document.getElementById('validationForm');
+            loading = document.getElementById('loading');
+
+            // Drag and Drop
+            uploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                this.classList.add('dragover');
+            });
+
+            uploadArea.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                this.classList.remove('dragover');
+            });
+
+            uploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.classList.remove('dragover');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0 && files[0].type === 'application/pdf') {
+                    fileInput.files = files;
+                    updateFileDisplay();
+                } else {
+                    alert('Por favor, selecione apenas arquivos PDF.');
+                }
+            });
+
+            // Click to select file
+            uploadArea.addEventListener('click', function() {
+                fileInput.click();
+            });
+
+            if (selectFileBtn) {
+                selectFileBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    fileInput.click();
+                });
+            }
+
+            // File input change
+            fileInput.addEventListener('change', function() {
+                if (this.files.length > 0) {
+                    updateFileDisplay();
+                }
+            });
+        }
+
+        // Configurar event listeners iniciais
+        setupEventListeners();
+
+        // Update file display
+        function updateFileDisplay() {
+            const file = fileInput.files[0];
+            if (file) {
+                uploadArea.innerHTML = `
+                    <div class="upload-content">
+                        <i class="fas fa-file-pdf icon-large text-success"></i>
+                        <h4 class="mb-2">${file.name}</h4>
+                        <p class="text-muted">${(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="resetUpload()">
+                            <i class="fas fa-times me-1"></i>
+                            Remover
+                        </button>
+                    </div>
+                `;
+                // Preserva o input file
+                uploadArea.appendChild(fileInput);
+                validateBtn.disabled = false;
+            }
+        }
+
+        // Reset upload
+        function resetUpload() {
+            fileInput.value = '';
+            validateBtn.disabled = true;
+            uploadArea.innerHTML = `
+                <div class="upload-content">
+                    <i class="fas fa-cloud-upload-alt icon-large text-primary"></i>
+                    <h4 class="mb-3">Arraste e solte seu PDF aqui</h4>
+                    <p class="text-muted mb-4">ou clique para selecionar um arquivo</p>
+                    <button type="button" class="btn btn-primary btn-custom" id="selectFileBtn">
+                        <i class="fas fa-file-pdf me-2"></i>
+                        Selecionar PDF
+                    </button>
+                </div>
+            `;
+            // Preserva o input file
+            uploadArea.appendChild(fileInput);
+            // Reconfigura os event listeners
+            setupEventListeners();
+        }
+
+        // Form submission
+        validationForm.addEventListener('submit', function(e) {
+            if (fileInput.files.length === 0) {
+                e.preventDefault();
+                alert('Por favor, selecione um arquivo PDF.');
+                return;
+            }
+            
+            // Show loading
+            loading.style.display = 'block';
+            validationForm.style.display = 'none';
+        });
+    </script>
+</body>
+</html>

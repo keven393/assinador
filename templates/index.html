@@ -90,6 +90,11 @@
                             <i class="fas fa-check me-1"></i> Concluídas
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('validate_pdf') }}">
+                            <i class="fas fa-shield-alt me-1"></i> Validador
+                        </a>
+                    </li>
                     
                     {% if current_user.is_authenticated and current_user.is_admin() %}
                     <li class="nav-item dropdown">

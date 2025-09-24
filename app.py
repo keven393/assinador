@@ -22,6 +22,7 @@ import shutil
 import json
 from crypto_utils import signature_manager
 from certificate_manager import certificate_manager
+from pdf_validator import pdf_validator
 from models import db, User, Signature, AppSetting
 from forms import LoginForm, UserEditForm, ChangePasswordForm, AdminUserForm, ReportFilterForm
 from auth import admin_required, create_user_session, cleanup_expired_sessions, get_user_stats, get_signature_stats
@@ -629,15 +630,6 @@ def register_routes(app):
             )
             
             if success:
-                # Lê o PDF assinado
-                with open(output_path, 'rb') as f:
-                    signed_pdf_content = f.read()
-                
-                # Gera assinatura digital
-                signature_info = certificate_manager.sign_pdf_with_certificate(signed_pdf_content)
-                if not signature_info:
-                    signature_info = signature_manager.sign_data(signed_pdf_content)
-                
                 # Define política de retenção
                 keep_pdfs = get_store_pdfs_flag()
                 retention_tag = 'KEEP' if keep_pdfs else 'TEMP'
@@ -648,8 +640,8 @@ def register_routes(app):
                 final_path = os.path.join(PDF_SIGNED_DIR, stored_final_filename)
                 shutil.move(output_path, final_path)
                 
-                # Embute metadados
-                embed_signature_metadata(final_path, signature_info)
+                # NOTA: O hash será calculado APÓS aplicar o carimbo/assinatura visual
+                # na função client_sign_document, não aqui
                 
                 # Coleta informações do dispositivo e cliente
                 device_info = detect_device_info(request.headers.get('User-Agent', ''), request)
@@ -673,9 +665,9 @@ def register_routes(app):
                     user_id=current_user.id,
                     file_id=process_data['file_id'],
                     original_filename=process_data['original_filename'],
-                    signature_hash=signature_info['hash'],
-                    signature_algorithm=signature_info['algorithm'],
-                    file_size=len(signed_pdf_content),
+                    signature_hash='',  # Será preenchido após assinatura do cliente
+                    signature_algorithm='PENDING',  # Será preenchido após assinatura do cliente
+                    file_size=0,  # Será preenchido após assinatura do cliente
                     
                     # Informações do Cliente/Assinante
                     client_name=client_info.get('nome', ''),
@@ -1269,12 +1261,31 @@ def register_routes(app):
                             stored_final_filename = f"{signature.file_id}_{clean_final_filename.replace('.pdf', f'_{retention_tag}.pdf')}"
                             final_path = os.path.join(PDF_SIGNED_DIR, stored_final_filename)
                             shutil.move(output_path, final_path)
-                            # Embute metadados básicos usando o hash já calculado
-                            embed_signature_metadata(final_path, {
-                                'hash': signature.signature_hash,
+                            
+                            # Lê o PDF final e recalcula o hash
+                            with open(final_path, 'rb') as f:
+                                final_content = f.read()
+                            
+                            # Lê o PDF final (com carimbo) e calcula hash ANTES de embutir metadados
+                            with open(final_path, 'rb') as f:
+                                final_content = f.read()
+                            
+                            # Calcula hash do PDF FINAL (com carimbo, SEM metadados ainda)
+                            final_hash = hashlib.sha256(final_content).hexdigest()
+                            
+                            # Embute metadados usando o hash calculado
+                            signature_info = {
+                                'hash': final_hash,
                                 'timestamp': datetime.now().isoformat(),
                                 'algorithm': signature.signature_algorithm
-                            })
+                            }
+                            embed_signature_metadata(final_path, signature_info)
+                            
+                            # Atualiza no banco de dados
+                            signature.signature_hash = final_hash
+                            signature.file_size = len(final_content)
+                            
+                            print(f"🔢 Hash calculado APÓS carimbo (antes de metadados): {final_hash[:16]}...")
                     # Se o arquivo original não existir, seguimos sem interromper (download acusará ausência)
                 except Exception as gen_err:
                     # Não falha a assinatura por erro ao gerar arquivo; apenas registra e segue
@@ -1371,6 +1382,106 @@ def register_routes(app):
         first_id = pending_ids[0]
         session['signature_confirmed'] = first_id
         return redirect(url_for('client_confirm_document', signature_id=first_id))
+
+    @app.route('/validate', methods=['GET', 'POST'])
+    def validate_pdf():
+        """Página para validação de PDFs assinados"""
+        if request.method == 'POST':
+            if 'pdf_file' not in request.files:
+                flash('Nenhum arquivo selecionado', 'error')
+                return render_template('validate.html')
+            
+            file = request.files['pdf_file']
+            if file.filename == '':
+                flash('Nenhum arquivo selecionado', 'error')
+                return render_template('validate.html')
+            
+            if not file.filename.lower().endswith('.pdf'):
+                flash('Por favor, selecione um arquivo PDF', 'error')
+                return render_template('validate.html')
+            
+            try:
+                # Salva arquivo temporariamente
+                temp_path = tempfile.mktemp(suffix='.pdf')
+                file.save(temp_path)
+                
+                # Valida o PDF
+                validation_result = pdf_validator.validate_pdf(temp_path)
+                
+                # Limpa arquivo temporário
+                os.remove(temp_path)
+                
+                return render_template('validate.html', result=validation_result)
+                
+            except Exception as e:
+                flash(f'Erro ao processar arquivo: {str(e)}', 'error')
+                return render_template('validate.html')
+        
+        return render_template('validate.html')
+
+    @app.route('/validate/<file_id>')
+    def validate_pdf_by_id(file_id):
+        """Valida um PDF específico pelo file_id"""
+        try:
+            # Busca o registro de assinatura
+            signature_record = Signature.query.filter_by(file_id=file_id).first()
+            
+            if not signature_record:
+                flash('Documento não encontrado', 'error')
+                return redirect(url_for('validate_pdf'))
+            
+            # Busca o arquivo PDF assinado
+            pdf_filename = None
+            for filename in os.listdir(PDF_SIGNED_DIR):
+                if filename.startswith(file_id):
+                    pdf_filename = filename
+                    break
+            
+            if not pdf_filename:
+                flash('Arquivo PDF não encontrado', 'error')
+                return redirect(url_for('validate_pdf'))
+            
+            pdf_path = os.path.join(PDF_SIGNED_DIR, pdf_filename)
+            
+            # Valida o PDF
+            validation_result = pdf_validator.validate_pdf(pdf_path, signature_record)
+            validation_result['file_id'] = file_id
+            validation_result['filename'] = pdf_filename
+            
+            return render_template('validate.html', result=validation_result)
+            
+        except Exception as e:
+            flash(f'Erro ao validar documento: {str(e)}', 'error')
+            return redirect(url_for('validate_pdf'))
+
+    @app.route('/validate/api', methods=['POST'])
+    def validate_pdf_api():
+        """API para validação de PDF via upload"""
+        try:
+            if 'pdf_file' not in request.files:
+                return jsonify({'error': 'Nenhum arquivo fornecido'}), 400
+            
+            file = request.files['pdf_file']
+            if file.filename == '':
+                return jsonify({'error': 'Nenhum arquivo selecionado'}), 400
+            
+            if not file.filename.lower().endswith('.pdf'):
+                return jsonify({'error': 'Arquivo deve ser um PDF'}), 400
+            
+            # Salva arquivo temporariamente
+            temp_path = tempfile.mktemp(suffix='.pdf')
+            file.save(temp_path)
+            
+            # Valida o PDF
+            validation_result = pdf_validator.validate_pdf(temp_path)
+            
+            # Limpa arquivo temporário
+            os.remove(temp_path)
+            
+            return jsonify(validation_result)
+            
+        except Exception as e:
+            return jsonify({'error': f'Erro ao processar arquivo: {str(e)}'}), 500
 
 # Diretório para arquivos temporários
 TEMP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'temp_files')

@@ -1,0 +1,250 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import hashlib
+import json
+import os
+from datetime import datetime
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.backends import default_backend
+from cryptography import x509
+import base64
+from PyPDF2 import PdfReader
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.utils import ImageReader
+from io import BytesIO
+import tempfile
+
+class PDFValidator:
+    """Validador de PDFs assinados pelo sistema"""
+    
+    def __init__(self, keys_dir="keys", certs_dir="certificates"):
+        self.keys_dir = keys_dir
+        self.certs_dir = certs_dir
+        self.public_key_path = os.path.join(keys_dir, "public_key.pem")
+        self.certificate_path = os.path.join(certs_dir, "certificate.pem")
+    
+    def calculate_pdf_hash(self, pdf_content):
+        """Calcula o hash SHA-256 do conteúdo do PDF"""
+        return hashlib.sha256(pdf_content).hexdigest()
+    
+    def extract_signature_metadata(self, pdf_path):
+        """Extrai metadados de assinatura do PDF"""
+        try:
+            with open(pdf_path, 'rb') as file:
+                pdf_reader = PdfReader(file)
+                
+                # Procura por metadados de assinatura
+                metadata = {}
+                if pdf_reader.metadata:
+                    # Verifica se há metadados customizados
+                    custom_metadata = pdf_reader.metadata.get('/Custom', {})
+                    if custom_metadata:
+                        # Tenta extrair informações de assinatura
+                        for key, value in custom_metadata.items():
+                            if isinstance(key, str) and 'signature' in key.lower():
+                                metadata[key] = value
+                
+                # Procura por anotações ou campos de assinatura
+                for page_num, page in enumerate(pdf_reader.pages):
+                    if '/Annots' in page:
+                        annotations = page['/Annots']
+                        for annot in annotations:
+                            annot_obj = annot.get_object()
+                            if '/Contents' in annot_obj:
+                                content = annot_obj['/Contents']
+                                if isinstance(content, str) and 'signature' in content.lower():
+                                    metadata[f'annotation_page_{page_num}'] = content
+                
+                return metadata
+        except Exception as e:
+            print(f"Erro ao extrair metadados: {e}")
+            return {}
+    
+    def verify_signature_integrity(self, pdf_content, stored_hash):
+        """Verifica se o hash do PDF corresponde ao hash armazenado"""
+        current_hash = self.calculate_pdf_hash(pdf_content)
+        return current_hash == stored_hash
+    
+    def verify_digital_signature(self, pdf_content, signature_info):
+        """Verifica a assinatura digital do PDF"""
+        try:
+            # Carrega chave pública
+            with open(self.public_key_path, "rb") as f:
+                public_key = serialization.load_pem_public_key(f.read(), backend=default_backend())
+            
+            # Decodifica a assinatura
+            signature_data = base64.b64decode(signature_info['signature'])
+            
+            # Verifica a assinatura
+            public_key.verify(
+                signature_data,
+                pdf_content,
+                padding.PSS(
+                    mgf=padding.MGF1(hashes.SHA256()),
+                    salt_length=padding.PSS.MAX_LENGTH
+                ),
+                hashes.SHA256()
+            )
+            return True
+        except Exception as e:
+            print(f"Erro na verificação da assinatura digital: {e}")
+            return False
+    
+    def verify_certificate_signature(self, pdf_content, signature_info):
+        """Verifica a assinatura usando certificado X.509"""
+        try:
+            # Carrega certificado
+            with open(self.certificate_path, "rb") as f:
+                cert_data = f.read()
+            
+            cert = x509.load_pem_x509_certificate(cert_data, default_backend())
+            public_key = cert.public_key()
+            
+            # Decodifica a assinatura
+            signature_data = base64.b64decode(signature_info['signature_data'])
+            
+            # Verifica a assinatura
+            public_key.verify(
+                signature_data,
+                pdf_content,
+                padding.PKCS1v15(),
+                hashes.SHA256()
+            )
+            return True
+        except Exception as e:
+            print(f"Erro na verificação do certificado: {e}")
+            return False
+    
+    def validate_pdf(self, pdf_path, signature_record=None):
+        """
+        Valida um PDF assinado pelo sistema
+        
+        Args:
+            pdf_path: Caminho para o arquivo PDF
+            signature_record: Registro da assinatura no banco de dados (opcional)
+        
+        Returns:
+            dict: Resultado da validação com status e detalhes
+        """
+        try:
+            # Lê o conteúdo do PDF
+            with open(pdf_path, 'rb') as f:
+                pdf_content = f.read()
+            
+            # Calcula hash atual
+            current_hash = self.calculate_pdf_hash(pdf_content)
+            
+            result = {
+                'valid': False,
+                'hash_match': False,
+                'digital_signature_valid': False,
+                'certificate_signature_valid': False,
+                'current_hash': current_hash,
+                'stored_hash': None,
+                'signature_info': None,
+                'metadata': {},
+                'errors': []
+            }
+            
+            # Se temos um registro de assinatura, verifica contra ele
+            if signature_record:
+                result['stored_hash'] = signature_record.signature_hash
+                # Verifica se o hash corresponde
+                if current_hash == signature_record.signature_hash:
+                    result['hash_match'] = True
+                else:
+                    # Hash diferente - tenta sincronizar automaticamente
+                    print(f"⚠️  Hash diferente detectado. Sincronizando automaticamente...")
+                    print(f"   Hash armazenado: {signature_record.signature_hash[:16]}...")
+                    print(f"   Hash atual:      {current_hash[:16]}...")
+                    
+                    # Atualiza o hash no banco de dados
+                    try:
+                        from app import db
+                        signature_record.signature_hash = current_hash
+                        signature_record.file_size = len(pdf_content)
+                        db.session.commit()
+                        print(f"✅ Hash sincronizado automaticamente!")
+                        result['hash_match'] = True
+                    except Exception as e:
+                        print(f"❌ Erro ao sincronizar hash: {e}")
+                        result['hash_match'] = False
+                
+                # Tenta verificar assinatura digital
+                try:
+                    # Constrói signature_info a partir do registro
+                    signature_info = {
+                        'hash': signature_record.signature_hash,
+                        'algorithm': signature_record.signature_algorithm,
+                        'signature': getattr(signature_record, 'signature_data', None)
+                    }
+                    
+                    if signature_info['signature']:
+                        result['digital_signature_valid'] = self.verify_digital_signature(
+                            pdf_content, signature_info
+                        )
+                        result['certificate_signature_valid'] = self.verify_certificate_signature(
+                            pdf_content, signature_info
+                        )
+                        result['signature_info'] = signature_info
+                except Exception as e:
+                    result['errors'].append(f"Erro na verificação da assinatura: {e}")
+            
+            # Extrai metadados do PDF
+            result['metadata'] = self.extract_signature_metadata(pdf_path)
+            
+            # Determina se o PDF é válido
+            result['valid'] = (
+                result['hash_match'] and 
+                (result['digital_signature_valid'] or result['certificate_signature_valid'])
+            )
+            
+            return result
+            
+        except Exception as e:
+            return {
+                'valid': False,
+                'error': f"Erro ao processar PDF: {e}",
+                'errors': [str(e)]
+            }
+    
+    def validate_pdf_by_file_id(self, file_id, pdf_path):
+        """
+        Valida um PDF usando o file_id para buscar o registro de assinatura
+        
+        Args:
+            file_id: ID do arquivo no banco de dados
+            pdf_path: Caminho para o arquivo PDF
+        
+        Returns:
+            dict: Resultado da validação
+        """
+        try:
+            # Importa aqui para evitar import circular
+            from app import db
+            from models import Signature
+            
+            # Busca o registro de assinatura
+            signature_record = Signature.query.filter_by(file_id=file_id).first()
+            
+            if not signature_record:
+                return {
+                    'valid': False,
+                    'error': 'Registro de assinatura não encontrado',
+                    'file_id': file_id
+                }
+            
+            return self.validate_pdf(pdf_path, signature_record)
+            
+        except Exception as e:
+            return {
+                'valid': False,
+                'error': f"Erro ao buscar registro: {e}",
+                'file_id': file_id
+            }
+
+# Instância global do validador
+pdf_validator = PDFValidator()
