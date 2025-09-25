@@ -11,6 +11,8 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            position: relative; /* Garante que o body seja o stacking context base */
+            overflow-x: hidden; /* Previne scroll horizontal indesejado */
         }
         .client-container {
             background: rgba(255, 255, 255, 0.95);
@@ -20,6 +22,11 @@
             margin: 2rem auto;
             max-width: 700px;
             overflow: hidden;
+            z-index: 1;
+        }
+        
+        .container {
+            position: relative; /* IMPORTANTE: Permite posicionamento absolute do dialog em relação ao container */
         }
         .client-header {
             background: linear-gradient(135deg, #28a745, #20c997);
@@ -47,6 +54,9 @@
         .canvas-container {
             position: relative;
             margin: 1rem 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         #signatureCanvas {
             border: 2px solid #dee2e6;
@@ -54,6 +64,445 @@
             cursor: crosshair;
             background: white;
             touch-action: none;
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+            /* Enhanced touch compatibility */
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            /* Samsung Internet compatibility */
+            -webkit-tap-highlight-color: transparent;
+            /* Better touch responsiveness */
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Enhanced mobile and tablet optimizations */
+        @media (max-width: 768px) {
+            #signatureCanvas {
+                width: 100% !important;
+                max-width: 100%;
+                height: 200px;
+            }
+            .client-container {
+                margin: 1rem;
+                max-width: 100%;
+            }
+            .btn-client {
+                font-size: 1rem;
+                padding: 0.6rem 1.5rem;
+            }
+            .btn-group-signature {
+                flex-direction: column;
+                align-items: center;
+            }
+            .btn-group-signature .btn {
+                width: 100%;
+                margin-bottom: 0.5rem;
+            }
+        }
+        
+        /* Tablet specific optimizations */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            #signatureCanvas {
+                width: 100% !important;
+                max-width: 100%;
+                height: 250px;
+            }
+            
+            .btn-group-signature {
+                flex-direction: row;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            
+            .btn-group-signature .btn {
+                flex: 1;
+                min-width: 150px;
+                margin: 0.25rem;
+            }
+        }
+        
+         /* Signature Dialog - CENTRALIZADO NA TELA (VIEWPORT) */
+         .signature-dialog {
+             position: fixed !important; /* Fixed em relação ao viewport */
+             top: 0 !important;
+             left: 0 !important;
+             width: 100vw !important; /* Cobre toda a largura da viewport */
+             height: 100vh !important; /* Cobre toda a altura da viewport */
+             z-index: 999999 !important; /* Alto para ficar acima de tudo */
+             display: flex !important; /* Sempre flex para permitir animação */
+             align-items: center !important; /* Centraliza verticalmente */
+             justify-content: center !important; /* Centraliza horizontalmente */
+             opacity: 0;
+             transform: scale(0.8) translateY(30px);
+             transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+             visibility: hidden; /* Usa visibility para esconder */
+             /* Animação suave com bounce effect */
+         }
+         
+         .signature-dialog::before {
+             content: '';
+             position: absolute;
+             top: 0;
+             left: 0;
+             width: 100%;
+             height: 100%;
+             background: rgba(0, 0, 0, 0.5);
+             opacity: 0;
+             transition: opacity 0.3s ease;
+         }
+         
+         .signature-dialog.active::before {
+             opacity: 1;
+         }
+         
+         .signature-dialog.active {
+             opacity: 1 !important;
+             transform: scale(1) translateY(0) !important;
+             visibility: visible !important; /* Mostra o dialog */
+         }
+         
+         /* Previne scroll do body quando dialog está aberto */
+         body.dialog-open {
+             overflow: hidden !important;
+         }
+         
+         .dialog-content {
+             background: white !important;
+             border-radius: 16px !important;
+             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3) !important;
+             width: 100% !important;
+             max-width: 90vw !important; /* 90% da largura da viewport */
+             max-height: 90vh !important; /* 90% da altura da viewport */
+             display: flex !important;
+             flex-direction: column !important;
+             overflow: hidden !important;
+             transform: translateY(40px) scale(0.9) !important;
+             transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+             position: relative !important;
+             z-index: 1000000 !important; /* Acima do backdrop */
+             margin: 0; /* Sem margem - centralização perfeita */
+             opacity: 0;
+         }
+         
+         .signature-dialog.active .dialog-content {
+             transform: translateY(0) scale(1) !important;
+             opacity: 1 !important;
+         }
+         
+         /* Z-index para filhos do dialog (herda do content) */
+         .dialog-header,
+         .dialog-canvas-container,
+         .dialog-controls {
+             position: relative;
+             z-index: auto;
+         }
+         
+         /* Animações para elementos internos */
+         .dialog-header {
+             transform: translateY(-20px);
+             opacity: 0;
+             transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s;
+         }
+         
+         .dialog-canvas-container {
+             transform: translateY(20px);
+             opacity: 0;
+             transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s;
+         }
+         
+         .dialog-controls {
+             transform: translateY(20px);
+             opacity: 0;
+             transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s;
+         }
+         
+         .signature-dialog.active .dialog-header,
+         .signature-dialog.active .dialog-canvas-container,
+         .signature-dialog.active .dialog-controls {
+             transform: translateY(0);
+             opacity: 1;
+         }
+         
+         .dialog-header {
+             background: linear-gradient(135deg, #28a745, #20c997);
+             color: white;
+             padding: 1.5rem;
+             display: flex;
+             justify-content: space-between;
+             align-items: center;
+             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+             border-radius: 16px 16px 0 0;
+         }
+         
+         .dialog-title {
+             margin: 0;
+             font-size: 1.3rem;
+             font-weight: 600;
+             display: flex;
+             align-items: center;
+             gap: 0.5rem;
+         }
+         
+         .dialog-close {
+             background: rgba(255,255,255,0.2);
+             border: none;
+             color: white;
+             border-radius: 50%;
+             width: 44px;
+             height: 44px;
+             display: flex;
+             align-items: center;
+             justify-content: center;
+             cursor: pointer;
+             transition: all 0.3s ease;
+             font-size: 1.2rem;
+         }
+         
+         .dialog-close:hover {
+             background: rgba(255,255,255,0.3);
+             transform: scale(1.1);
+         }
+         
+         .dialog-canvas-container {
+             flex: 1;
+             padding: 1.5rem;
+             display: flex;
+             flex-direction: column;
+             overflow: hidden;
+             min-height: 300px;
+         }
+         
+         .dialog-canvas {
+             width: 100%;
+             height: 100%;
+             min-height: 250px;
+             border: 2px solid #dee2e6;
+             border-radius: 12px;
+             background: white;
+             touch-action: none;
+             cursor: crosshair;
+         }
+         
+         .dialog-controls {
+             background: #f8f9fa;
+             padding: 1.5rem;
+             border-top: 1px solid #dee2e6;
+             display: flex;
+             justify-content: space-between;
+             align-items: center;
+             flex-wrap: wrap;
+             gap: 1rem;
+             border-radius: 0 0 16px 16px;
+         }
+         
+         .color-picker-group {
+             display: flex;
+             align-items: center;
+             gap: 0.75rem;
+         }
+         
+         .color-picker {
+             width: 36px;
+             height: 36px;
+             border-radius: 50%;
+             border: 3px solid transparent;
+             cursor: pointer;
+             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+         }
+         
+         .color-picker:hover {
+             transform: scale(1.1);
+         }
+         
+         .color-picker.active {
+             border-color: #007bff;
+             transform: scale(1.2);
+             box-shadow: 0 4px 12px rgba(0,123,255,0.3);
+         }
+         
+         .dialog-buttons {
+             display: flex;
+             gap: 0.75rem;
+             flex-wrap: wrap;
+         }
+         
+         .dialog-btn {
+             padding: 0.75rem 1.25rem;
+             border: none;
+             border-radius: 8px;
+             font-weight: 600;
+             cursor: pointer;
+             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+             display: flex;
+             align-items: center;
+             gap: 0.5rem;
+             font-size: 0.9rem;
+             min-width: 100px;
+         }
+         
+         .dialog-btn-clear {
+             background: #dc3545;
+             color: white;
+         }
+         
+         .dialog-btn-clear:hover {
+             background: #c82333;
+         }
+         
+         .dialog-btn-undo {
+             background: #6c757d;
+             color: white;
+         }
+         
+         .dialog-btn-undo:hover {
+             background: #5a6268;
+         }
+         
+         .dialog-btn-done {
+             background: #28a745;
+             color: white;
+         }
+         
+         .dialog-btn-done:hover {
+             background: #218838;
+             transform: translateY(-2px);
+             box-shadow: 0 4px 12px rgba(40,167,69,0.3);
+         }
+         
+         /* Responsive - Ajustado para viewport */
+         @media (max-width: 480px) {
+             .dialog-content {
+                 max-width: 95vw !important;
+                 max-height: 95vh !important;
+                 margin: 0 !important;
+             }
+             
+             .dialog-header {
+                 padding: 1rem;
+             }
+             
+             .dialog-title {
+                 font-size: 1.1rem;
+             }
+             
+             .dialog-canvas-container {
+                 padding: 1rem;
+                 min-height: 250px;
+             }
+             
+             .dialog-canvas {
+                 min-height: 200px;
+             }
+             
+             .dialog-controls {
+                 padding: 1rem;
+                 flex-direction: column;
+                 gap: 1rem;
+             }
+             
+             .color-picker-group {
+                 justify-content: center;
+             }
+             
+             .dialog-buttons {
+                 justify-content: center;
+                 width: 100%;
+             }
+             
+             .dialog-btn {
+                 flex: 1;
+                 min-width: 80px;
+                 padding: 0.6rem 1rem;
+             }
+         }
+         
+         @media (min-width: 481px) and (max-width: 768px) {
+             .dialog-content {
+                 max-width: 85vw !important;
+                 max-height: 85vh !important;
+             }
+             
+             .dialog-canvas-container {
+                 min-height: 350px;
+             }
+             
+             .dialog-canvas {
+                 min-height: 300px;
+             }
+         }
+         
+         @media (min-width: 769px) {
+             .dialog-content {
+                 max-width: 70vw !important;
+                 max-height: 80vh !important;
+             }
+             
+             .dialog-canvas-container {
+                 min-height: 400px;
+             }
+             
+             .dialog-canvas {
+                 min-height: 350px;
+             }
+         }
+         
+         /* Hide expand button on mobile */
+         @media (max-width: 768px) {
+             .expand-btn {
+                 display: none;
+             }
+         }
+         
+        /* Show expand button on desktop */
+        @media (min-width: 769px) {
+            .canvas-container {
+                justify-content: center;
+                align-items: center;
+            }
+            
+            #signatureCanvas {
+                margin: 0 auto;
+                display: block;
+            }
+            
+            .expand-btn {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                background: linear-gradient(135deg, #007bff, #0056b3);
+                color: white;
+                border: 2px solid rgba(255, 255, 255, 0.2);
+                border-radius: 50%;
+                width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                z-index: 10;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+                font-size: 1rem;
+                backdrop-filter: blur(10px);
+            }
+            
+            .expand-btn:hover {
+                background: linear-gradient(135deg, #0056b3, #004085);
+                transform: scale(1.15);
+                box-shadow: 0 6px 16px rgba(0, 123, 255, 0.4);
+            }
+            
+            .expand-btn:active {
+                transform: scale(1.05);
+            }
         }
         .canvas-controls {
             margin-top: 1rem;
@@ -73,6 +522,91 @@
         .btn-client:disabled {
             opacity: 0.6;
             cursor: not-allowed;
+        }
+        
+        /* Enhanced button styles for all browsers and devices */
+        #signBtn {
+            position: relative;
+            z-index: 10;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            pointer-events: auto !important;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            /* Enhanced touch target for tablets */
+            min-height: 48px;
+            min-width: 48px;
+            /* Samsung Internet compatibility */
+            -webkit-touch-callout: none;
+            -webkit-user-drag: none;
+            -khtml-user-select: none;
+            /* Better touch feedback */
+            transition: all 0.2s ease;
+        }
+        
+        #signBtn:not(:disabled) {
+            cursor: pointer;
+            pointer-events: auto !important;
+        }
+        
+        #signBtn:not(:disabled):active {
+            transform: scale(0.98);
+            background-color: #1e7e34 !important;
+        }
+        
+        #signBtn:disabled {
+            cursor: not-allowed;
+            pointer-events: none !important;
+            opacity: 0.6;
+        }
+        
+        /* Samsung Internet specific fixes */
+        @media screen and (-webkit-min-device-pixel-ratio: 0) {
+            #signBtn {
+                -webkit-appearance: none;
+                appearance: none;
+                border-radius: 10px;
+            }
+        }
+        
+        /* Modal fixes for Samsung Internet */
+        .modal {
+            z-index: 1055 !important;
+        }
+        
+        .modal-backdrop {
+            z-index: 1050 !important;
+        }
+        
+        /* Samsung Internet modal compatibility */
+        @media screen and (-webkit-min-device-pixel-ratio: 0) {
+            .modal {
+                -webkit-transform: translateZ(0);
+                transform: translateZ(0);
+                -webkit-backface-visibility: hidden;
+                backface-visibility: hidden;
+            }
+            
+            .modal-dialog {
+                -webkit-transform: translateZ(0);
+                transform: translateZ(0);
+            }
+        }
+        
+        /* Force hardware acceleration for modals */
+        .modal.show {
+            display: block !important;
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
+        }
+        
+        /* Samsung Internet specific modal backdrop */
+        .modal-backdrop.fade.show {
+            opacity: 0.5 !important;
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
         }
         .logo-icon {
             font-size: 3rem;
@@ -162,8 +696,11 @@
                         Sua Assinatura
                     </h5>
                     
-                    <div class="canvas-container">
+                    <div class="canvas-container position-relative">
                         <canvas id="signatureCanvas" width="600" height="200"></canvas>
+                        <button class="expand-btn" id="expandBtn" title="Expandir área de assinatura">
+                            <i class="fas fa-expand-arrows-alt"></i>
+                        </button>
                     </div>
                     
                     <div class="canvas-controls">
@@ -198,6 +735,46 @@
                         <i class="fas fa-arrow-left me-2"></i>
                         Voltar
                     </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mobile Signature Dialog - DENTRO DO CONTAINER -->
+        <div class="signature-dialog" id="signatureDialog">
+            <div class="dialog-content">
+                <div class="dialog-header">
+                    <h5 class="dialog-title">
+                        <i class="fas fa-signature"></i>
+                        Desenhe sua Assinatura
+                    </h5>
+                    <button class="dialog-close" id="dialogCloseBtn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="dialog-canvas-container">
+                    <canvas id="dialogCanvas" class="dialog-canvas"></canvas>
+                </div>
+                
+                <div class="dialog-controls">
+                    <div class="color-picker-group">
+                        <span class="me-2 fw-bold">Cor:</span>
+                        <div class="color-picker active" data-color="#000" style="background: #000;"></div>
+                        <div class="color-picker" data-color="#007bff" style="background: #007bff;"></div>
+                        <div class="color-picker" data-color="#dc3545" style="background: #dc3545;"></div>
+                    </div>
+                    
+                    <div class="dialog-buttons">
+                        <button class="dialog-btn dialog-btn-clear" id="dialogClearBtn">
+                            <i class="fas fa-eraser"></i>Limpar
+                        </button>
+                        <button class="dialog-btn dialog-btn-undo" id="dialogUndoBtn">
+                            <i class="fas fa-undo"></i>Desfazer
+                        </button>
+                        <button class="dialog-btn dialog-btn-done" id="dialogDoneBtn">
+                            <i class="fas fa-check"></i>Concluir
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -275,17 +852,125 @@
         const clearBtn = document.getElementById('clearBtn');
         const undoBtn = document.getElementById('undoBtn');
         const signBtn = document.getElementById('signBtn');
+        console.log('signBtn encontrado:', signBtn);
+        if (!signBtn) {
+            console.error('signBtn não encontrado!');
+        }
         
-        let isDrawing = false;
-        let hasSignature = false;
-        let signatureHistory = [];
-        let currentPath = [];
+         // Dialog elements
+         const expandBtn = document.getElementById('expandBtn');
+         const signatureDialog = document.getElementById('signatureDialog');
+         const dialogCanvas = document.getElementById('dialogCanvas');
+         const dialogCtx = dialogCanvas.getContext('2d');
+         const dialogCloseBtn = document.getElementById('dialogCloseBtn');
+         const dialogClearBtn = document.getElementById('dialogClearBtn');
+         const dialogUndoBtn = document.getElementById('dialogUndoBtn');
+         const dialogDoneBtn = document.getElementById('dialogDoneBtn');
+         
+         let isDrawing = false;
+         let hasSignature = false;
+         let signatureHistory = [];
+         let currentPath = [];
+         
+         // Dialog variables
+         let dialogPaths = [];
+         let dialogCurrentPath = [];
+         let isDialogDrawing = false;
+         let currentColor = '#000';
         
-        // Configurações do canvas
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 2;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
+        // Enhanced mobile/tablet detection for all browsers including Samsung Internet
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|SamsungBrowser|Samsung/i.test(navigator.userAgent);
+        const isTablet = /iPad|Android(?!.*Mobile)|Tablet/i.test(navigator.userAgent) || 
+                        (navigator.maxTouchPoints && navigator.maxTouchPoints > 1 && window.innerWidth >= 768);
+        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        const isSamsungInternet = /SamsungBrowser|Samsung/i.test(navigator.userAgent);
+        const devicePixelRatio = window.devicePixelRatio || 1; // Para high-DPI
+        
+        console.log('Device detection:', {
+            isMobile,
+            isTablet, 
+            isTouchDevice,
+            isSamsungInternet,
+            userAgent: navigator.userAgent,
+            maxTouchPoints: navigator.maxTouchPoints,
+            devicePixelRatio,
+            screenWidth: window.innerWidth
+        });
+        
+        // Configurações do canvas (com suporte a high-DPI)
+        function setupCanvasContext() {
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2 * devicePixelRatio; // Ajusta para high-DPI
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+        }
+        
+        // Dialog canvas setup
+        function setupDialogContext() {
+            dialogCtx.strokeStyle = currentColor;
+            dialogCtx.lineWidth = (isMobile ? 3 : 2) * devicePixelRatio;
+            dialogCtx.lineCap = 'round';
+            dialogCtx.lineJoin = 'round';
+        }
+        
+        // Função precisa para obter coordenadas (corrige offset em mobile/high-DPI)
+        function getTouchCoordinates(e, canvasElement) {
+            const rect = canvasElement.getBoundingClientRect();
+            const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+            const clientY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+            
+            // Corrige para scroll e viewport (essencial em mobile com barras dinâmicas)
+            const scaleX = canvasElement.width / rect.width;
+            const scaleY = canvasElement.height / rect.height;
+            
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
+         
+         // Responsive canvas sizing (com high-DPI)
+         function resizeCanvas() {
+             const container = canvas.parentElement;
+             const containerWidth = container.clientWidth - 40;
+             
+             const logicalWidth = isMobile ? Math.min(containerWidth, 400) : Math.min(containerWidth, 600);
+             const logicalHeight = 200;
+             
+             // Physical size para high-DPI (melhor qualidade)
+             canvas.width = logicalWidth * devicePixelRatio;
+             canvas.height = logicalHeight * devicePixelRatio;
+             canvas.style.width = logicalWidth + 'px';
+             canvas.style.height = logicalHeight + 'px';
+             
+             // Escala o contexto para CSS pixels
+             ctx.scale(devicePixelRatio, devicePixelRatio);
+             setupCanvasContext();
+             
+             redrawCanvas();
+         }
+         
+         // Dialog canvas setup (com high-DPI)
+         function setupDialogCanvas() {
+             const container = document.querySelector('.dialog-canvas-container');
+             const containerRect = container.getBoundingClientRect();
+             
+             let logicalWidth = containerRect.width - 40;
+             let logicalHeight = containerRect.height - 40;
+             
+             logicalWidth = Math.max(logicalWidth, 300);
+             logicalHeight = Math.max(logicalHeight, 200);
+             
+             // Physical size
+             dialogCanvas.width = logicalWidth * devicePixelRatio;
+             dialogCanvas.height = logicalHeight * devicePixelRatio;
+             dialogCanvas.style.width = logicalWidth + 'px';
+             dialogCanvas.style.height = logicalHeight + 'px';
+             
+             dialogCtx.scale(devicePixelRatio, devicePixelRatio);
+             setupDialogContext();
+         }
+         
         
         // Função para coletar informações do dispositivo
         function collectDeviceInfo() {
@@ -300,41 +985,68 @@
             };
         }
         
-        // Eventos de mouse
+        // Mouse events (mantidos para desktop)
         canvas.addEventListener('mousedown', startDrawing);
         canvas.addEventListener('mousemove', draw);
         canvas.addEventListener('mouseup', stopDrawing);
         canvas.addEventListener('mouseout', stopDrawing);
         
-        // Eventos de touch para dispositivos móveis
-        canvas.addEventListener('touchstart', handleTouchStart);
-        canvas.addEventListener('touchmove', handleTouchMove);
-        canvas.addEventListener('touchend', handleTouchEnd);
+        // Touch events corrigidos (sem preventDefault excessivo)
+        canvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 1) return; // Ignora multi-touch
+            startDrawing(e);
+        }, { passive: true }); // Passive para performance
         
+        canvas.addEventListener('touchmove', throttledDraw, { passive: true });
+        canvas.addEventListener('touchend', stopDrawing, { passive: true });
+        
+        // Pointer Events como fallback unificado (melhor compatibilidade)
+        canvas.addEventListener('pointerdown', (e) => {
+            if (e.pointerType === 'touch') {
+                canvas.setPointerCapture(e.pointerId);
+                startDrawing(e);
+            }
+        });
+        canvas.addEventListener('pointermove', (e) => {
+            if (e.pointerType === 'touch' && isDrawing) {
+                draw(e);
+            }
+        });
+        canvas.addEventListener('pointerup', (e) => {
+            if (e.pointerType === 'touch') {
+                stopDrawing(e);
+            }
+        });
+        
+        // Auto-open dialog on mobile/tablet touch - Enhanced for all browsers
+        if (isMobile || isTablet || isTouchDevice) {
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                openSignatureDialog();
+            }, { passive: false });
+        }
+        
+        // Eventos unificados com Pointer Events (melhor para cross-device)
         function startDrawing(e) {
+            e.preventDefault(); // Só no canvas, não propaga
             isDrawing = true;
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            
-            currentPath = [{x, y}];
+            const coords = getTouchCoordinates(e, canvas);
+            currentPath = [{x: coords.x, y: coords.y}];
             ctx.beginPath();
-            ctx.moveTo(x, y);
+            ctx.moveTo(coords.x, coords.y);
         }
         
         function draw(e) {
             if (!isDrawing) return;
-            
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            
-            currentPath.push({x, y});
-            ctx.lineTo(x, y);
+            e.preventDefault();
+            const coords = getTouchCoordinates(e, canvas);
+            currentPath.push({x: coords.x, y: coords.y});
+            ctx.lineTo(coords.x, coords.y);
             ctx.stroke();
         }
         
-        function stopDrawing() {
+        function stopDrawing(e) {
             if (isDrawing) {
                 isDrawing = false;
                 if (currentPath.length > 0) {
@@ -346,36 +1058,50 @@
             }
         }
         
-        // Funções para touch
-        function handleTouchStart(e) {
-            e.preventDefault();
-            const touch = e.touches[0];
-            const mouseEvent = new MouseEvent('mousedown', {
-                clientX: touch.clientX,
-                clientY: touch.clientY
-            });
-            canvas.dispatchEvent(mouseEvent);
+        // Throttled touchmove para performance (evita lag em mobile)
+        let lastTouchMove = 0;
+        function throttledDraw(e) {
+            const now = Date.now();
+            if (now - lastTouchMove < 16) return; // ~60fps
+            lastTouchMove = now;
+            draw(e);
         }
         
-        function handleTouchMove(e) {
+        // Mesmas correções para o dialog canvas
+        function startDialogDrawing(e) {
             e.preventDefault();
-            const touch = e.touches[0];
-            const mouseEvent = new MouseEvent('mousemove', {
-                clientX: touch.clientX,
-                clientY: touch.clientY
-            });
-            canvas.dispatchEvent(mouseEvent);
+            isDialogDrawing = true;
+            const coords = getTouchCoordinates(e, dialogCanvas);
+            dialogCurrentPath = [{ x: coords.x, y: coords.y, color: currentColor }];
+            dialogPaths.push(dialogCurrentPath);
+            dialogCtx.beginPath();
+            dialogCtx.moveTo(coords.x, coords.y);
         }
         
-        function handleTouchEnd(e) {
+        function drawDialog(e) {
+            if (!isDialogDrawing) return;
             e.preventDefault();
-            const mouseEvent = new MouseEvent('mouseup', {});
-            canvas.dispatchEvent(mouseEvent);
+            const coords = getTouchCoordinates(e, dialogCanvas);
+            dialogCurrentPath.push({ x: coords.x, y: coords.y, color: currentColor });
+            redrawDialogCanvas();
+        }
+        
+        function stopDialogDrawing() {
+            isDialogDrawing = false;
+            dialogCurrentPath = [];
+        }
+        
+        let lastDialogTouchMove = 0;
+        function throttledDrawDialog(e) {
+            const now = Date.now();
+            if (now - lastDialogTouchMove < 16) return;
+            lastDialogTouchMove = now;
+            drawDialog(e);
         }
         
         // Botão Limpar
         clearBtn.addEventListener('click', function() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.clearRect(0, 0, canvas.width / devicePixelRatio, canvas.height / devicePixelRatio); // Corrige para logical pixels
             signatureHistory = [];
             hasSignature = false;
             updateSignButton();
@@ -393,13 +1119,13 @@
         
         // Função para redesenhar o canvas
         function redrawCanvas() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.clearRect(0, 0, canvas.width / devicePixelRatio, canvas.height / devicePixelRatio);
+            setupCanvasContext();
             
             signatureHistory.forEach(path => {
                 if (path.length > 0) {
                     ctx.beginPath();
                     ctx.moveTo(path[0].x, path[0].y);
-                    
                     for (let i = 1; i < path.length; i++) {
                         ctx.lineTo(path[i].x, path[i].y);
                     }
@@ -408,26 +1134,232 @@
             });
         }
         
-        // Função para atualizar estado do botão de assinatura
-        function updateSignButton() {
-            signBtn.disabled = !hasSignature;
+        function redrawDialogCanvas() {
+            dialogCtx.clearRect(0, 0, dialogCanvas.width / devicePixelRatio, dialogCanvas.height / devicePixelRatio);
+            setupDialogContext();
+            
+            dialogPaths.forEach(path => {
+                if (path.length > 1) {
+                    dialogCtx.strokeStyle = path[0].color;
+                    dialogCtx.beginPath();
+                    dialogCtx.moveTo(path[0].x, path[0].y);
+                    for (let i = 1; i < path.length; i++) {
+                        dialogCtx.lineTo(path[i].x, path[i].y);
+                    }
+                    dialogCtx.stroke();
+                }
+            });
         }
         
-        // Botão Finalizar Assinatura
-        signBtn.addEventListener('click', function() {
+        // Função para atualizar estado do botão de assinatura
+        function updateSignButton() {
+            if (signBtn) {
+                signBtn.disabled = !hasSignature;
+                console.log('Botão assinatura:', hasSignature ? 'Habilitado' : 'Desabilitado');
+                console.log('signBtn.disabled:', signBtn.disabled);
+            } else {
+                console.error('signBtn não encontrado em updateSignButton!');
+            }
+        }
+        
+         // Dialog functions with animations
+         function openSignatureDialog() {
+             // Prevent body scroll and add class
+             document.body.style.overflow = 'hidden';
+             document.body.classList.add('dialog-open');
+             
+             // Add active class for animation
+             signatureDialog.classList.add('active');
+             
+             // Setup canvas after animation starts with delay for proper rendering
+             setTimeout(() => {
+                 setupDialogCanvas();
+                 copyCanvasToDialog();
+             }, 100); // Increased delay for better rendering
+         }
+         
+         function closeSignatureDialog() {
+             signatureDialog.classList.remove('active');
+             
+             // Wait for animation to complete before hiding
+             setTimeout(() => {
+                 // Restore body scroll and remove class
+                 document.body.style.overflow = '';
+                 document.body.classList.remove('dialog-open');
+             }, 400); // Match animation duration
+         }
+         
+        // Desktop expand button (only visible on desktop)
+        if (!isMobile && !isTablet) {
+            expandBtn.addEventListener('click', () => {
+                openSignatureDialog();
+            });
+        }
+         
+         // Dialog close buttons
+         dialogCloseBtn.addEventListener('click', closeSignatureDialog);
+         dialogDoneBtn.addEventListener('click', () => {
+             copyDialogToCanvas();
+             closeSignatureDialog();
+         });
+         
+         // Close dialog when clicking on background
+         signatureDialog.addEventListener('click', (e) => {
+             if (e.target === signatureDialog) {
+                 closeSignatureDialog();
+             }
+         });
+         
+         // Prevent dialog content clicks from closing dialog
+         document.querySelector('.dialog-content').addEventListener('click', (e) => {
+             e.stopPropagation();
+         });
+         
+         // Copy canvas content to dialog
+         function copyCanvasToDialog() {
+             dialogCtx.clearRect(0, 0, dialogCanvas.width, dialogCanvas.height);
+             dialogCtx.drawImage(canvas, 0, 0, dialogCanvas.width, dialogCanvas.height);
+             dialogPaths = [...signatureHistory];
+         }
+         
+         // Copy dialog content back to canvas
+         function copyDialogToCanvas() {
+             ctx.clearRect(0, 0, canvas.width, canvas.height);
+             ctx.drawImage(dialogCanvas, 0, 0, canvas.width, canvas.height);
+             signatureHistory = [...dialogPaths];
+             hasSignature = signatureHistory.length > 0;
+             updateSignButton();
+         }
+         
+         // Dialog mouse events
+         dialogCanvas.addEventListener('mousedown', startDialogDrawing);
+         dialogCanvas.addEventListener('mousemove', drawDialog);
+         dialogCanvas.addEventListener('mouseup', stopDialogDrawing);
+         dialogCanvas.addEventListener('mouseout', stopDialogDrawing);
+         
+         // Dialog touch events
+         dialogCanvas.addEventListener('touchstart', (e) => {
+             if (e.touches.length > 1) return;
+             startDialogDrawing(e);
+         }, { passive: true });
+         
+         dialogCanvas.addEventListener('touchmove', throttledDrawDialog, { passive: true });
+         dialogCanvas.addEventListener('touchend', stopDialogDrawing, { passive: true });
+         
+         // Dialog pointer events
+         dialogCanvas.addEventListener('pointerdown', (e) => {
+             if (e.pointerType === 'touch') {
+                 dialogCanvas.setPointerCapture(e.pointerId);
+                 startDialogDrawing(e);
+             }
+         });
+         dialogCanvas.addEventListener('pointermove', (e) => {
+             if (e.pointerType === 'touch' && isDialogDrawing) {
+                 drawDialog(e);
+             }
+         });
+         dialogCanvas.addEventListener('pointerup', (e) => {
+             if (e.pointerType === 'touch') {
+                 stopDialogDrawing(e);
+             }
+         });
+         
+        // Dialog controls
+        dialogClearBtn.addEventListener('click', () => {
+            dialogCtx.clearRect(0, 0, dialogCanvas.width / devicePixelRatio, dialogCanvas.height / devicePixelRatio);
+            dialogPaths = [];
+        });
+        
+        dialogUndoBtn.addEventListener('click', () => {
+            if (dialogPaths.length > 0) {
+                dialogPaths.pop();
+                redrawDialogCanvas();
+            }
+        });
+        
+        // Color picker for dialog
+        document.querySelectorAll('.color-picker').forEach(picker => {
+            picker.addEventListener('click', function() {
+                document.querySelectorAll('.color-picker').forEach(p => p.classList.remove('active'));
+                this.classList.add('active');
+                currentColor = this.dataset.color;
+                dialogCtx.strokeStyle = currentColor;
+            });
+        });
+         
+         function redrawDialogCanvas() {
+             dialogCtx.clearRect(0, 0, dialogCanvas.width, dialogCanvas.height);
+             
+             dialogPaths.forEach(path => {
+                 if (path.length > 1) {
+                     dialogCtx.strokeStyle = path[0].color;
+                     dialogCtx.beginPath();
+                     dialogCtx.moveTo(path[0].x, path[0].y);
+                     
+                     for (let i = 1; i < path.length; i++) {
+                         dialogCtx.lineTo(path[i].x, path[i].y);
+                     }
+                     dialogCtx.stroke();
+                 }
+             });
+         }
+         
+         // Dialog controls
+         dialogClearBtn.addEventListener('click', () => {
+             dialogCtx.clearRect(0, 0, dialogCanvas.width, dialogCanvas.height);
+             dialogPaths = [];
+         });
+         
+         dialogUndoBtn.addEventListener('click', () => {
+             if (dialogPaths.length > 0) {
+                 dialogPaths.pop();
+                 redrawDialogCanvas();
+             }
+         });
+         
+         // Color picker for dialog
+         document.querySelectorAll('.color-picker').forEach(picker => {
+             picker.addEventListener('click', function() {
+                 document.querySelectorAll('.color-picker').forEach(p => p.classList.remove('active'));
+                 this.classList.add('active');
+                 currentColor = this.dataset.color;
+                 dialogCtx.strokeStyle = currentColor;
+             });
+         });
+        
+        // Enhanced Finalizar Assinatura button with Pointer Events
+        console.log('Configurando event listener para signBtn:', signBtn);
+        if (signBtn) {
+            // Handler unificado com Pointer Events (melhor compatibilidade)
+            const handleSignClick = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                console.log('Botão clicado! hasSignature:', hasSignature);
+                console.log('Event type:', e.type, 'Pointer type:', e.pointerType);
+                console.log('Botão disabled:', signBtn.disabled);
+            
             if (!hasSignature) {
-                // HUD de validação
+                console.log('Sem assinatura, mostrando modal de validação');
+                // HUD de validação com fallback para Samsung Internet
                 document.getElementById('signValidationText').textContent = 'Por favor, desenhe sua assinatura antes de continuar.';
-                new bootstrap.Modal(document.getElementById('signValidationModal')).show();
+                showModalWithFallback('signValidationModal');
                 return;
             }
 
-            // Mostra HUD de confirmação
-            const confirmModal = new bootstrap.Modal(document.getElementById('signConfirmModal'));
-            confirmModal.show();
+            // Mostra HUD de confirmação com fallback
+            showModalWithFallback('signConfirmModal');
 
             const doSign = () => {
-                confirmModal.hide();
+                // Fecha modal de confirmação
+                const confirmModalEl = document.getElementById('signConfirmModal');
+                if (confirmModalEl) {
+                    confirmModalEl.style.display = 'none';
+                    confirmModalEl.classList.remove('show');
+                    const backdrop = document.getElementById('modal-backdrop-signConfirmModal');
+                    if (backdrop) backdrop.remove();
+                    document.body.style.overflow = '';
+                }
                 document.getElementById('signConfirmBtn').removeEventListener('click', doSign);
 
                 // Desabilita botão para evitar duplo envio
@@ -457,33 +1389,146 @@
                 .then(data => {
                     if (data.success) {
                         // HUD de sucesso
-                        const successModal = new bootstrap.Modal(document.getElementById('signSuccessModal'));
                         document.getElementById('signSuccessText').textContent = 'Assinatura realizada com sucesso!';
-                        successModal.show();
+                        showModalWithFallback('signSuccessModal');
                         setTimeout(() => { window.location.href = data.redirect; }, 800);
                     } else {
                         // HUD de erro
-                        const errorModal = new bootstrap.Modal(document.getElementById('signErrorModal'));
                         document.getElementById('signErrorText').textContent = 'Erro ao processar assinatura: ' + (data.message || 'Tente novamente.');
-                        errorModal.show();
+                        showModalWithFallback('signErrorModal');
                         signBtn.disabled = false;
                         signBtn.innerHTML = '<i class="fas fa-check me-2"></i>Finalizar Assinatura';
                     }
                 })
                 .catch(error => {
                     console.error('Erro:', error);
-                    const errorModal = new bootstrap.Modal(document.getElementById('signErrorModal'));
                     document.getElementById('signErrorText').textContent = 'Erro ao processar assinatura. Tente novamente.';
-                    errorModal.show();
+                    showModalWithFallback('signErrorModal');
                     signBtn.disabled = false;
                     signBtn.innerHTML = '<i class="fas fa-check me-2"></i>Finalizar Assinatura';
                 });
             };
             document.getElementById('signConfirmBtn').addEventListener('click', doSign);
+            };
+            
+            // Pointer Events como handler principal (melhor compatibilidade cross-device)
+            signBtn.addEventListener('pointerup', handleSignClick);
+            
+            // Fallback para browsers antigos
+            signBtn.addEventListener('click', handleSignClick);
+            
+            // Touch fallback específico para Samsung Internet
+            if (navigator.userAgent.includes('SamsungBrowser')) {
+                signBtn.addEventListener('touchend', handleSignClick);
+            }
+            
+        } else {
+            console.error('signBtn não encontrado, não é possível configurar event listener!');
+        }
+        
+        // Função de fallback para modais (Samsung Internet compatibility)
+        function showModalWithFallback(modalId) {
+            const modalElement = document.getElementById(modalId);
+            if (!modalElement) {
+                console.error('Modal não encontrado:', modalId);
+                return;
+            }
+            
+            // Para Samsung Internet, usa fallback direto
+            if (isSamsungInternet) {
+                console.log('Samsung Internet detectado, usando fallback direto');
+                showModalFallback(modalElement, modalId);
+                return;
+            }
+            
+            try {
+                // Tenta usar Bootstrap Modal primeiro
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+                console.log('Modal Bootstrap exibido:', modalId);
+            } catch (error) {
+                console.warn('Bootstrap Modal falhou, usando fallback:', error);
+                showModalFallback(modalElement, modalId);
+            }
+        }
+        
+        function showModalFallback(modalElement, modalId) {
+            // Fallback: exibe modal manualmente
+            modalElement.style.display = 'block';
+            modalElement.classList.add('show');
+            modalElement.setAttribute('aria-modal', 'true');
+            modalElement.setAttribute('role', 'dialog');
+            
+            // Adiciona backdrop
+            const backdrop = document.createElement('div');
+            backdrop.className = 'modal-backdrop fade show';
+            backdrop.id = 'modal-backdrop-' + modalId;
+            document.body.appendChild(backdrop);
+            
+            // Previne scroll do body
+            document.body.style.overflow = 'hidden';
+            
+            // Adiciona listener para fechar modal
+            const closeModal = () => {
+                modalElement.style.display = 'none';
+                modalElement.classList.remove('show');
+                modalElement.removeAttribute('aria-modal');
+                modalElement.removeAttribute('role');
+                
+                const backdropEl = document.getElementById('modal-backdrop-' + modalId);
+                if (backdropEl) {
+                    backdropEl.remove();
+                }
+                
+                document.body.style.overflow = '';
+            };
+            
+            // Fecha modal ao clicar no backdrop
+            modalElement.addEventListener('click', (e) => {
+                if (e.target === modalElement) {
+                    closeModal();
+                }
+            });
+            
+            // Fecha modal ao clicar no X
+            const closeBtn = modalElement.querySelector('.btn-close');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', closeModal);
+            }
+            
+            // Fecha modal ao pressionar ESC
+            const handleEsc = (e) => {
+                if (e.key === 'Escape') {
+                    closeModal();
+                    document.removeEventListener('keydown', handleEsc);
+                }
+            };
+            document.addEventListener('keydown', handleEsc);
+            
+            console.log('Modal fallback exibido:', modalId);
+        }
+        
+        // Enhanced initialization
+        updateSignButton();
+        
+        // Initialize canvas on load
+        window.addEventListener('load', () => {
+            resizeCanvas();
+            setupDialogCanvas();
         });
         
-        // Inicialização
-        updateSignButton();
+        // Resize with debouncing
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                resizeCanvas();
+                if (signatureDialog.classList.contains('active')) {
+                    setupDialogCanvas();
+                    setTimeout(() => redrawDialogCanvas(), 100);
+                }
+            }, 150);
+        });
         
         // Previne zoom em dispositivos móveis
         document.addEventListener('gesturestart', function(e) {

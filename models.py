@@ -45,8 +45,9 @@ class Signature(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     file_id = db.Column(db.String(255), nullable=False)
     original_filename = db.Column(db.String(255), nullable=False)
-    signature_hash = db.Column(db.String(255), nullable=False)
+    signature_hash = db.Column(db.String(64), nullable=False)  # SHA-256 hex = 64 chars
     signature_algorithm = db.Column(db.String(50), nullable=False)
+    signature_data = db.Column(db.Text)  # Dados da assinatura digital (base64)
     timestamp = db.Column(db.DateTime, default=datetime.now)
     file_size = db.Column(db.Integer)
     signature_valid = db.Column(db.Boolean, default=True)

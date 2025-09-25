@@ -8,6 +8,34 @@ from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.backends import default_backend
 from cryptography.exceptions import InvalidSignature
 
+def calculate_pdf_hash(pdf_path):
+    """
+    Calcula o hash SHA-256 do conteúdo binário do PDF.
+    
+    Args:
+        pdf_path: Caminho para o arquivo PDF
+        
+    Returns:
+        str: Hash SHA-256 em formato hexadecimal
+    """
+    sha256_hash = hashlib.sha256()
+    with open(pdf_path, "rb") as f:
+        while chunk := f.read(4096):  # Lê em chunks para PDFs grandes
+            sha256_hash.update(chunk)
+    return sha256_hash.hexdigest()
+
+def calculate_content_hash(pdf_content):
+    """
+    Calcula o hash SHA-256 do conteúdo binário do PDF (a partir de bytes).
+    
+    Args:
+        pdf_content: Conteúdo binário do PDF
+        
+    Returns:
+        str: Hash SHA-256 em formato hexadecimal
+    """
+    return hashlib.sha256(pdf_content).hexdigest()
+
 class DigitalSignatureManager:
     def __init__(self, keys_dir="keys"):
         self.keys_dir = keys_dir
@@ -71,8 +99,12 @@ class DigitalSignatureManager:
                 backend=default_backend()
             )
         
-        # Calcula hash dos dados
-        data_hash = self.calculate_hash(data)
+        # Se os dados já são um hash (64 caracteres hex), usa diretamente
+        if isinstance(data, str) and len(data) == 64 and all(c in '0123456789abcdef' for c in data.lower()):
+            data_hash = data
+        else:
+            # Calcula hash dos dados
+            data_hash = self.calculate_hash(data)
         
         # Assina o hash
         signature = private_key.sign(

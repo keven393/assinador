@@ -24,11 +24,12 @@ class PDFValidator:
         self.keys_dir = keys_dir
         self.certs_dir = certs_dir
         self.public_key_path = os.path.join(keys_dir, "public_key.pem")
-        self.certificate_path = os.path.join(certs_dir, "certificate.pem")
+        self.certificate_path = os.path.join(keys_dir, "public_key.pem")  # Usa a mesma chave pública
     
     def calculate_pdf_hash(self, pdf_content):
         """Calcula o hash SHA-256 do conteúdo do PDF"""
-        return hashlib.sha256(pdf_content).hexdigest()
+        from crypto_utils import calculate_content_hash
+        return calculate_content_hash(pdf_content)
     
     def extract_signature_metadata(self, pdf_path):
         """Extrai metadados de assinatura do PDF"""
@@ -78,10 +79,18 @@ class PDFValidator:
             # Decodifica a assinatura
             signature_data = base64.b64decode(signature_info['signature'])
             
-            # Verifica a assinatura
+            # Calcula o hash do PDF
+            pdf_hash = self.calculate_pdf_hash(pdf_content)
+            
+            # Verifica se o hash corresponde
+            if pdf_hash != signature_info['hash']:
+                print(f"Hash do PDF não corresponde ao hash assinado")
+                return False
+            
+            # Verifica a assinatura do hash
             public_key.verify(
                 signature_data,
-                pdf_content,
+                pdf_hash.encode('utf-8'),
                 padding.PSS(
                     mgf=padding.MGF1(hashes.SHA256()),
                     salt_length=padding.PSS.MAX_LENGTH
@@ -94,28 +103,36 @@ class PDFValidator:
             return False
     
     def verify_certificate_signature(self, pdf_content, signature_info):
-        """Verifica a assinatura usando certificado X.509"""
+        """Verifica a assinatura usando a chave pública do sistema"""
         try:
-            # Carrega certificado
-            with open(self.certificate_path, "rb") as f:
-                cert_data = f.read()
-            
-            cert = x509.load_pem_x509_certificate(cert_data, default_backend())
-            public_key = cert.public_key()
+            # Carrega chave pública (mesma usada para assinar)
+            with open(self.public_key_path, "rb") as f:
+                public_key = serialization.load_pem_public_key(f.read(), backend=default_backend())
             
             # Decodifica a assinatura
-            signature_data = base64.b64decode(signature_info['signature_data'])
+            signature_data = base64.b64decode(signature_info['signature'])
             
-            # Verifica a assinatura
+            # Calcula o hash do PDF
+            pdf_hash = self.calculate_pdf_hash(pdf_content)
+            
+            # Verifica se o hash corresponde
+            if pdf_hash != signature_info['hash']:
+                print(f"Hash do PDF não corresponde ao hash assinado")
+                return False
+            
+            # Verifica a assinatura do hash
             public_key.verify(
                 signature_data,
-                pdf_content,
-                padding.PKCS1v15(),
+                pdf_hash.encode('utf-8'),
+                padding.PSS(
+                    mgf=padding.MGF1(hashes.SHA256()),
+                    salt_length=padding.PSS.MAX_LENGTH
+                ),
                 hashes.SHA256()
             )
             return True
         except Exception as e:
-            print(f"Erro na verificação do certificado: {e}")
+            print(f"Erro na verificação da assinatura: {e}")
             return False
     
     def validate_pdf(self, pdf_path, signature_record=None):
@@ -179,7 +196,7 @@ class PDFValidator:
                     signature_info = {
                         'hash': signature_record.signature_hash,
                         'algorithm': signature_record.signature_algorithm,
-                        'signature': getattr(signature_record, 'signature_data', None)
+                        'signature': signature_record.signature_data
                     }
                     
                     if signature_info['signature']:
@@ -197,9 +214,11 @@ class PDFValidator:
             result['metadata'] = self.extract_signature_metadata(pdf_path)
             
             # Determina se o PDF é válido
+            # Para o sistema atual, consideramos válido se o hash confere e a assinatura digital é válida
+            # A verificação de certificado é opcional e pode falhar se as chaves forem diferentes
             result['valid'] = (
                 result['hash_match'] and 
-                (result['digital_signature_valid'] or result['certificate_signature_valid'])
+                result['digital_signature_valid']
             )
             
             return result

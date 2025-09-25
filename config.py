@@ -67,6 +67,42 @@ class ProductionConfig(Config):
     DEBUG = False
     SESSION_COOKIE_SECURE = True
     
+    # Otimizações de performance
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_size': 20,
+        'pool_recycle': 3600,
+        'pool_pre_ping': True,
+        'max_overflow': 30
+    }
+    
+    # Configurações de cache
+    CACHE_TYPE = 'simple'
+    CACHE_DEFAULT_TIMEOUT = 300
+    
+    # Configurações de compressão
+    COMPRESS_MIMETYPES = [
+        'text/html',
+        'text/css',
+        'text/xml',
+        'application/json',
+        'application/javascript'
+    ]
+    COMPRESS_LEVEL = 6
+    COMPRESS_MIN_SIZE = 500
+    
+    # Configurações de sessão otimizadas
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    PERMANENT_SESSION_LIFETIME = timedelta(hours=8)  # Reduzido para melhor performance
+    
+    # Configurações de upload otimizadas
+    MAX_CONTENT_LENGTH = 25 * 1024 * 1024  # 25MB para produção
+    UPLOAD_FOLDER = 'temp_files'
+    
+    # Configurações de limpeza mais agressivas
+    CLEANUP_INTERVAL = 1800  # 30 minutos
+    FILE_RETENTION = 7200  # 2 horas
+    
     @classmethod
     def init_app(cls, app):
         Config.init_app(app)

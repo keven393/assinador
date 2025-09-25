@@ -1,5 +1,7 @@
-from flask import Flask, render_template, request, jsonify, send_file, session, flash, redirect, url_for
+from flask import Flask, render_template, request, jsonify, send_file, session, flash, redirect, url_for, g
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from flask_caching import Cache
+from flask_compress import Compress
 import PyPDF2
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter, A4
@@ -20,6 +22,7 @@ import numpy as np
 import uuid
 import shutil
 import json
+from functools import wraps
 from crypto_utils import signature_manager
 from certificate_manager import certificate_manager
 from pdf_validator import pdf_validator
@@ -31,6 +34,12 @@ from config import config
 import os
 import re
 from datetime import date
+from mobile_optimizations import (
+    is_mobile_device, is_tablet, optimize_for_device, 
+    get_optimized_query_limits, should_use_compression,
+    get_cache_timeout, optimize_database_queries,
+    get_mobile_headers, log_performance_metrics
+)
 
 def detect_device_info(user_agent, request_obj):
     """Detecta informações completas do dispositivo e conexão"""
@@ -153,6 +162,18 @@ def create_app(config_name=None):
     
     # Inicializa extensões
     db.init_app(app)
+    
+    # Inicializa cache
+    cache = Cache()
+    cache.init_app(app)
+    
+    # Inicializa compressão
+    compress = Compress()
+    compress.init_app(app)
+    
+    # Disponibiliza cache globalmente
+    app.cache = cache
+    
     login_manager = LoginManager()
     login_manager.init_app(app)
     login_manager.login_view = 'login'
@@ -175,6 +196,55 @@ def create_app(config_name=None):
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
+    
+    # Adiciona middleware de performance
+    @app.before_request
+    def before_request():
+        g.start_time = time.time()
+        
+        # Aplica otimizações para dispositivos móveis
+        optimize_for_device()
+        
+        # Configura limites baseados no dispositivo
+        g.query_limit = get_optimized_query_limits()
+        g.cache_timeout = get_cache_timeout()
+    
+    @app.after_request
+    def after_request(response):
+        # Headers específicos para mobile
+        mobile_headers = get_mobile_headers()
+        for header, value in mobile_headers.items():
+            response.headers[header] = value
+        
+        # Adiciona headers de cache para arquivos estáticos
+        if request.endpoint and request.endpoint.startswith('static'):
+            response.headers['Cache-Control'] = 'public, max-age=31536000'  # 1 ano
+        elif request.endpoint in ['index', 'admin_dashboard']:
+            cache_timeout = get_cache_timeout()
+            response.headers['Cache-Control'] = f'private, max-age={cache_timeout}'
+        
+        # Adiciona headers de compressão
+        if should_use_compression():
+            response.headers['Vary'] = 'Accept-Encoding'
+        
+        # Log de performance
+        log_performance_metrics()
+        
+        # Log de performance (apenas em desenvolvimento)
+        if app.debug:
+            duration = time.time() - g.start_time
+            if duration > 1.0:  # Log apenas requests lentos
+                app.logger.warning(f'Slow request: {request.endpoint} took {duration:.2f}s')
+        
+        return response
+    
+    # Função para invalidar cache
+    def invalidate_user_cache(user_id=None):
+        """Invalida cache relacionado ao usuário"""
+        if user_id:
+            app.cache.delete(f"user_signatures_{user_id}")
+        app.cache.delete("admin_dashboard_stats")
+        app.cache.delete("admin_users_list")
     
     # Register routes
     register_routes(app)
@@ -233,13 +303,22 @@ def register_routes(app):
     @login_required
     def index():
         """Página inicial com lista de assinaturas pendentes"""
-        # Busca assinaturas pendentes do usuário logado
-        pending_signatures = Signature.query.filter_by(
+        # Cache key baseado no usuário
+        cache_key = f"user_signatures_{current_user.id}"
+        
+        # Tenta buscar do cache primeiro
+        cached_data = app.cache.get(cache_key)
+        if cached_data:
+            return render_template('index.html', **cached_data)
+        
+        # Busca assinaturas pendentes do usuário logado (otimizada)
+        query_limit = getattr(g, 'query_limit', 50)
+        pending_signatures = db.session.query(Signature).filter_by(
             user_id=current_user.id,
             status='pending'
-        ).order_by(Signature.timestamp.desc()).all()
+        ).order_by(Signature.timestamp.desc()).limit(query_limit).all()
         
-        # Agrupa por cliente
+        # Agrupa por cliente (otimizado)
         clients = {}
         for sig in pending_signatures:
             client_key = f"{sig.client_name}_{sig.client_cpf}"
@@ -253,7 +332,16 @@ def register_routes(app):
                 }
             clients[client_key]['signatures'].append(sig)
         
-        return render_template('index.html', clients=clients, pending_count=len(pending_signatures))
+        template_data = {
+            'clients': clients,
+            'pending_count': len(pending_signatures)
+        }
+        
+        # Cache com timeout otimizado para o dispositivo
+        cache_timeout = getattr(g, 'cache_timeout', 300)
+        app.cache.set(cache_key, template_data, timeout=cache_timeout)
+        
+        return render_template('index.html', **template_data)
 
     @app.route('/login', methods=['GET', 'POST'])
     def login():
@@ -336,9 +424,21 @@ def register_routes(app):
     @app.route('/admin')
     @admin_required
     def admin_dashboard():
-        user_stats = get_user_stats()
-        signature_stats = get_signature_stats()
-        return render_template('admin/dashboard.html', user_stats=user_stats, signature_stats=signature_stats, store_pdfs=get_store_pdfs_flag())
+        # Cache das estatísticas por 10 minutos
+        cache_key = "admin_dashboard_stats"
+        cached_stats = app.cache.get(cache_key)
+        
+        if cached_stats:
+            user_stats, signature_stats = cached_stats
+        else:
+            user_stats = get_user_stats()
+            signature_stats = get_signature_stats()
+            app.cache.set(cache_key, (user_stats, signature_stats), timeout=600)
+        
+        return render_template('admin/dashboard.html', 
+                             user_stats=user_stats, 
+                             signature_stats=signature_stats, 
+                             store_pdfs=get_store_pdfs_flag())
 
     @app.route('/admin/users')
     @admin_required
@@ -409,10 +509,18 @@ def register_routes(app):
     def admin_reports():
         form = ReportFilterForm()
         
-        # Popula as opções de usuário
-        form.user_id.choices = [(0, 'Todos os usuários')] + [(u.id, u.username) for u in User.query.all()]
+        # Cache das opções de usuário por 1 hora
+        cache_key_users = "admin_users_list"
+        cached_users = app.cache.get(cache_key_users)
         
-        # Filtros padrão
+        if cached_users:
+            form.user_id.choices = cached_users
+        else:
+            users_list = [(0, 'Todos os usuários')] + [(u.id, u.username) for u in User.query.all()]
+            form.user_id.choices = users_list
+            app.cache.set(cache_key_users, users_list, timeout=3600)
+        
+        # Filtros padrão com paginação
         signatures = Signature.query.order_by(Signature.timestamp.desc()).limit(100)
         
         if form.validate_on_submit():
@@ -1199,7 +1307,11 @@ def register_routes(app):
             flash('Confirmação necessária. Por favor, confirme os dados primeiro.', 'error')
             return redirect(url_for('client_confirm_document', signature_id=signature_id))
         
-        signature = Signature.query.get_or_404(signature_id)
+        # Query otimizada - busca apenas campos necessários
+        signature = db.session.query(Signature).filter_by(id=signature_id).first()
+        if not signature:
+            flash('Documento não encontrado', 'error')
+            return redirect(url_for('client_select_document'))
         
         if request.method == 'POST':
             signature_image = request.json.get('signature_image')
@@ -1209,28 +1321,6 @@ def register_routes(app):
             try:
                 # Coleta informações do dispositivo
                 device_info = detect_device_info(request.headers.get('User-Agent', ''), request)
-                
-                # Processa a assinatura
-                # Combina os dados para criar uma assinatura única
-                signature_data = f"{signature.file_id}_{signature.original_filename}_{signature_image[:100]}"  # Primeiros 100 chars da imagem
-                signature_info = signature_manager.sign_data(signature_data)
-                
-                # Atualiza o registro
-                signature.signature_hash = signature_info['hash']
-                signature.signature_algorithm = signature_info['algorithm']
-                signature.signature_valid = True
-                signature.status = 'completed'
-                signature.verification_status = 'verified'
-                signature.signature_method = 'drawing'
-                signature.ip_address = device_info['ip_address']
-                signature.user_agent = device_info['user_agent']
-                signature.browser_name = device_info['browser_name']
-                signature.browser_version = device_info['browser_version']
-                signature.operating_system = device_info['operating_system']
-                signature.device_type = device_info['device_type']
-                signature.screen_resolution = request.headers.get('X-Screen-Resolution', '')
-                signature.timezone = request.headers.get('X-Timezone', '')
-                signature.updated_at = datetime.now()
                 
                 # Gera o PDF assinado fisicamente para download
                 try:
@@ -1266,26 +1356,48 @@ def register_routes(app):
                             with open(final_path, 'rb') as f:
                                 final_content = f.read()
                             
-                            # Lê o PDF final (com carimbo) e calcula hash ANTES de embutir metadados
-                            with open(final_path, 'rb') as f:
-                                final_content = f.read()
-                            
-                            # Calcula hash do PDF FINAL (com carimbo, SEM metadados ainda)
-                            final_hash = hashlib.sha256(final_content).hexdigest()
-                            
-                            # Embute metadados usando o hash calculado
+                            # Embute metadados primeiro
                             signature_info = {
-                                'hash': final_hash,
+                                'hash': signature.signature_hash,  # Usa o hash já calculado
                                 'timestamp': datetime.now().isoformat(),
                                 'algorithm': signature.signature_algorithm
                             }
                             embed_signature_metadata(final_path, signature_info)
                             
+                            # Lê o PDF final (com carimbo + metadados) e calcula hash
+                            with open(final_path, 'rb') as f:
+                                final_content = f.read()
+                            
+                            # Calcula hash do PDF FINAL (com carimbo + metadados)
+                            from crypto_utils import calculate_content_hash
+                            final_hash = calculate_content_hash(final_content)
+                            
+                            # Assina o hash do PDF final
+                            signature_info = signature_manager.sign_data(final_hash)
+                            
+                            # Atualiza o registro
+                            signature.signature_hash = signature_info['hash']
+                            signature.signature_algorithm = signature_info['algorithm']
+                            signature.signature_data = signature_info['signature']  # Salva os dados da assinatura digital
+                            signature.signature_valid = True
+                            signature.status = 'completed'
+                            signature.verification_status = 'verified'
+                            signature.signature_method = 'drawing'
+                            signature.ip_address = device_info['ip_address']
+                            signature.user_agent = device_info['user_agent']
+                            signature.browser_name = device_info['browser_name']
+                            signature.browser_version = device_info['browser_version']
+                            signature.operating_system = device_info['operating_system']
+                            signature.device_type = device_info['device_type']
+                            signature.screen_resolution = request.headers.get('X-Screen-Resolution', '')
+                            signature.timezone = request.headers.get('X-Timezone', '')
+                            signature.updated_at = datetime.now()
+                            
                             # Atualiza no banco de dados
                             signature.signature_hash = final_hash
                             signature.file_size = len(final_content)
                             
-                            print(f"🔢 Hash calculado APÓS carimbo (antes de metadados): {final_hash[:16]}...")
+                            print(f"🔢 Hash calculado APÓS carimbo + metadados: {final_hash[:16]}...")
                     # Se o arquivo original não existir, seguimos sem interromper (download acusará ausência)
                 except Exception as gen_err:
                     # Não falha a assinatura por erro ao gerar arquivo; apenas registra e segue
@@ -1405,8 +1517,19 @@ def register_routes(app):
                 temp_path = tempfile.mktemp(suffix='.pdf')
                 file.save(temp_path)
                 
-                # Valida o PDF
-                validation_result = pdf_validator.validate_pdf(temp_path)
+                # Tenta encontrar um registro de assinatura correspondente
+                # Procura por arquivos na pasta pdf_assinados que correspondam ao hash
+                with open(temp_path, 'rb') as f:
+                    pdf_content = f.read()
+                
+                from crypto_utils import calculate_content_hash
+                current_hash = calculate_content_hash(pdf_content)
+                
+                # Busca registro de assinatura com hash correspondente
+                signature_record = Signature.query.filter_by(signature_hash=current_hash).first()
+                
+                # Valida o PDF (com ou sem registro)
+                validation_result = pdf_validator.validate_pdf(temp_path, signature_record)
                 
                 # Limpa arquivo temporário
                 os.remove(temp_path)
@@ -1670,8 +1793,8 @@ def add_signature_to_all_pages(pdf_file, signature_text, output_path, signature_
                 width, height = A4
                 
                 # Define a posição da assinatura no canto inferior direito
-                signature_x = width - 10*cm  # 10cm da borda direita para acomodar logo + info + assinatura
-                signature_y = 2*cm  # 2cm da borda inferior
+                signature_x = width - 8*cm  # 8cm da borda direita para acomodar logo + info + assinatura
+                signature_y = 1*cm  # 1cm da borda inferior (mais próximo da borda)
                 
                 # Calcula altura da assinatura para redimensionar o logo proporcionalmente
                 signature_height = 1.2*cm  # Reduzida para caber melhor
@@ -1690,7 +1813,7 @@ def add_signature_to_all_pages(pdf_file, signature_text, output_path, signature_
                 
                 # Adiciona informações pessoais no meio (alinhadas com a assinatura)
                 if personal_info:
-                    info_x = signature_x + logo_width + 0.5*cm  # Posição após o logo
+                    info_x = signature_x + logo_width + 0.3*cm  # Posição após o logo (mais próximo)
                     info_y = signature_y + 0.8*cm  # Alinhado com a assinatura (mesma altura)
                     c.setFont("Helvetica-Bold", 8)
                     c.setFillColor(colors.darkblue)
@@ -1718,7 +1841,7 @@ def add_signature_to_all_pages(pdf_file, signature_text, output_path, signature_
                         signature_img.drawWidth = 2.5*cm  # Largura fixa para a assinatura
                         
                         # Posiciona a assinatura após as informações pessoais
-                        signature_img_x = signature_x + logo_width + 3*cm  # Posição após logo + info
+                        signature_img_x = signature_x + logo_width + 2.5*cm  # Posição após logo + info (mais próximo da borda)
                         signature_img_y = signature_y  # Mesma altura do logo
                         signature_img.drawOn(c, signature_img_x, signature_img_y)
                         
@@ -1785,4 +1908,4 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
     
-    app.run(debug=True, host='0.0.0.0', port=5000) 
+    app.run(debug=True, host='0.0.0.0', port=5001) 

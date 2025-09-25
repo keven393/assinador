@@ -1,8 +1,160 @@
-# Assinador de PDFs com Sistema de Usuários
+# 🚀 Assinador de PDFs - Sistema de Produção
 
-Sistema completo de assinatura digital de PDFs com controle de usuários, sessões e permissões administrativas.
+Sistema completo de assinatura digital de documentos PDF com interface web responsiva, otimizado para tablets e dispositivos móveis.
 
-## 🚀 Funcionalidades
+## ✨ Funcionalidades
+
+- 📄 **Upload e Assinatura** de arquivos PDF
+- ✍️ **Assinatura Digital** com desenho em canvas
+- 🔍 **Validação** de assinaturas digitais
+- 👥 **Interface Administrativa** completa
+- 📊 **Relatórios e Estatísticas** detalhadas
+- 📱 **Otimizado para Mobile/Tablet**
+- 🚀 **Performance** otimizada para produção
+
+## 🛠️ Instalação Rápida
+
+### **Para Produção (Recomendado)**
+```cmd
+# 1. Execute como Administrador
+install_service.bat
+
+# 2. Verifique o sistema
+check_system.bat
+
+# 3. Acesse: http://localhost:5001
+```
+
+### **Para Desenvolvimento**
+```cmd
+# 1. Instalar dependências
+uv pip install -r requirements.txt
+
+# 2. Executar aplicação
+uv run python app.py
+```
+
+## 📁 Estrutura do Projeto
+
+```
+📦 AssinadorPDF/
+├── 🐍 app.py                    # Aplicação principal
+├── 🐍 asgi.py                   # Configuração ASGI
+├── 🐍 config.py                 # Configurações
+├── 🐍 models.py                 # Modelos do banco
+├── 🐍 forms.py                  # Formulários
+├── 🐍 auth.py                   # Autenticação
+├── 🐍 crypto_utils.py           # Criptografia
+├── 🐍 certificate_manager.py    # Certificados
+├── 🐍 pdf_validator.py          # Validação PDF
+├── 🐍 password_utils.py         # Utilitários de senha
+├── 🐍 mobile_optimizations.py  # Otimizações mobile
+├── 📄 requirements.txt          # Dependências
+├── 🎯 install_service.bat      # Instalador do serviço
+├── 🎯 uninstall_service.bat     # Removedor do serviço
+├── 🎯 check_system.bat          # Verificação do sistema
+├── 📁 templates/               # Templates HTML
+├── 📁 static/                  # Arquivos estáticos
+└── 📖 DEPLOY_GUIDE.md          # Guia completo de deploy
+```
+
+## 🚀 Scripts Disponíveis
+
+| Script | Descrição |
+|--------|-----------|
+| `install_service.bat` | Instala o serviço Windows |
+| `uninstall_service.bat` | Remove o serviço Windows |
+| `check_system.bat` | Verifica status do sistema |
+
+## 🌐 Acesso
+
+- **Principal**: http://localhost:5001
+- **Login**: http://localhost:5001/login
+- **Admin**: http://localhost:5001/admin
+
+## 🔧 Comandos de Gerenciamento
+
+```cmd
+# Status do serviço
+sc query AssinadorPDF
+
+# Parar serviço
+sc stop AssinadorPDF
+
+# Iniciar serviço
+sc start AssinadorPDF
+
+# Remover serviço
+sc delete AssinadorPDF
+```
+
+## 📊 Monitoramento
+
+- **Logs**: `logs/service.log` e `logs/error.log`
+- **Performance**: Otimizada para tablets/mobile
+- **Cache**: Inteligente baseado no dispositivo
+- **Compressão**: Automática para mobile
+
+## 🔒 Segurança
+
+- ✅ Certificados digitais auto-assinados
+- ✅ Criptografia RSA-SHA256
+- ✅ Validação de integridade
+- ✅ Firewall configurado automaticamente
+
+## 📱 Otimizações Mobile
+
+- **Detecção inteligente** de dispositivos
+- **Cache adaptativo** (3-10 minutos)
+- **Compressão automática** para mobile
+- **Queries otimizadas** por dispositivo
+- **Headers de performance** específicos
+
+## 🛠️ Troubleshooting
+
+### **Verificar Sistema**
+```cmd
+check_system.bat
+```
+
+### **Logs de Erro**
+```cmd
+type logs\error.log
+```
+
+### **Reinstalar Serviço**
+```cmd
+uninstall_service.bat
+install_service.bat
+```
+
+## 📚 Documentação
+
+- **Guia Completo**: `DEPLOY_GUIDE.md`
+- **Configurações**: `config.py`
+- **Otimizações**: `mobile_optimizations.py`
+
+## 🎯 Requisitos
+
+- **Windows Server 2016+** ou **Windows 10/11**
+- **Python 3.11+**
+- **UV** (gerenciador de pacotes)
+- **Acesso de Administrador**
+
+## 🎉 **Sistema Pronto para Produção!**
+
+Após a instalação, o sistema estará:
+- ✅ Rodando como serviço Windows
+- ✅ Iniciando automaticamente
+- ✅ Otimizado para tablets/mobile
+- ✅ Monitorado e com logs
+- ✅ Seguro e configurado
+
+**URL de Acesso**: http://localhost:5001
+
+---
+
+## 📋 Funcionalidades Detalhadas
 
 ### Sistema de Autenticação
 - **Login/Logout** com sessões seguras
@@ -25,75 +177,16 @@ Sistema completo de assinatura digital de PDFs com controle de usuários, sessõ
 - **Exportação de dados** em formato JSON
 - **Monitoramento de atividade** do sistema
 
-## 🛠️ Tecnologias Utilizadas
+## 🏗️ Tecnologias Utilizadas
 
-- **Backend**: Flask (Python)
+- **Backend**: Flask (Python) + ASGI (Uvicorn)
 - **Banco de Dados**: SQLite com SQLAlchemy
 - **Autenticação**: Flask-Login com bcrypt
 - **Frontend**: Bootstrap 5 + Font Awesome
 - **Criptografia**: PyCryptodome + Cryptography
 - **PDF**: PyPDF2 + ReportLab
-
-## 📋 Pré-requisitos
-
-- Python 3.9 ou superior
-- pip ou uv (gerenciador de pacotes)
-
-## 🔧 Instalação
-
-### 1. Clone o repositório
-```bash
-git clone <url-do-repositorio>
-cd Assinaturas
-```
-
-### 2. Instale as dependências
-```bash
-# Usando uv (recomendado)
-uv sync
-
-# Ou usando pip
-pip install -r requirements.txt
-```
-
-### 3. Inicialize o banco de dados
-```bash
-python init_db.py
-```
-
-### 4. Execute a aplicação
-```bash
-python app.py
-```
-
-A aplicação estará disponível em `http://localhost:5000`
-## ⚙️ Configuração via .env
-
-Crie um arquivo `.env` (baseado em `env_example.txt`) para configurar a aplicação sem editar código.
-
-Principais variáveis:
-
-- `FLASK_CONFIG`: development | production | testing
-- `FLASK_DEBUG`: True | False
-- `SECRET_KEY`: chave secreta da aplicação
-- `DATABASE_URL`: URL do banco (ex.: sqlite:///assinador.db)
-- `LOG_LEVEL`: nível de log (INFO, DEBUG, WARNING, ...)
-- `SESSION_COOKIE_SECURE`: True (produção HTTPS) | False
-- `MAX_CONTENT_LENGTH`: limite de upload em bytes (padrão 50MB)
-
-### Limpeza automática de arquivos
-
-- `CLEANUP_TIME`: horário diário de limpeza no timezone definido (formato HH:MM). Ex.: `02:00`
-- `CLEANUP_TZ`: timezone da limpeza. Ex.: `America/Sao_Paulo`
-- `CLEANUP_INTERVAL` e `FILE_RETENTION`: intervalos em segundos (opcionais, legado)
-
-O que a limpeza faz:
-- Remove todos os arquivos da pasta `temp_files/`
-- Remove todos os PDFs `*_TEMP.pdf` na pasta `pdf_assinados/`
-- Mantém os PDFs `*_KEEP.pdf`
-
-Observação: a limpeza roda em um thread daemon em background e é iniciada automaticamente no boot da aplicação.
-
+- **Cache**: Flask-Caching
+- **Compressão**: Flask-Compress
 
 ## 👤 Usuários Padrão
 
@@ -137,39 +230,10 @@ Observação: a limpeza roda em um thread daemon em background e é iniciada aut
 - Use a funcionalidade de verificação para validar documentos
 - O sistema verifica integridade e autenticidade
 
-## 🏗️ Estrutura do Projeto
-
-```
-Assinaturas/
-├── app.py                 # Aplicação principal Flask
-├── models.py              # Modelos do banco de dados
-├── forms.py               # Formulários WTForms
-├── auth.py                # Sistema de autenticação
-├── init_db.py             # Inicialização do banco
-├── crypto_utils.py        # Utilitários de criptografia
-├── certificate_manager.py  # Gerenciamento de certificados
-├── templates/             # Templates HTML
-│   ├── index.html         # Página principal
-│   ├── login.html         # Página de login
-│   ├── register.html      # Página de registro
-│   ├── profile.html       # Perfil do usuário
-│   ├── change_password.html # Alteração de senha
-│   └── admin/             # Templates administrativos
-│       ├── dashboard.html # Dashboard admin
-│       ├── users.html     # Gerenciar usuários
-│       ├── new_user.html  # Criar usuário
-│       ├── edit_user.html # Editar usuário
-│       └── reports.html   # Relatórios
-├── static/                # Arquivos estáticos
-├── signatures/            # Armazenamento de assinaturas
-├── temp_files/            # Arquivos temporários
-└── keys/                  # Chaves criptográficas
-```
-
 ## 🔒 Segurança
 
 - **Senhas**: Hash bcrypt com salt único
-- **Sessões**: Expiração automática em 24 horas
+- **Sessões**: Expiração automática em 8 horas (produção)
 - **CSRF**: Proteção contra ataques Cross-Site Request Forgery
 - **Validação**: Validação de entrada em todos os formulários
 - **Permissões**: Controle granular de acesso por função
@@ -190,39 +254,30 @@ Assinaturas/
 ### Erro de Banco de Dados
 ```bash
 # Recrie o banco de dados
-rm assinador.db
+rm instance/assinador.db
 python init_db.py
 ```
 
 ### Erro de Dependências
 ```bash
 # Atualize as dependências
-uv sync --upgrade
+uv pip install -r requirements.txt
 ```
 
 ### Problemas de Permissão
 - Verifique se o usuário tem acesso de escrita nas pastas
 - Certifique-se de que as chaves criptográficas estão acessíveis
 
-## 🤝 Contribuição
-
-1. Fork o projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
-5. Abra um Pull Request
-
-## 📄 Licença
-
-Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
-
-## 📞 Suporte
-
-Para suporte ou dúvidas:
-- Abra uma issue no repositório
-- Entre em contato com a equipe de desenvolvimento
-
 ## 🔄 Atualizações
+
+### v3.0.0 (Produção)
+- ✅ **Serviço Windows** com auto-start
+- ✅ **Otimizações mobile/tablet** completas
+- ✅ **Cache inteligente** baseado em dispositivo
+- ✅ **Compressão automática** para mobile
+- ✅ **Performance** otimizada para produção
+- ✅ **Monitoramento** com logs detalhados
+- ✅ **Firewall** configurado automaticamente
 
 ### v2.0.0
 - ✅ Sistema de usuários e autenticação
@@ -230,8 +285,7 @@ Para suporte ou dúvidas:
 - ✅ Painel administrativo
 - ✅ Relatórios e estatísticas
 - ✅ Interface moderna e responsiva
- - ✅ Rotina diária de limpeza com agendamento configurável via `.env` (CLEANUP_TIME/CLEANUP_TZ)
- - ✅ Armazenamento de PDFs assinados em `pdf_assinados/` com retenção `_KEEP`/_`TEMP`
+- ✅ Rotina diária de limpeza com agendamento configurável
 
 ### v1.0.0
 - ✅ Assinatura digital básica

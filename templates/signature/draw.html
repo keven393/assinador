@@ -36,10 +36,93 @@
             background: white;
             cursor: crosshair;
             touch-action: none;
+            max-width: 100%;
+            height: auto;
         }
         .signature-canvas.signing {
             border-color: #007bff;
             box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .signature-canvas {
+                width: 100% !important;
+                max-width: 100%;
+                height: 200px;
+            }
+            .toolbar {
+                padding: 0.5rem;
+            }
+            .color-picker {
+                width: 35px;
+                height: 35px;
+                margin: 0 3px;
+            }
+            .brush-size {
+                width: 25px !important;
+                height: 25px !important;
+                margin: 0 3px;
+            }
+            .btn {
+                font-size: 0.9rem;
+                padding: 0.5rem 0.75rem;
+            }
+        }
+        
+        /* Fullscreen mode */
+        .fullscreen-mode {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: white;
+            z-index: 9999;
+            display: none;
+        }
+        
+        .fullscreen-mode.active {
+            display: block;
+        }
+        
+        .fullscreen-canvas {
+            width: 100%;
+            height: calc(100vh - 120px);
+            border: none;
+            border-radius: 0;
+        }
+        
+        .fullscreen-controls {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 1rem;
+            border-top: 1px solid #dee2e6;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .expand-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+        }
+        
+        .expand-btn:hover {
+            background: rgba(0,0,0,0.9);
         }
         .canvas-container {
             position: relative;
@@ -184,8 +267,11 @@
                                 </small>
                             </div>
                             
-                            <div class="d-flex justify-content-center">
+                            <div class="d-flex justify-content-center position-relative">
                                 <canvas id="signatureCanvas" class="signature-canvas" width="600" height="200"></canvas>
+                                <button class="expand-btn" id="expandBtn" title="Expandir tela">
+                                    <i class="fas fa-expand"></i>
+                                </button>
                             </div>
                             
                             <div class="text-center mt-3">
@@ -203,6 +289,47 @@
                             </h6>
                             <div class="text-center">
                                 <img id="previewImage" alt="Preview da assinatura" style="max-width: 300px; border: 1px solid #dee2e6; border-radius: 4px;">
+                            </div>
+                        </div>
+                        
+                        <!-- Fullscreen Mode -->
+                        <div class="fullscreen-mode" id="fullscreenMode">
+                            <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-expand-arrows-alt me-2"></i>
+                                    Modo Tela Cheia
+                                </h5>
+                                <button class="btn btn-outline-secondary" id="exitFullscreenBtn">
+                                    <i class="fas fa-times me-2"></i>Sair
+                                </button>
+                            </div>
+                            
+                            <div class="p-3">
+                                <canvas id="fullscreenCanvas" class="fullscreen-canvas"></canvas>
+                            </div>
+                            
+                            <div class="fullscreen-controls">
+                                <div class="row align-items-center">
+                                    <div class="col-6">
+                                        <div class="d-flex align-items-center">
+                                            <span class="me-3">Cor:</span>
+                                            <div class="color-picker" data-color="#000" style="background: #000;"></div>
+                                            <div class="color-picker" data-color="#007bff" style="background: #007bff;"></div>
+                                            <div class="color-picker" data-color="#dc3545" style="background: #dc3545;"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 text-end">
+                                        <button class="btn btn-outline-danger me-2" id="fullscreenClearBtn">
+                                            <i class="fas fa-eraser me-1"></i>Limpar
+                                        </button>
+                                        <button class="btn btn-outline-info me-2" id="fullscreenUndoBtn">
+                                            <i class="fas fa-undo me-1"></i>Desfazer
+                                        </button>
+                                        <button class="btn btn-success" id="fullscreenDoneBtn">
+                                            <i class="fas fa-check me-1"></i>Concluir
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -263,16 +390,73 @@
         const signBtn = document.getElementById('signBtn');
         const previewDiv = document.getElementById('signaturePreview');
         const previewImage = document.getElementById('previewImage');
+        
+        // Fullscreen elements
+        const expandBtn = document.getElementById('expandBtn');
+        const fullscreenMode = document.getElementById('fullscreenMode');
+        const fullscreenCanvas = document.getElementById('fullscreenCanvas');
+        const fullscreenCtx = fullscreenCanvas.getContext('2d');
+        const exitFullscreenBtn = document.getElementById('exitFullscreenBtn');
+        const fullscreenClearBtn = document.getElementById('fullscreenClearBtn');
+        const fullscreenUndoBtn = document.getElementById('fullscreenUndoBtn');
+        const fullscreenDoneBtn = document.getElementById('fullscreenDoneBtn');
 
         let isDrawing = false;
         let currentPath = [];
         let allPaths = [];
         let currentColor = '#000';
         let currentSize = 3;
+        
+        // Fullscreen variables
+        let fullscreenPaths = [];
+        let fullscreenCurrentPath = [];
+        let isFullscreenDrawing = false;
 
         // Canvas setup
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
+        fullscreenCtx.lineCap = 'round';
+        fullscreenCtx.lineJoin = 'round';
+        
+        // Mobile detection
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        // Responsive canvas sizing
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            const containerWidth = container.clientWidth - 40; // padding
+            
+            if (isMobile) {
+                canvas.width = Math.min(containerWidth, 400);
+                canvas.height = 200;
+            } else {
+                canvas.width = Math.min(containerWidth, 600);
+                canvas.height = 200;
+            }
+            
+            // Redraw existing paths
+            redrawCanvas();
+        }
+        
+        // Fullscreen canvas setup
+        function setupFullscreenCanvas() {
+            fullscreenCanvas.width = window.innerWidth;
+            fullscreenCanvas.height = window.innerHeight - 120; // space for controls
+        }
+        
+        // Initialize canvas on load
+        window.addEventListener('load', () => {
+            resizeCanvas();
+            setupFullscreenCanvas();
+        });
+        
+        // Resize on window resize
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            if (fullscreenMode.classList.contains('active')) {
+                setupFullscreenCanvas();
+            }
+        });
 
         // Color picker
         document.querySelectorAll('.color-picker').forEach(picker => {
@@ -281,6 +465,120 @@
                 this.classList.add('active');
                 currentColor = this.dataset.color;
             });
+        });
+        
+        // Fullscreen mode functions
+        expandBtn.addEventListener('click', () => {
+            fullscreenMode.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            setupFullscreenCanvas();
+            copyCanvasToFullscreen();
+        });
+        
+        exitFullscreenBtn.addEventListener('click', () => {
+            fullscreenMode.classList.remove('active');
+            document.body.style.overflow = '';
+            copyFullscreenToCanvas();
+        });
+        
+        fullscreenDoneBtn.addEventListener('click', () => {
+            fullscreenMode.classList.remove('active');
+            document.body.style.overflow = '';
+            copyFullscreenToCanvas();
+        });
+        
+        // Copy canvas content to fullscreen
+        function copyCanvasToFullscreen() {
+            fullscreenCtx.clearRect(0, 0, fullscreenCanvas.width, fullscreenCanvas.height);
+            fullscreenCtx.drawImage(canvas, 0, 0, fullscreenCanvas.width, fullscreenCanvas.height);
+            fullscreenPaths = [...allPaths];
+        }
+        
+        // Copy fullscreen content back to canvas
+        function copyFullscreenToCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(fullscreenCanvas, 0, 0, canvas.width, canvas.height);
+            allPaths = [...fullscreenPaths];
+            updateButtons();
+        }
+        
+        // Fullscreen drawing events
+        fullscreenCanvas.addEventListener('mousedown', startFullscreenDrawing);
+        fullscreenCanvas.addEventListener('mousemove', drawFullscreen);
+        fullscreenCanvas.addEventListener('mouseup', stopFullscreenDrawing);
+        fullscreenCanvas.addEventListener('mouseout', stopFullscreenDrawing);
+        
+        // Touch events for fullscreen
+        fullscreenCanvas.addEventListener('touchstart', handleFullscreenTouch, { passive: false });
+        fullscreenCanvas.addEventListener('touchmove', handleFullscreenTouch, { passive: false });
+        fullscreenCanvas.addEventListener('touchend', stopFullscreenDrawing);
+        
+        function startFullscreenDrawing(e) {
+            isFullscreenDrawing = true;
+            const rect = fullscreenCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            fullscreenCurrentPath = [{ x, y, color: currentColor, size: currentSize }];
+            fullscreenPaths.push(fullscreenCurrentPath);
+        }
+        
+        function drawFullscreen(e) {
+            if (!isFullscreenDrawing) return;
+            
+            const rect = fullscreenCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            fullscreenCurrentPath.push({ x, y, color: currentColor, size: currentSize });
+            redrawFullscreenCanvas();
+        }
+        
+        function stopFullscreenDrawing() {
+            isFullscreenDrawing = false;
+            fullscreenCurrentPath = [];
+        }
+        
+        function handleFullscreenTouch(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent(e.type === 'touchstart' ? 'mousedown' : 
+                                            e.type === 'touchmove' ? 'mousemove' : 'mouseup', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            fullscreenCanvas.dispatchEvent(mouseEvent);
+        }
+        
+        function redrawFullscreenCanvas() {
+            fullscreenCtx.clearRect(0, 0, fullscreenCanvas.width, fullscreenCanvas.height);
+            
+            fullscreenPaths.forEach(path => {
+                if (path.length > 1) {
+                    fullscreenCtx.strokeStyle = path[0].color;
+                    fullscreenCtx.lineWidth = path[0].size;
+                    fullscreenCtx.beginPath();
+                    fullscreenCtx.moveTo(path[0].x, path[0].y);
+                    
+                    for (let i = 1; i < path.length; i++) {
+                        fullscreenCtx.lineTo(path[i].x, path[i].y);
+                    }
+                    fullscreenCtx.stroke();
+                }
+            });
+        }
+        
+        // Fullscreen controls
+        fullscreenClearBtn.addEventListener('click', () => {
+            fullscreenCtx.clearRect(0, 0, fullscreenCanvas.width, fullscreenCanvas.height);
+            fullscreenPaths = [];
+        });
+        
+        fullscreenUndoBtn.addEventListener('click', () => {
+            if (fullscreenPaths.length > 0) {
+                fullscreenPaths.pop();
+                redrawFullscreenCanvas();
+            }
         });
 
         // Brush size picker
@@ -340,10 +638,19 @@
         canvas.addEventListener('mouseup', stopDrawing);
         canvas.addEventListener('mouseout', stopDrawing);
 
-        // Touch events
+        // Touch events with improved mobile support
         canvas.addEventListener('touchstart', startDrawing);
         canvas.addEventListener('touchmove', draw);
         canvas.addEventListener('touchend', stopDrawing);
+        
+        // Prevent scrolling on mobile when drawing
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+        }, { passive: false });
+        
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+        }, { passive: false });
 
         // Clear canvas
         clearBtn.addEventListener('click', function() {

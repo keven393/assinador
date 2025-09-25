@@ -2,6 +2,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, BooleanField, SelectField, TextAreaField, DateField
 from wtforms.validators import DataRequired, Email, Length, EqualTo, ValidationError, Optional
 from models import User
+from password_utils import password_validator
 
 class LoginForm(FlaskForm):
     username = StringField('Usuário', validators=[DataRequired(), Length(min=3, max=80)])
@@ -38,15 +39,21 @@ class UserEditForm(FlaskForm):
 
 class ChangePasswordForm(FlaskForm):
     current_password = PasswordField('Senha Atual', validators=[DataRequired()])
-    new_password = PasswordField('Nova Senha', validators=[DataRequired(), Length(min=6)])
+    new_password = PasswordField('Nova Senha', validators=[DataRequired(), Length(min=8)])
     confirm_new_password = PasswordField('Confirmar Nova Senha', validators=[DataRequired(), EqualTo('new_password')])
     submit = SubmitField('Alterar Senha')
+    
+    def validate_new_password(self, field):
+        """Valida os requisitos da nova senha"""
+        is_valid, errors = password_validator.validate_password(field.data)
+        if not is_valid:
+            raise ValidationError('; '.join(errors))
 
 class AdminUserForm(FlaskForm):
     username = StringField('Usuário', validators=[DataRequired(), Length(min=3, max=80)])
     email = StringField('Email', validators=[DataRequired(), Email()])
     full_name = StringField('Nome Completo', validators=[DataRequired(), Length(min=2, max=120)])
-    password = PasswordField('Senha', validators=[DataRequired(), Length(min=6)])
+    password = PasswordField('Senha', validators=[DataRequired(), Length(min=8)])
     must_change_password = BooleanField('Exigir alteração de senha no primeiro login')
     role = SelectField('Função', choices=[('user', 'Usuário'), ('admin', 'Administrador')])
     is_active = BooleanField('Usuário Ativo')
@@ -61,6 +68,12 @@ class AdminUserForm(FlaskForm):
         user = User.query.filter_by(email=email.data).first()
         if user:
             raise ValidationError('Este email já está registrado.')
+    
+    def validate_password(self, field):
+        """Valida os requisitos da senha"""
+        is_valid, errors = password_validator.validate_password(field.data)
+        if not is_valid:
+            raise ValidationError('; '.join(errors))
 
 class ReportFilterForm(FlaskForm):
     # Filtros de Data
