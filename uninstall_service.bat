@@ -19,8 +19,7 @@ if %errorlevel% neq 0 (
 
 rem ==== CONFIGURAÇÕES ====
 set "SERVICE_NAME=AssinadorPDF"
-set "NSSM_DIR=%~dp0nssm"
-set "NSSM_EXE=%NSSM_DIR%\nssm.exe"
+set "NSSM_EXE=nssm.exe"
 
 rem ==== VERIFICA SE SERVIÇO EXISTE ====
 sc query "%SERVICE_NAME%" >nul 2>&1
@@ -41,7 +40,9 @@ timeout /t 3 /nobreak >nul
 rem ==== REMOVE O SERVIÇO ====
 echo [INFO] Removendo serviço...
 
-if exist "%NSSM_EXE%" (
+rem Verifica se NSSM está disponível
+where "%NSSM_EXE%" >nul 2>&1
+if %errorlevel% equ 0 (
     "%NSSM_EXE%" remove "%SERVICE_NAME%" confirm >nul 2>&1
     echo [OK] Serviço removido via NSSM
 ) else (

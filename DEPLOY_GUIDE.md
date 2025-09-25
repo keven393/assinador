@@ -5,11 +5,10 @@
 ### Sistema Operacional
 - **Windows Server 2016+** ou **Windows 10/11**
 - **Acesso de Administrador** obrigatório
-- **Python 3.11+** instalado
 
 ### Dependências
-- **UV** (gerenciador de pacotes Python)
-- **NSSM** (será baixado automaticamente)
+- **UV** (gerenciador de pacotes Python - instala Python automaticamente)
+- **NSSM** (deve estar instalado e no PATH)
 - **Porta 5001** disponível
 
 ## 🛠️ Instalação Rápida
@@ -19,12 +18,20 @@
 # 1. Instalar UV (se não estiver instalado)
 # Baixe de: https://github.com/astral-sh/uv
 # Ou execute: pip install uv
+# O UV instala Python automaticamente!
 
-# 2. Verificar Python
-python --version
+# 2. Instalar NSSM (obrigatório)
+# Baixe de: https://nssm.cc/download
+# Extraia nssm.exe e adicione ao PATH
 
 # 3. Verificar UV
 uv --version
+
+# 4. Verificar NSSM
+nssm version
+
+# 5. Verificar Python via UV
+uv run python --version
 ```
 
 ### 2. **Deploy dos Arquivos**

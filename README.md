@@ -137,8 +137,8 @@ install_service.bat
 ## 🎯 Requisitos
 
 - **Windows Server 2016+** ou **Windows 10/11**
-- **Python 3.11+**
-- **UV** (gerenciador de pacotes)
+- **UV** (gerenciador de pacotes - instala Python automaticamente)
+- **NSSM** (instalado e no PATH)
 - **Acesso de Administrador**
 
 ## 🎉 **Sistema Pronto para Produção!**

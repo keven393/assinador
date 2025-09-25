@@ -15,14 +15,14 @@ set "APP_DIR=%~dp0"
 echo [INFO] Verificando sistema...
 echo.
 
-rem ==== 1. VERIFICA PYTHON ====
-echo [1/8] Verificando Python...
-python --version >nul 2>&1
+rem ==== 1. VERIFICA PYTHON VIA UV ====
+echo [1/8] Verificando Python via UV...
+uv run python --version >nul 2>&1
 if %errorlevel% equ 0 (
-    for /f "tokens=*" %%i in ('python --version') do echo ✅ Python: %%i
+    for /f "tokens=*" %%i in ('uv run python --version') do echo ✅ Python: %%i
 ) else (
-    echo ❌ Python não encontrado!
-    echo    Instale Python 3.11+ e adicione ao PATH
+    echo ❌ Python não encontrado via UV!
+    echo    UV deve gerenciar o Python automaticamente
     goto :error
 )
 
@@ -39,7 +39,8 @@ if %errorlevel% equ 0 (
 
 rem ==== 3. VERIFICA DEPENDÊNCIAS ====
 echo [3/8] Verificando dependências...
-python -c "import flask, flask_caching, flask_compress" 2>nul
+cd /d "%APP_DIR%"
+uv run python -c "import flask, flask_caching, flask_compress" 2>nul
 if %errorlevel% equ 0 (
     echo ✅ Dependências Python OK
 ) else (
