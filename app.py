@@ -285,6 +285,18 @@ def create_app(config_name=None):
             content_security_policy=csp,
             content_security_policy_nonce_in=['script-src', 'style-src']
         )
+
+    # Fallback: disponibiliza csp_nonce() mesmo quando Talisman não está ativo
+    @app.context_processor
+    def inject_csp_nonce():
+        def _csp_nonce():
+            try:
+                # Quando Talisman está ativo, ele injeta a função automaticamente
+                # e/ou popula um nonce por request; este fallback retorna vazio.
+                return ''
+            except Exception:
+                return ''
+        return dict(csp_nonce=_csp_nonce)
     
     # Inicializa extensões
     db.init_app(app)
@@ -2542,7 +2554,7 @@ def register_routes(app):
                             signature.file_size = len(final_content)
                             
                             if signature.signature_hash:
-                                print(f"🔢 Hash calculado APÓS carimbo + metadados: {signature.signature_hash[:16]}...")
+                                print(f"Hash calculado APÓS carimbo + metadados: {signature.signature_hash[:16]}...")
                     else:
                         return jsonify({'success': False, 'message': 'Arquivo original não encontrado. Refaça o upload.'})
                 except Exception as gen_err:
@@ -2804,9 +2816,9 @@ def cleanup_temp_files():
                 if os.path.getmtime(file_path) < (current_time - retention_seconds):
                     try:
                         os.remove(file_path)
-                        print(f"🗑️  Arquivo temporário removido: {filename}")
+                        print(f"Arquivo temporário removido: {filename}")
                     except Exception as e:
-                        print(f"❌ Falha ao remover {file_path}: {e}")
+                        print(f"Falha ao remover {file_path}: {e}")
     except Exception as e:
         print(f"Erro ao limpar arquivos temporários: {e}")
 
@@ -2818,9 +2830,9 @@ def cleanup_temp_files_all():
             if os.path.isfile(file_path):
                 try:
                     os.remove(file_path)
-                    print(f"🗑️  Arquivo temporário removido: {filename}")
+                    print(f"Arquivo temporário removido: {filename}")
                 except Exception as e:
-                    print(f"❌ Falha ao remover {file_path}: {e}")
+                    print(f"Falha ao remover {file_path}: {e}")
     except Exception as e:
         print(f"Erro ao limpar diretório temporário: {e}")
 
@@ -2833,9 +2845,9 @@ def cleanup_signed_pdfs_temp():
                 if os.path.isfile(file_path):
                     try:
                         os.remove(file_path)
-                        print(f"🗑️  PDF temporário removido: {filename}")
+                        print(f"PDF temporário removido: {filename}")
                     except Exception as e:
-                        print(f"❌ Falha ao remover PDF temporário {file_path}: {e}")
+                        print(f"Falha ao remover PDF temporário {file_path}: {e}")
     except Exception as e:
         print(f"Erro ao limpar PDFs temporários: {e}")
 
@@ -2862,9 +2874,9 @@ def cleanup_old_files():
                         try:
                             os.remove(file_path)
                             removed_count += 1
-                            print(f"🗑️  Arquivo antigo removido de temp_files: {filename}")
+                            print(f"Arquivo antigo removido de temp_files: {filename}")
                         except Exception as e:
-                            print(f"❌ Falha ao remover {file_path}: {e}")
+                            print(f"Falha ao remover {file_path}: {e}")
         
         # Limpa arquivos da pasta pdf_assinados
         if os.path.exists(PDF_SIGNED_DIR):
@@ -2876,17 +2888,17 @@ def cleanup_old_files():
                         try:
                             os.remove(file_path)
                             removed_count += 1
-                            print(f"🗑️  PDF assinado antigo removido: {filename}")
+                            print(f"PDF assinado antigo removido: {filename}")
                         except Exception as e:
-                            print(f"❌ Falha ao remover {file_path}: {e}")
+                            print(f"Falha ao remover {file_path}: {e}")
         
         if removed_count > 0:
-            print(f"✅ Limpeza concluída: {removed_count} arquivos removidos (mais de {retention_days} dias)")
+            print(f"Limpeza concluída: {removed_count} arquivos removidos (mais de {retention_days} dias)")
         else:
-            print(f"ℹ️  Nenhum arquivo antigo encontrado para remoção")
+            print(f"ℹNenhum arquivo antigo encontrado para remoção")
             
     except Exception as e:
-        print(f"❌ Erro durante limpeza de arquivos antigos: {e}")
+        print(f"Erro durante limpeza de arquivos antigos: {e}")
 
 def cleanup_old_files_by_database():
     """Remove arquivos baseado nos registros do banco de dados (mais preciso)"""
@@ -2917,17 +2929,17 @@ def cleanup_old_files_by_database():
                                     try:
                                         os.remove(file_path)
                                         removed_count += 1
-                                        print(f"🗑️  Arquivo removido por idade no BD: {filename}")
+                                        print(f"Arquivo removido por idade no BD: {filename}")
                                     except Exception as e:
-                                        print(f"❌ Falha ao remover {file_path}: {e}")
+                                        print(f"Falha ao remover {file_path}: {e}")
         
         if removed_count > 0:
-            print(f"✅ Limpeza por banco de dados concluída: {removed_count} arquivos removidos")
+            print(f"Limpeza por banco de dados concluída: {removed_count} arquivos removidos")
         else:
-            print(f"ℹ️  Nenhum arquivo antigo encontrado no banco de dados")
+            print(f"ℹNenhum arquivo antigo encontrado no banco de dados")
             
     except Exception as e:
-        print(f"❌ Erro durante limpeza por banco de dados: {e}")
+        print(f"Erro durante limpeza por banco de dados: {e}")
 
 def run_daily_cleanup(hour: int = 2, minute: int = 0, tz_name: str = 'America/Sao_Paulo'):
     """Loop em background que executa a limpeza diariamente no horário configurado.
@@ -2966,9 +2978,9 @@ def run_daily_cleanup(hour: int = 2, minute: int = 0, tz_name: str = 'America/Sa
             # Limpeza de arquivos antigos (7 dias) - baseada no banco de dados
             cleanup_old_files_by_database()
             
-            print(f"✅ Rotina diária de limpeza concluída - {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
+            print(f"Rotina diária de limpeza concluída - {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
         except Exception as e:
-            print(f"❌ Erro durante rotina diária de limpeza: {e}")
+            print(f"Erro durante rotina diária de limpeza: {e}")
 
 SCHEDULER_STARTED = False
 
