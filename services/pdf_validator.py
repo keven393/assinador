@@ -70,9 +70,31 @@ class PDFValidator:
         return current_hash == stored_hash
     
     def verify_digital_signature(self, pdf_content, signature_info):
-        """Verifica a assinatura digital do PDF"""
-        from utils.crypto_utils import verify_pdf_signature_unified
-        return verify_pdf_signature_unified(pdf_content, signature_info, self.public_key_path)
+        """Verifica a assinatura digital do PDF
+        Tenta primeiro com o certificado X.509 do sistema; se falhar, usa a chave pública legacy.
+        """
+        # Tentativa 1: verificar com o certificado X.509
+        try:
+            from services.certificate_manager import certificate_manager
+            ok, _msg = certificate_manager.verify_signature_with_certificate(pdf_content, {
+                'hash': signature_info.get('hash'),
+                'signature_data': signature_info.get('signature') or signature_info.get('signature_data')
+            })
+            if ok:
+                return True
+        except Exception:
+            pass
+        # Tentativa 2: fallback legacy com chave pública
+        try:
+            from utils.crypto_utils import verify_pdf_signature_unified
+            # Normaliza o formato para o verificador legacy
+            legacy_sig = {
+                'hash': signature_info.get('hash'),
+                'signature': signature_info.get('signature') or signature_info.get('signature_data')
+            }
+            return verify_pdf_signature_unified(pdf_content, legacy_sig, self.public_key_path)
+        except Exception:
+            return False
     
     def verify_certificate_signature(self, pdf_content, signature_info):
         """Verifica a assinatura usando a chave pública do sistema"""
@@ -160,10 +182,7 @@ class PDFValidator:
             # Determina se o PDF é válido
             # Para o sistema atual, consideramos válido se o hash confere e a assinatura digital é válida
             # A verificação de certificado é opcional e pode falhar se as chaves forem diferentes
-            result['valid'] = (
-                result['hash_match'] and 
-                result['digital_signature_valid']
-            )
+            result['valid'] = (result['hash_match'] and result['digital_signature_valid'])
             
             return result
             

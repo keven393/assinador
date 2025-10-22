@@ -2441,21 +2441,17 @@ def register_routes(app):
                             }
                             embed_signature_metadata(final_path, signature_info)
                             
-                            # Lê o PDF final (com carimbo + metadados) e calcula hash
+                            # Lê o PDF final (com carimbo + metadados)
                             with open(final_path, 'rb') as f:
                                 final_content = f.read()
+
+                            # Assina o PDF final usando o certificado X.509 do sistema
+                            signature_info = certificate_manager.sign_pdf_with_certificate(final_content)
                             
-                            # Calcula hash do PDF FINAL (com carimbo + metadados)
-                            from utils.crypto_utils import calculate_content_hash
-                            final_hash = calculate_content_hash(final_content)
-                            
-                            # Assina o hash do PDF final
-                            signature_info = signature_manager.sign_data(final_hash)
-                            
-                            # Atualiza o registro
-                            signature.signature_hash = signature_info['hash']
-                            signature.signature_algorithm = signature_info['algorithm']
-                            signature.signature_data = signature_info['signature']  # Salva os dados da assinatura digital
+                            # Atualiza o registro com dados da assinatura via certificado
+                            signature.signature_hash = signature_info.get('hash')
+                            signature.signature_algorithm = signature_info.get('signature_format', 'RSA-SHA256')
+                            signature.signature_data = signature_info.get('signature_data')
                             signature.signature_valid = True
                             signature.status = 'completed'
                             signature.verification_status = 'verified'
@@ -2471,10 +2467,10 @@ def register_routes(app):
                             signature.updated_at = datetime.now()
                             
                             # Atualiza no banco de dados
-                            signature.signature_hash = final_hash
                             signature.file_size = len(final_content)
                             
-                            print(f"🔢 Hash calculado APÓS carimbo + metadados: {final_hash[:16]}...")
+                            if signature.signature_hash:
+                                print(f"🔢 Hash calculado APÓS carimbo + metadados: {signature.signature_hash[:16]}...")
                     # Se o arquivo original não existir, seguimos sem interromper (download acusará ausência)
                 except Exception as gen_err:
                     # Não falha a assinatura por erro ao gerar arquivo; apenas registra e segue
