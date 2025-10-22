@@ -234,7 +234,8 @@ def create_app(config_name=None):
     
     # Segurança: confiar no proxy e habilitar CSRF
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
-    CSRFProtect(app)
+    if app.config.get('WTF_CSRF_ENABLED', True):
+        CSRFProtect(app)
     # HSTS/CSP via Talisman em produção (opcional)
     if (env_name == 'production') and Talisman is not None:
         csp = {
@@ -284,6 +285,10 @@ def create_app(config_name=None):
     compress = Compress()
     compress.init_app(app)
     
+    # Desativa rate limiting em desenvolvimento
+    if (app.config.get('FLASK_ENV') or os.environ.get('FLASK_ENV', 'development')) != 'production':
+        app.config['RATELIMIT_ENABLED'] = False
+
     # Inicializa rate limiter
     limiter = Limiter(
         app=app,
@@ -358,7 +363,7 @@ def create_app(config_name=None):
         log_performance_metrics()
         
         # Log de performance (apenas em desenvolvimento)
-        if app.debug:
+        if app.debug and hasattr(g, 'start_time'):
             duration = time.time() - g.start_time
             if duration > 1.0:  # Log apenas requests lentos
                 app.logger.warning(f'Slow request: {request.endpoint} took {duration:.2f}s')
@@ -2118,6 +2123,7 @@ def register_routes(app):
                     file_size=os.path.getsize(temp_path),
                     signature_valid=False,
                     status='pending',  # Novo campo para status
+                    pdf_file_path=temp_path,
                     document_type_id=document_type_id,
                     client_name=client_info['nome'],
                     client_cpf=client_info['cpf'],
@@ -2401,7 +2407,17 @@ def register_routes(app):
                 
                 # Gera o PDF assinado fisicamente para download
                 try:
-                    original_path = os.path.join(TEMP_DIR, f"{signature.file_id}_{signature.original_filename}")
+                    # Resolve caminho do PDF original
+                    original_path = signature.pdf_file_path or os.path.join(TEMP_DIR, f"{signature.file_id}_{signature.original_filename}")
+                    if not os.path.exists(original_path):
+                        try:
+                            for name in os.listdir(TEMP_DIR):
+                                if name.startswith(signature.file_id) and name.lower().endswith('.pdf'):
+                                    original_path = os.path.join(TEMP_DIR, name)
+                                    break
+                        except Exception:
+                            pass
+
                     if os.path.exists(original_path):
                         # Cria saída temporária
                         output_path = tempfile.mktemp(suffix='.pdf')
@@ -2447,6 +2463,8 @@ def register_routes(app):
 
                             # Assina o PDF final usando o certificado X.509 do sistema
                             signature_info = certificate_manager.sign_pdf_with_certificate(final_content)
+                            if not signature_info:
+                                return jsonify({'success': False, 'message': 'Falha ao assinar com certificado do sistema.'})
                             
                             # Atualiza o registro com dados da assinatura via certificado
                             signature.signature_hash = signature_info.get('hash')
@@ -2471,7 +2489,8 @@ def register_routes(app):
                             
                             if signature.signature_hash:
                                 print(f"🔢 Hash calculado APÓS carimbo + metadados: {signature.signature_hash[:16]}...")
-                    # Se o arquivo original não existir, seguimos sem interromper (download acusará ausência)
+                    else:
+                        return jsonify({'success': False, 'message': 'Arquivo original não encontrado. Refaça o upload.'})
                 except Exception as gen_err:
                     # Não falha a assinatura por erro ao gerar arquivo; apenas registra e segue
                     print(f"Erro ao gerar PDF assinado para cliente: {gen_err}")
@@ -2999,17 +3018,25 @@ def add_signature_to_all_pages(pdf_file, signature_text, output_path, signature_
             for page_num, page in enumerate(pdf_reader.pages):
                 # Cria um PDF temporário para a página atual em memória
                 temp_buffer = io.BytesIO()
+
+                # Usa o tamanho REAL da página como base (evita problemas de corte/posição)
+                try:
+                    page_width = float(page.mediabox.width)
+                    page_height = float(page.mediabox.height)
+                except Exception:
+                    page_width, page_height = A4
+
+                # Cria um canvas com o tamanho da página original
+                c = canvas.Canvas(temp_buffer, pagesize=(page_width, page_height))
+                width, height = page_width, page_height
                 
-                # Cria um canvas para adicionar a assinatura no canto inferior direito
-                c = canvas.Canvas(temp_buffer, pagesize=A4)
-                width, height = A4
-                
-                # Define a posição da assinatura no canto inferior direito
-                signature_x = width - 8*cm  # 8cm da borda direita para acomodar logo + info + assinatura
-                signature_y = 1*cm  # 1cm da borda inferior (mais próximo da borda)
+                # Define a posição da assinatura no canto inferior direito (margem segura)
+                margin_cm = 1.2*cm
+                signature_x = max(margin_cm, width - (8*cm))
+                signature_y = margin_cm
                 
                 # Calcula altura da assinatura para redimensionar o logo proporcionalmente
-                signature_height = 1.2*cm  # Reduzida para caber melhor
+                signature_height = 1.6*cm  # ligeiramente maior para melhor visibilidade
                 logo_height = signature_height  # Logo na mesma altura da assinatura
                 logo_width = logo_height * 1.5  # Reduzida proporção para 1.5:1
                 
@@ -3028,7 +3055,7 @@ def add_signature_to_all_pages(pdf_file, signature_text, output_path, signature_
                         
                         # Posiciona a assinatura ACIMA do logo e dados
                         signature_img_x = signature_x + logo_width + 1*cm  # Centraliza a rubrica
-                        signature_img_y = signature_y + 1.5*cm  # Posiciona acima dos dados
+                        signature_img_y = signature_y + 1.7*cm  # Posiciona acima dos dados
                         signature_img.drawOn(c, signature_img_x, signature_img_y)
                         
                         # Limpa arquivo temporário
@@ -3049,7 +3076,7 @@ def add_signature_to_all_pages(pdf_file, signature_text, output_path, signature_
                 # Adiciona informações pessoais ao lado do logo (alinhadas com o logo)
                 if personal_info:
                     info_x = signature_x + logo_width + 0.3*cm  # Posição após o logo (mais próximo)
-                    info_y = signature_y + 0.8*cm  # Alinhado com o logo (mesma altura)
+                    info_y = signature_y + 0.9*cm  # Alinhado com o logo (mesma altura)
                     c.setFont("Helvetica-Bold", 8)
                     c.setFillColor(colors.darkblue)
                     
