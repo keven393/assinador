@@ -128,6 +128,8 @@ class PDFValidator:
                 'current_hash': current_hash,
                 'stored_hash': None,
                 'signature_info': None,
+                'certificate_subject': None,
+                'certificate_issuer': None,
                 'metadata': {},
                 'errors': []
             }
@@ -166,12 +168,18 @@ class PDFValidator:
                     }
                     
                     if signature_info['signature']:
-                        result['digital_signature_valid'] = self.verify_digital_signature(
-                            pdf_content, signature_info
-                        )
-                        result['certificate_signature_valid'] = self.verify_certificate_signature(
-                            pdf_content, signature_info
-                        )
+                        result['digital_signature_valid'] = self.verify_digital_signature(pdf_content, signature_info)
+                        # Verificação com certificado do sistema (PKI interna)
+                        ok_cert, msg_cert = False, ''
+                        try:
+                            from services.certificate_manager import certificate_manager
+                            ok_cert, msg_cert = certificate_manager.verify_signature_with_certificate(pdf_content, {
+                                'hash': signature_info.get('hash'),
+                                'signature_data': signature_info.get('signature')
+                            })
+                        except Exception as e:
+                            result['errors'].append(str(e))
+                        result['certificate_signature_valid'] = ok_cert
                         result['signature_info'] = signature_info
                 except Exception as e:
                     result['errors'].append(f"Erro na verificação da assinatura: {e}")

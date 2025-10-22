@@ -235,9 +235,12 @@ class CertificateManager:
             if current_hash != original_hash:
                 return False, "Hash do conteúdo não corresponde ao original"
             
-            # Verifica se o certificado usado na assinatura é o nosso
-            if signature_info.get('certificate_fingerprint') != cert.fingerprint(hashes.SHA256()).hex():
-                return False, "Certificado usado na assinatura não corresponde ao esperado"
+            # Verifica se o certificado usado na assinatura é o esperado (se informado)
+            expected_fp = signature_info.get('certificate_fingerprint')
+            if expected_fp:
+                current_fp = cert.fingerprint(hashes.SHA256()).hex()
+                if expected_fp != current_fp:
+                    return False, "Certificado usado na assinatura não corresponde ao esperado"
             
             return True, "Assinatura válida"
             

@@ -161,24 +161,6 @@ body {
                     <div class="mt-5">
                         <div class="card result-card">
                             <div class="card-body">
-                                <!-- Status Summary -->
-                                <div class="row mb-4">
-                                    <div class="col-md-6">
-                                        <div class="metadata-item">
-                                            <strong><i class="fas fa-hashtag me-2"></i>Hash Atual:</strong>
-                                            <div class="hash-display mt-2">{{ result.current_hash }}</div>
-                                        </div>
-                                    </div>
-                                    {% if result.stored_hash %}
-                                    <div class="col-md-6">
-                                        <div class="metadata-item">
-                                            <strong><i class="fas fa-database me-2"></i>Hash Armazenado:</strong>
-                                            <div class="hash-display mt-2">{{ result.stored_hash }}</div>
-                                        </div>
-                                    </div>
-                                    {% endif %}
-                                </div>
-
                                 <!-- Validation Details -->
                                 <div class="row">
                                     <div class="col-md-6">
@@ -197,7 +179,7 @@ body {
                                                 </span>
                                             </div>
                                             <div class="list-group-item d-flex justify-content-between align-items-center">
-                                                <span><i class="fas fa-certificate me-2"></i>Certificado</span>
+                                                <span><i class="fas fa-certificate me-2"></i>Certificado (PKI interna)</span>
                                                 <span class="badge {% if result.certificate_signature_valid %}bg-success{% else %}bg-danger{% endif %}">
                                                     {% if result.certificate_signature_valid %}✓ Válido{% else %}✗ Inválido{% endif %}
                                                 </span>
