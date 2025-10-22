@@ -1,0 +1,60 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: assinador_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+      POSTGRES_DB: assinador_db
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      FLASK_ENV: production
+      FLASK_DEBUG: "False"
+      SECRET_KEY: ${SECRET_KEY}
+      DATABASE_URL: postgresql://assinador_user:${POSTGRES_PASSWORD:-change_me}@db:5432/assinador_db
+      RATE_LIMIT_STORAGE: redis://redis:6379/0
+      SERVER_NAME: ${SERVER_NAME}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN}
+      HOST: 0.0.0.0
+      PORT: 5001
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./logs:/app/logs
+      - ./pdf_assinados:/app/pdf_assinados
+      - ./temp_files:/app/temp_files
+      - ./keys:/app/keys
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db_data:
+
+

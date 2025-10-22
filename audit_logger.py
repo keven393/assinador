@@ -2,6 +2,7 @@ import logging
 import json
 import os
 from datetime import datetime
+from logging.handlers import RotatingFileHandler
 
 
 def _ensure_logs_dir(logs_dir: str) -> None:
@@ -18,7 +19,7 @@ _AUDIT_LOG_PATH = os.path.join(_DEFAULT_LOGS_DIR, 'audit.log')
 
 audit_logger = logging.getLogger("assinador_audit")
 if not audit_logger.handlers:
-    audit_handler = logging.FileHandler(_AUDIT_LOG_PATH, encoding='utf-8')
+    audit_handler = RotatingFileHandler(_AUDIT_LOG_PATH, maxBytes=10*1024*1024, backupCount=5, encoding='utf-8')
     audit_handler.setFormatter(logging.Formatter('%(message)s'))
     audit_logger.addHandler(audit_handler)
     audit_logger.setLevel(logging.INFO)

@@ -5,6 +5,8 @@
 # Ambiente (development, production, testing)
 FLASK_ENV=development
 FLASK_DEBUG=True
+SERVER_NAME=
+COOKIE_DOMAIN=
 
 # Chave secreta (GERE UMA NOVA PARA PRODUÇÃO!)
 # Use: python -c "import secrets; print(secrets.token_hex(32))"
@@ -19,7 +21,7 @@ DATABASE_URL=sqlite:///assinador.db
 
 # PostgreSQL (PRODUÇÃO - RECOMENDADO!)
 # Descomente e configure para produção
-# DATABASE_URL=postgresql://assinador_user:senha_forte@localhost:5432/assinador_db
+# DATABASE_URL=postgresql://assinador_user:senha_forte@postgres:5432/assinador_db
 
 # MySQL (PRODUÇÃO - Alternativa)
 # Descomente e configure para produção

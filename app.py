@@ -49,7 +49,13 @@ from utils.mobile_optimizations import (
     get_cache_timeout, optimize_database_queries,
     get_mobile_headers, log_performance_metrics
 )
+from werkzeug.middleware.proxy_fix import ProxyFix
+from flask_wtf.csrf import CSRFProtect
 from audit_logger import log_event, log_signature_event, log_validation_event
+try:
+    from flask_talisman import Talisman
+except Exception:
+    Talisman = None
 
 def save_pdf_to_filesystem(pdf_content, file_id):
     """
@@ -210,12 +216,42 @@ def create_app(config_name=None):
     # Configurações adicionais de sessão
     app.config['SESSION_COOKIE_NAME'] = 'assinador_session'
     app.config['SESSION_COOKIE_PATH'] = '/'
-    app.config['SESSION_COOKIE_DOMAIN'] = None
-    app.config['SESSION_COOKIE_SECURE'] = False
+    app.config['SESSION_COOKIE_DOMAIN'] = os.environ.get('COOKIE_DOMAIN', None)
     app.config['SESSION_COOKIE_HTTPONLY'] = True
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+    # Respeita ambiente para flags de segurança de cookies
+    env_name = app.config.get('FLASK_ENV') or os.environ.get('FLASK_ENV', 'development')
+    if env_name == 'production':
+        app.config['SESSION_COOKIE_SECURE'] = True
+        app.config['REMEMBER_COOKIE_SECURE'] = True
+    else:
+        app.config['SESSION_COOKIE_SECURE'] = False
+        app.config['REMEMBER_COOKIE_SECURE'] = False
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
+    app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024
+    if os.environ.get('SERVER_NAME'):
+        app.config['SERVER_NAME'] = os.environ.get('SERVER_NAME')
     
+    # Segurança: confiar no proxy e habilitar CSRF
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
+    CSRFProtect(app)
+    # HSTS/CSP via Talisman em produção (opcional)
+    if (env_name == 'production') and Talisman is not None:
+        csp = {
+            'default-src': ["'self'"],
+            'img-src': ["'self'", 'data:'],
+            'style-src': ["'self'", "'unsafe-inline'"],
+            'script-src': ["'self'", "'unsafe-inline'"]
+        }
+        Talisman(
+            app,
+            force_https=False,  # HTTPS deve ser forçado pelo proxy; ajustar para True se necessário
+            strict_transport_security=True,
+            strict_transport_security_max_age=31536000,
+            strict_transport_security_include_subdomains=True,
+            content_security_policy=csp
+        )
+
     # Inicializa extensões
     db.init_app(app)
 
@@ -253,7 +289,7 @@ def create_app(config_name=None):
         app=app,
         key_func=get_remote_address,
         default_limits=["200 per day", "50 per hour"],
-        storage_uri="memory://"
+        storage_uri=os.environ.get('RATE_LIMIT_STORAGE', 'memory://')
     )
     
     # Disponibiliza cache e limiter globalmente
@@ -282,6 +318,11 @@ def create_app(config_name=None):
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
+
+    # Healthcheck simples para infraestrutura
+    @app.route('/healthz')
+    def healthz():
+        return 'ok', 200
     
     # Adiciona middleware de performance
     @app.before_request
@@ -739,6 +780,7 @@ def register_routes(app):
         return render_template('index.html', **template_data)
 
     @app.route('/login', methods=['GET', 'POST'])
+    @app.limiter.limit("10 per hour; 3 per minute")
     def login():
         if current_user.is_authenticated:
             return redirect(url_for('index'))
@@ -2045,9 +2087,25 @@ def register_routes(app):
             signature_ids = []
             for pdf_file in valid_files:
                 file_id = str(uuid.uuid4())
-                filename = f"{file_id}_{pdf_file.filename}"
+                from werkzeug.utils import secure_filename
+                safe_name = secure_filename(pdf_file.filename)
+                filename = f"{file_id}_{safe_name}"
                 temp_path = os.path.join(TEMP_DIR, filename)
                 pdf_file.save(temp_path)
+                # valida cabeçalho PDF
+                try:
+                    with open(temp_path, 'rb') as f:
+                        if f.read(4) != b'%PDF':
+                            os.remove(temp_path)
+                            flash(f'Arquivo {safe_name} inválido (não é PDF).', 'error')
+                            continue
+                except Exception:
+                    try:
+                        os.remove(temp_path)
+                    except Exception:
+                        pass
+                    flash(f'Falha ao ler {safe_name}', 'error')
+                    continue
                 
                 # Cria registro de assinatura pendente
                 signature_record = Signature(

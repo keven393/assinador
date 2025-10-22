@@ -484,6 +484,89 @@ server {
 }
 ```
 
+### Opção 5: Docker (Windows/Linux)
+
+#### Pré-requisitos
+- Windows: Docker Desktop instalado e em execução (`https://docs.docker.com/desktop/`)
+- Linux: Docker Engine + Docker Compose V2 (`https://docs.docker.com/engine/install/` e `https://docs.docker.com/compose/install/`)
+
+#### 1) Criar arquivo .env
+- Windows (PowerShell):
+```powershell
+copy env_example.txt .env
+notepad .env
+```
+- Linux:
+```bash
+cp env_example.txt .env
+nano .env
+```
+Edite ao menos:
+```env
+SECRET_KEY=coloque_uma_chave_forte
+POSTGRES_PASSWORD=senha_forte_do_postgres
+SERVER_NAME=assinador.seudominio.com   # opcional em dev
+COOKIE_DOMAIN=.seudominio.com          # opcional em dev
+```
+
+#### 2) Subir com Docker Compose
+```bash
+docker compose up -d --build
+```
+
+#### 3) Acessar
+- App: `http://localhost:5001`
+- Healthcheck: `http://localhost:5001/healthz`
+
+#### 4) Logs e status
+```bash
+docker compose logs -f web       # logs do app
+docker compose ps                # deve mostrar web (healthy)
+```
+
+#### 5) Parar/Remover containers
+```bash
+docker compose down              # mantém volumes (dados do Postgres)
+docker compose down -v           # remove volumes (APAGA dados do Postgres)
+```
+
+#### 6) Atualizar imagem/config
+```bash
+docker compose build --no-cache web
+docker compose up -d
+```
+
+#### 7) Pastas montadas e permissões (Linux)
+As pastas `logs/`, `pdf_assinados/`, `temp_files/` e `keys/` são montadas no container.
+Em Linux, garanta que o seu usuário tenha permissão:
+```bash
+mkdir -p logs pdf_assinados temp_files keys
+sudo chown -R $USER:$USER logs pdf_assinados temp_files keys
+```
+
+#### 8) Reset do banco (opcional)
+O volume do Postgres se chama `db_data` (o nome real pode aparecer como `<projeto>_db_data`). Para apagar todos os dados:
+```bash
+docker compose down -v
+# ou apague apenas o volume do Postgres
+docker volume ls
+docker volume rm <nome_do_volume_db_data>
+```
+
+#### 9) Variáveis úteis no .env (exemplo)
+```env
+FLASK_ENV=production
+FLASK_DEBUG=False
+SECRET_KEY=coloque_uma_chave_forte
+POSTGRES_PASSWORD=senha_forte_do_postgres
+SERVER_NAME=assinador.seudominio.com
+COOKIE_DOMAIN=.seudominio.com
+```
+
+Observações:
+- Em produção, coloque o serviço atrás de um proxy HTTPS (Nginx/Traefik) e aponte para `web:5001`.
+- Os headers de proxy já são tratados (ProxyFix). HSTS/CSP são aplicados automaticamente em `FLASK_ENV=production`.
+
 ---
 
 ## 🔐 Segurança
