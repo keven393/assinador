@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Tipos de Documento - Admin{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="d-flex align-items-center mb-3">
+        <h3 class="mb-0"><i class="fas fa-tags me-2"></i>Tipos de Documento</h3>
+        <form class="ms-auto d-flex" method="GET">
+            <input type="text" class="form-control me-2" name="q" placeholder="Buscar..." value="{{ q }}">
+            <button class="btn btn-outline-primary" type="submit"><i class="fas fa-search"></i></button>
+        </form>
+    </div>
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="POST" class="row g-3">
+                <input type="hidden" name="action" value="create">
+                <div class="col-md-4">
+                    <label class="form-label">Nome</label>
+                    <input type="text" class="form-control" name="name" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Descrição</label>
+                    <input type="text" class="form-control" name="description">
+                </div>
+                <div class="col-md-2 d-grid">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-plus me-1"></i>Adicionar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Descrição</th>
+                            <th>Status</th>
+                            <th style="width:220px;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for it in items %}
+                        <tr>
+                            <form method="POST" class="row g-2">
+                                <input type="hidden" name="action" value="update">
+                                <input type="hidden" name="id" value="{{ it.id }}">
+                                <td class="col-md-3">
+                                    <input type="text" class="form-control" name="name" value="{{ it.name }}" required>
+                                </td>
+                                <td class="col-md-5">
+                                    <input type="text" class="form-control" name="description" value="{{ it.description or '' }}">
+                                </td>
+                                <td class="col-md-2">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="active" id="active_{{ it.id }}" {% if it.active %}checked{% endif %}>
+                                        <label class="form-check-label" for="active_{{ it.id }}">Ativo</label>
+                                    </div>
+                                </td>
+                                <td class="col-md-2">
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-sm btn-success" type="submit"><i class="fas fa-save"></i></button>
+                                    </div>
+                            </form>
+                                    <form method="POST" onsubmit="return confirm('Remover este tipo?');" class="d-inline">
+                                        <input type="hidden" name="action" value="delete">
+                                        <input type="hidden" name="id" value="{{ it.id }}">
+                                        <button class="btn btn-sm btn-outline-danger" type="submit"><i class="fas fa-trash"></i></button>
+                                    </form>
+                                </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-4">Nenhum tipo cadastrado.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

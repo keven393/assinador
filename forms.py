@@ -2,7 +2,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, BooleanField, SelectField, TextAreaField, DateField
 from wtforms.validators import DataRequired, Email, Length, EqualTo, ValidationError, Optional
 from models import User
-from password_utils import password_validator
+from utils.password_utils import password_validator
 
 class LoginForm(FlaskForm):
     username = StringField('Usuário', validators=[DataRequired(), Length(min=3, max=80)])
@@ -12,7 +12,7 @@ class LoginForm(FlaskForm):
 
 class RegistrationForm(FlaskForm):
     username = StringField('Usuário', validators=[DataRequired(), Length(min=3, max=80)])
-    email = StringField('Email', validators=[DataRequired(), Email()])
+    email = StringField('Email', validators=[DataRequired()])  # Removido Email() para usar validação customizada
     full_name = StringField('Nome Completo', validators=[DataRequired(), Length(min=2, max=120)])
     password = PasswordField('Senha', validators=[DataRequired(), Length(min=6)])
     confirm_password = PasswordField('Confirmar Senha', validators=[DataRequired(), EqualTo('password')])
@@ -24,18 +24,33 @@ class RegistrationForm(FlaskForm):
             raise ValidationError('Este nome de usuário já está em uso.')
     
     def validate_email(self, email):
+        """Validação customizada de email que aceita domínios .local"""
+        import re
+        # Padrão mais flexível que aceita .local, .internal, .lan, etc.
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_pattern, email.data):
+            raise ValidationError('Email inválido')
+        
         user = User.query.filter_by(email=email.data).first()
         if user:
             raise ValidationError('Este email já está registrado.')
 
 class UserEditForm(FlaskForm):
     username = StringField('Usuário', validators=[DataRequired(), Length(min=3, max=80)])
-    email = StringField('Email', validators=[DataRequired(), Email()])
+    email = StringField('Email', validators=[DataRequired()])  # Removido Email() para usar validação customizada
     full_name = StringField('Nome Completo', validators=[DataRequired(), Length(min=2, max=120)])
     role = SelectField('Função', choices=[('user', 'Usuário'), ('admin', 'Administrador')])
     is_active = BooleanField('Usuário Ativo')
     must_change_password = BooleanField('Exigir alteração de senha no próximo login')
     submit = SubmitField('Atualizar')
+    
+    def validate_email(self, email):
+        """Validação customizada de email que aceita domínios .local"""
+        import re
+        # Padrão mais flexível que aceita .local, .internal, .lan, etc.
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_pattern, email.data):
+            raise ValidationError('Email inválido')
 
 class ChangePasswordForm(FlaskForm):
     current_password = PasswordField('Senha Atual', validators=[DataRequired()])
@@ -51,7 +66,7 @@ class ChangePasswordForm(FlaskForm):
 
 class AdminUserForm(FlaskForm):
     username = StringField('Usuário', validators=[DataRequired(), Length(min=3, max=80)])
-    email = StringField('Email', validators=[DataRequired(), Email()])
+    email = StringField('Email', validators=[DataRequired()])  # Removido Email() para usar validação customizada
     full_name = StringField('Nome Completo', validators=[DataRequired(), Length(min=2, max=120)])
     password = PasswordField('Senha', validators=[DataRequired(), Length(min=8)])
     must_change_password = BooleanField('Exigir alteração de senha no primeiro login')
@@ -65,6 +80,13 @@ class AdminUserForm(FlaskForm):
             raise ValidationError('Este nome de usuário já está em uso.')
     
     def validate_email(self, email):
+        """Validação customizada de email que aceita domínios .local"""
+        import re
+        # Padrão mais flexível que aceita .local, .internal, .lan, etc.
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_pattern, email.data):
+            raise ValidationError('Email inválido')
+        
         user = User.query.filter_by(email=email.data).first()
         if user:
             raise ValidationError('Este email já está registrado.')
@@ -82,6 +104,7 @@ class ReportFilterForm(FlaskForm):
     
     # Filtros de Usuário e Cliente
     user_id = SelectField('Atendente', coerce=int, validators=[Optional()])
+    document_type_id = SelectField('Tipo de Documento', coerce=int, validators=[Optional()])
     client_name = StringField('Nome do Cliente', validators=[Optional(), Length(max=255)])
     client_cpf = StringField('CPF do Cliente', validators=[Optional(), Length(max=14)])
     

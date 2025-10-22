@@ -1,13 +1,10 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editar Assinatura - Sistema de Assinaturas</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        body {
+{% extends "base.html" %}
+
+{% block title %}Editar Assinatura - Sistema de Assinaturas{% endblock %}
+
+{% block extra_css %}
+<style>
+body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -89,21 +86,14 @@
             margin-bottom: 0.25rem;
             color: #6c757d;
         }
-    </style>
-</head>
-<body>
+</style>
+{% endblock %}
+
+{% block content %}
+
     <div class="container">
         <!-- Mensagens Flash -->
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+        
 
         <div class="edit-card">
             <div class="card-header text-center">
@@ -125,6 +115,14 @@
 
                 <form method="POST" id="editForm">
                     <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="document_type_id" class="form-label">Tipo de Documento <span class="required">*</span></label>
+                            <select class="form-select" id="document_type_id" name="document_type_id" required>
+                                {% for dt in document_types %}
+                                    <option value="{{ dt.id }}" {% if signature.document_type_id == dt.id %}selected{% endif %}>{{ dt.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
                         <div class="col-md-6 mb-3">
                             <label for="client_name" class="form-label">
                                 Nome Completo <span class="required">*</span>
@@ -184,7 +182,7 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
     <script>
         // Validação de CPF
         function validateCPF(cpf) {
@@ -277,5 +275,5 @@
             }
         });
     </script>
-</body>
-</html>
+
+{% endblock %}

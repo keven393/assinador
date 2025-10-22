@@ -271,13 +271,12 @@
          }
          
          .dialog-canvas-container {
-             flex: 1;
-             padding: 1.5rem;
-             display: flex;
-             flex-direction: column;
-             overflow: hidden;
-             min-height: 300px;
-         }
+                flex: 0 0 auto;        /* não crescer automaticamente */
+                padding: 1.5rem;
+                display: block;        /* simples: deixa o bloco medir pela altura definida */
+                overflow: visible;     /* evita corte do canvas */
+                min-height: 0;         /* remove travas de min-height */
+            }
          
          .dialog-canvas {
              width: 100%;
@@ -760,8 +759,6 @@
                     <div class="color-picker-group">
                         <span class="me-2 fw-bold">Cor:</span>
                         <div class="color-picker active" data-color="#000" style="background: #000;"></div>
-                        <div class="color-picker" data-color="#007bff" style="background: #007bff;"></div>
-                        <div class="color-picker" data-color="#dc3545" style="background: #dc3545;"></div>
                     </div>
                     
                     <div class="dialog-buttons">
@@ -847,6 +844,9 @@
     </div>
     <script>
         // Configuração do canvas
+        const DIALOG_ASPECT_LANDSCAPE = 3 / 1; // ex.: 3:1 no modo paisagem
+        const DIALOG_ASPECT_PORTRAIT  = 4 / 3; // ex.: 4:3 no modo retrato
+        const DPR = window.devicePixelRatio || 1;
         const canvas = document.getElementById('signatureCanvas');
         const ctx = canvas.getContext('2d');
         const clearBtn = document.getElementById('clearBtn');
@@ -877,6 +877,10 @@
          let dialogCurrentPath = [];
          let isDialogDrawing = false;
          let currentColor = '#000';
+         
+         // Tamanhos lógicos (CSS px) atuais de cada canvas
+         let mainLogicalSize = { w: 600, h: 200 };
+         let dialogLogicalSize = { w: 600, h: 200 };
         
         // Enhanced mobile/tablet detection for all browsers including Samsung Internet
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|SamsungBrowser|Samsung/i.test(navigator.userAgent);
@@ -897,80 +901,125 @@
             screenWidth: window.innerWidth
         });
         
+        function fitCanvasHiDPI(canvasElement, context, cssWidth, cssHeight) {
+            // Tamanho interno (físico)
+            canvasElement.width  = Math.round(cssWidth * DPR);
+            canvasElement.height = Math.round(cssHeight * DPR);
+            // Tamanho visual (CSS)
+            canvasElement.style.width  = cssWidth + 'px';
+            canvasElement.style.height = cssHeight + 'px';
+            // Reset e aplica transformação: desenhar em CSS pixels
+            context.setTransform(DPR, 0, 0, DPR, 0, 0);
+            }
         // Configurações do canvas (com suporte a high-DPI)
         function setupCanvasContext() {
             ctx.strokeStyle = '#000';
-            ctx.lineWidth = 2 * devicePixelRatio; // Ajusta para high-DPI
+            ctx.lineWidth = isMobile ? 3 : 2; // em CSS px; não multiplique por DPR
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
-        }
+            }
         
         // Dialog canvas setup
         function setupDialogContext() {
             dialogCtx.strokeStyle = currentColor;
-            dialogCtx.lineWidth = (isMobile ? 3 : 2) * devicePixelRatio;
+            dialogCtx.lineWidth = (isMobile ? 3 : 2); // em CSS px
             dialogCtx.lineCap = 'round';
             dialogCtx.lineJoin = 'round';
-        }
+            }
         
         // Função precisa para obter coordenadas (corrige offset em mobile/high-DPI)
-        function getTouchCoordinates(e, canvasElement) {
+        function getPointerPos(e, canvasElement) {
             const rect = canvasElement.getBoundingClientRect();
-            const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
-            const clientY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
-            
-            // Corrige para scroll e viewport (essencial em mobile com barras dinâmicas)
-            const scaleX = canvasElement.width / rect.width;
-            const scaleY = canvasElement.height / rect.height;
-            
+            const touch = e.touches?.[0] || e.changedTouches?.[0] || e;
+            const clientX = touch.clientX;
+            const clientY = touch.clientY;
+            // Retorna coordenadas em CSS pixels (sem aplicar DPR novamente)
             return {
-                x: (clientX - rect.left) * scaleX,
-                y: (clientY - rect.top) * scaleY
+                x: clientX - rect.left,
+                y: clientY - rect.top
             };
-        }
+            }
          
          // Responsive canvas sizing (com high-DPI)
          function resizeCanvas() {
-             const container = canvas.parentElement;
-             const containerWidth = container.clientWidth - 40;
-             
-             const logicalWidth = isMobile ? Math.min(containerWidth, 400) : Math.min(containerWidth, 600);
-             const logicalHeight = 200;
-             
-             // Physical size para high-DPI (melhor qualidade)
-             canvas.width = logicalWidth * devicePixelRatio;
-             canvas.height = logicalHeight * devicePixelRatio;
-             canvas.style.width = logicalWidth + 'px';
-             canvas.style.height = logicalHeight + 'px';
-             
-             // Escala o contexto para CSS pixels
-             ctx.scale(devicePixelRatio, devicePixelRatio);
-             setupCanvasContext();
-             
-             redrawCanvas();
-         }
+            const container = canvas.parentElement;
+            const containerWidth = container.clientWidth - 40;
+            const logicalWidth = isMobile ? Math.min(containerWidth, 400) : Math.min(containerWidth, 600);
+            const logicalHeight = 200;
+            fitCanvasHiDPI(canvas, ctx, logicalWidth, logicalHeight);
+            setupCanvasContext();
+            
+            // Atualiza tamanho lógico
+            mainLogicalSize.w = logicalWidth;
+            mainLogicalSize.h = logicalHeight;
+            
+            redrawCanvas();
+            }
          
          // Dialog canvas setup (com high-DPI)
          function setupDialogCanvas() {
-             const container = document.querySelector('.dialog-canvas-container');
-             const containerRect = container.getBoundingClientRect();
-             
-             let logicalWidth = containerRect.width - 40;
-             let logicalHeight = containerRect.height - 40;
-             
-             logicalWidth = Math.max(logicalWidth, 300);
-             logicalHeight = Math.max(logicalHeight, 200);
-             
-             // Physical size
-             dialogCanvas.width = logicalWidth * devicePixelRatio;
-             dialogCanvas.height = logicalHeight * devicePixelRatio;
-             dialogCanvas.style.width = logicalWidth + 'px';
-             dialogCanvas.style.height = logicalHeight + 'px';
-             
-             dialogCtx.scale(devicePixelRatio, devicePixelRatio);
-             setupDialogContext();
-         }
+            const container = document.querySelector('.dialog-canvas-container');
+            const styles = getComputedStyle(container);
+            const paddingX = parseFloat(styles.paddingLeft) + parseFloat(styles.paddingRight);
+            const paddingY = parseFloat(styles.paddingTop) + parseFloat(styles.paddingBottom);
+            // Largura disponível (em CSS px)
+            const containerWidth = container.clientWidth; // inclui padding
+            const innerWidth = Math.max(300, Math.round(containerWidth - paddingX));
+            // Define razão de aspecto conforme orientação
+            const portrait = window.matchMedia('(orientation: portrait)').matches;
+            const aspect = portrait ? DIALOG_ASPECT_PORTRAIT : DIALOG_ASPECT_LANDSCAPE;
+            // Altura interna proporcional (em CSS px)
+            let innerHeight = Math.round(innerWidth / aspect);
+            // Limites de altura para não estourar o dialog
+            // Você pode ajustar esses limites conforme seu layout
+            const MIN_INNER_HEIGHT = 200;
+            const MAX_INNER_HEIGHT = Math.round(window.innerHeight * 0.6);
+            innerHeight = Math.max(MIN_INNER_HEIGHT, Math.min(innerHeight, MAX_INNER_HEIGHT));
+            // Ajusta a altura do container para acompanhar o canvas (altura interna + paddings)
+            container.style.height = (innerHeight + paddingY) + 'px';
+            // Configura o canvas em HiDPI
+            dialogCanvas.width  = Math.round(innerWidth * DPR);
+            dialogCanvas.height = Math.round(innerHeight * DPR);
+            dialogCanvas.style.width  = innerWidth + 'px';
+            dialogCanvas.style.height = innerHeight + 'px';
+            // Desenha em coordenadas de CSS px; DPR aplicado aqui
+            dialogCtx.setTransform(DPR, 0, 0, DPR, 0, 0);
+            setupDialogContext();
+            
+            // Atualiza tamanho lógico do dialog
+            dialogLogicalSize.w = innerWidth;
+            dialogLogicalSize.h = innerHeight;
+            
+            // Redesenha, se já tiver conteúdo
+            if (typeof redrawDialogCanvas === 'function') {
+                redrawDialogCanvas();
+            }
+        }
+
          
+        
+        // Reescala paths de um tamanho lógico para outro
+        function scalePaths(srcPaths, fromW, fromH, toW, toH) {
+            if (!srcPaths || !srcPaths.length) return [];
+            const sx = toW / fromW;
+            const sy = toH / fromH;
+            return srcPaths.map(path => {
+                // path pode ser array de pontos {x,y} ou {x,y,color}
+                return path.map(p => ({
+                    x: p.x * sx,
+                    y: p.y * sy,
+                    color: p.color || '#000'
+                }));
+            });
+        }
+        
+        // Função para limpar canvas corretamente
+        function clearCanvas(context, canvasElement) {
+            context.save();
+            context.setTransform(1, 0, 0, 1, 0, 0);
+            context.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            context.restore();
+        }
         
         // Função para coletar informações do dispositivo
         function collectDeviceInfo() {
@@ -1031,7 +1080,7 @@
         function startDrawing(e) {
             e.preventDefault(); // Só no canvas, não propaga
             isDrawing = true;
-            const coords = getTouchCoordinates(e, canvas);
+            const coords = getPointerPos(e, canvas);
             currentPath = [{x: coords.x, y: coords.y}];
             ctx.beginPath();
             ctx.moveTo(coords.x, coords.y);
@@ -1040,7 +1089,7 @@
         function draw(e) {
             if (!isDrawing) return;
             e.preventDefault();
-            const coords = getTouchCoordinates(e, canvas);
+            const coords = getPointerPos(e, canvas);
             currentPath.push({x: coords.x, y: coords.y});
             ctx.lineTo(coords.x, coords.y);
             ctx.stroke();
@@ -1071,7 +1120,7 @@
         function startDialogDrawing(e) {
             e.preventDefault();
             isDialogDrawing = true;
-            const coords = getTouchCoordinates(e, dialogCanvas);
+            const coords = getPointerPos(e, dialogCanvas);
             dialogCurrentPath = [{ x: coords.x, y: coords.y, color: currentColor }];
             dialogPaths.push(dialogCurrentPath);
             dialogCtx.beginPath();
@@ -1081,7 +1130,7 @@
         function drawDialog(e) {
             if (!isDialogDrawing) return;
             e.preventDefault();
-            const coords = getTouchCoordinates(e, dialogCanvas);
+            const coords = getPointerPos(e, dialogCanvas);
             dialogCurrentPath.push({ x: coords.x, y: coords.y, color: currentColor });
             redrawDialogCanvas();
         }
@@ -1101,7 +1150,7 @@
         
         // Botão Limpar
         clearBtn.addEventListener('click', function() {
-            ctx.clearRect(0, 0, canvas.width / devicePixelRatio, canvas.height / devicePixelRatio); // Corrige para logical pixels
+            clearCanvas(ctx, canvas);
             signatureHistory = [];
             hasSignature = false;
             updateSignButton();
@@ -1119,11 +1168,12 @@
         
         // Função para redesenhar o canvas
         function redrawCanvas() {
-            ctx.clearRect(0, 0, canvas.width / devicePixelRatio, canvas.height / devicePixelRatio);
-            setupCanvasContext();
+            clearCanvas(ctx, canvas);
+            setupCanvasContext(); // garante lineWidth/estilos
             
             signatureHistory.forEach(path => {
                 if (path.length > 0) {
+                    ctx.strokeStyle = path[0].color || '#000';
                     ctx.beginPath();
                     ctx.moveTo(path[0].x, path[0].y);
                     for (let i = 1; i < path.length; i++) {
@@ -1135,12 +1185,12 @@
         }
         
         function redrawDialogCanvas() {
-            dialogCtx.clearRect(0, 0, dialogCanvas.width / devicePixelRatio, dialogCanvas.height / devicePixelRatio);
+            clearCanvas(dialogCtx, dialogCanvas);
             setupDialogContext();
             
             dialogPaths.forEach(path => {
-                if (path.length > 1) {
-                    dialogCtx.strokeStyle = path[0].color;
+                if (path.length > 0) {
+                    dialogCtx.strokeStyle = path[0].color || currentColor || '#000';
                     dialogCtx.beginPath();
                     dialogCtx.moveTo(path[0].x, path[0].y);
                     for (let i = 1; i < path.length; i++) {
@@ -1215,18 +1265,28 @@
              e.stopPropagation();
          });
          
-         // Copy canvas content to dialog
+         // Copia o conteúdo da página para o dialog (reescalando paths)
          function copyCanvasToDialog() {
-             dialogCtx.clearRect(0, 0, dialogCanvas.width, dialogCanvas.height);
-             dialogCtx.drawImage(canvas, 0, 0, dialogCanvas.width, dialogCanvas.height);
-             dialogPaths = [...signatureHistory];
+             // Converte histórico da página (main) para o tamanho do dialog
+             dialogPaths = scalePaths(
+                 signatureHistory,
+                 mainLogicalSize.w, mainLogicalSize.h,
+                 dialogLogicalSize.w, dialogLogicalSize.h
+             );
+             // Redesenha no dialog
+             redrawDialogCanvas();
          }
          
-         // Copy dialog content back to canvas
+         // Copia o conteúdo do dialog para a página (reescalando paths)
          function copyDialogToCanvas() {
-             ctx.clearRect(0, 0, canvas.width, canvas.height);
-             ctx.drawImage(dialogCanvas, 0, 0, canvas.width, canvas.height);
-             signatureHistory = [...dialogPaths];
+             // Converte histórico do dialog para o tamanho da página
+             signatureHistory = scalePaths(
+                 dialogPaths,
+                 dialogLogicalSize.w, dialogLogicalSize.h,
+                 mainLogicalSize.w, mainLogicalSize.h
+             );
+             // Redesenha na página
+             redrawCanvas();
              hasSignature = signatureHistory.length > 0;
              updateSignButton();
          }
@@ -1266,7 +1326,7 @@
          
         // Dialog controls
         dialogClearBtn.addEventListener('click', () => {
-            dialogCtx.clearRect(0, 0, dialogCanvas.width / devicePixelRatio, dialogCanvas.height / devicePixelRatio);
+            clearCanvas(dialogCtx, dialogCanvas);
             dialogPaths = [];
         });
         
@@ -1287,45 +1347,6 @@
             });
         });
          
-         function redrawDialogCanvas() {
-             dialogCtx.clearRect(0, 0, dialogCanvas.width, dialogCanvas.height);
-             
-             dialogPaths.forEach(path => {
-                 if (path.length > 1) {
-                     dialogCtx.strokeStyle = path[0].color;
-                     dialogCtx.beginPath();
-                     dialogCtx.moveTo(path[0].x, path[0].y);
-                     
-                     for (let i = 1; i < path.length; i++) {
-                         dialogCtx.lineTo(path[i].x, path[i].y);
-                     }
-                     dialogCtx.stroke();
-                 }
-             });
-         }
-         
-         // Dialog controls
-         dialogClearBtn.addEventListener('click', () => {
-             dialogCtx.clearRect(0, 0, dialogCanvas.width, dialogCanvas.height);
-             dialogPaths = [];
-         });
-         
-         dialogUndoBtn.addEventListener('click', () => {
-             if (dialogPaths.length > 0) {
-                 dialogPaths.pop();
-                 redrawDialogCanvas();
-             }
-         });
-         
-         // Color picker for dialog
-         document.querySelectorAll('.color-picker').forEach(picker => {
-             picker.addEventListener('click', function() {
-                 document.querySelectorAll('.color-picker').forEach(p => p.classList.remove('active'));
-                 this.classList.add('active');
-                 currentColor = this.dataset.color;
-                 dialogCtx.strokeStyle = currentColor;
-             });
-         });
         
         // Enhanced Finalizar Assinatura button with Pointer Events
         console.log('Configurando event listener para signBtn:', signBtn);

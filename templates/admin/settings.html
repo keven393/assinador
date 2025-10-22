@@ -1,50 +1,541 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Configurações do Sistema</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
-    <div class="container py-4">
-        <div class="d-flex align-items-center mb-3">
-            <a href="{{ url_for('index') }}" class="btn btn-outline-secondary me-2">
-                <i class="fas fa-arrow-left"></i>
-            </a>
-            <h3 class="mb-0">Configurações</h3>
-        </div>
+{% extends "base.html" %}
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+{% block title %}Configurações do Sistema - Assinador Digital{% endblock %}
 
-        <form method="POST" class="card p-3 shadow-sm">
-            <div class="form-check form-switch mb-3">
-                <input class="form-check-input" type="checkbox" role="switch" id="store_pdfs" name="store_pdfs" {% if store_pdfs %}checked{% endif %}>
-                <label class="form-check-label" for="store_pdfs">
-                    Salvar PDFs assinados no servidor (e no banco para garantia)
-                </label>
-                <div class="form-text">
-                    Quando desativado, os PDFs serão removidos do servidor após o download. Um aviso será exibido pedindo para salvar no 1doc.
+{% block extra_css %}
+<style>
+    .settings-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    .setting-item {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid #667eea;
+    }
+    .form-control, .form-select {
+        border-radius: 10px;
+        border: 2px solid #e9ecef;
+        padding: 0.75rem 1rem;
+        transition: all 0.3s ease;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    .btn-save {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 10px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    .btn-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+    }
+    .info-card {
+        background: #e3f2fd;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid #2196f3;
+    }
+    .warning-card {
+        background: #fff3cd;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid #ffc107;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Mensagens Flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
-            </div>
-            <button type="submit" class="btn btn-primary">
-                <i class="fas fa-save me-1"></i>Salvar Configurações
-            </button>
-        </form>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Header -->
+    <div class="settings-card">
+        <h3 class="mb-3">
+            <i class="fas fa-cog me-2"></i>
+            Configurações do Sistema
+        </h3>
+        <p class="text-muted mb-0">Gerencie as configurações gerais do sistema de assinatura digital</p>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
- </body>
-</html>
+    <!-- Configurações de Armazenamento -->
+    <div class="settings-card">
+        <h5 class="mb-4">
+            <i class="fas fa-database me-2 text-primary"></i>
+            Armazenamento de PDFs
+        </h5>
+        
+        <div class="info-card">
+            <h6 class="mb-2">
+                <i class="fas fa-info-circle me-2"></i>
+                Armazenamento Atual
+            </h6>
+            <p class="mb-1">
+                <strong>Modo:</strong> 
+                {% if store_pdfs %}
+                    <span class="badge bg-success">Armazenamento no Banco de Dados</span>
+                {% else %}
+                    <span class="badge bg-warning">Armazenamento Temporário</span>
+                {% endif %}
+            </p>
+            <p class="mb-0">
+                <strong>Diretório:</strong> {{ pdf_signed_dir }}
+            </p>
+        </div>
 
+        <div class="warning-card">
+            <h6 class="mb-2">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Aviso Importante
+            </h6>
+            <p class="mb-0">
+                No modo temporário, os PDFs são excluídos após o download. 
+                Certifique-se de salvar os documentos importantes no sistema 1doc antes de baixar.
+            </p>
+        </div>
 
+        <div class="setting-item">
+            <h6 class="mb-3">Política de Retenção</h6>
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label">
+                        <i class="fas fa-clock me-2"></i>Arquivos Temporários
+                    </label>
+                    <input type="text" class="form-control" value="1 hora" readonly>
+                    <small class="text-muted">Arquivos da pasta temp_files/</small>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">
+                        <i class="fas fa-file-pdf me-2"></i>PDFs Assinados
+                    </label>
+                    <input type="text" class="form-control" value="7 dias" readonly>
+                    <small class="text-muted">Arquivos da pasta pdf_assinados/</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="setting-item">
+            <h6 class="mb-3">Limpeza Automática</h6>
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label">
+                        <i class="fas fa-clock me-2"></i>Horário de Execução
+                    </label>
+                    <input type="text" class="form-control" value="02:00" readonly>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">
+                        <i class="fas fa-globe me-2"></i>Fuso Horário
+                    </label>
+                    <input type="text" class="form-control" value="America/Sao_Paulo" readonly>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Configurações de Segurança -->
+    <div class="settings-card">
+        <h5 class="mb-4">
+            <i class="fas fa-shield-alt me-2 text-success"></i>
+            Segurança
+        </h5>
+
+        <div class="setting-item">
+            <h6 class="mb-3">Chaves de Criptografia</h6>
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label">
+                        <i class="fas fa-key me-2"></i>Diretório de Chaves
+                    </label>
+                    <input type="text" class="form-control" value="{{ keys_dir }}" readonly>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">
+                        <i class="fas fa-lock me-2"></i>Algoritmo de Assinatura
+                    </label>
+                    <input type="text" class="form-control" value="RSA-SHA256" readonly>
+                </div>
+            </div>
+        </div>
+
+        <div class="setting-item">
+            <h6 class="mb-3">Rate Limiting</h6>
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label">
+                        <i class="fas fa-ban me-2"></i>Limite de Requisições
+                    </label>
+                    <input type="text" class="form-control" value="20 por minuto" readonly>
+                    <small class="text-muted">Rotas de validação</small>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">
+                        <i class="fas fa-database me-2"></i>Armazenamento
+                    </label>
+                    <input type="text" class="form-control" value="Memória" readonly>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Configurações de Performance -->
+    <div class="settings-card">
+        <h5 class="mb-4">
+            <i class="fas fa-tachometer-alt me-2 text-info"></i>
+            Performance
+        </h5>
+
+        <div class="setting-item">
+            <h6 class="mb-3">Cache</h6>
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label">
+                        <i class="fas fa-memory me-2"></i>Tipo de Cache
+                    </label>
+                    <input type="text" class="form-control" value="{{ cache_type }}" readonly>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">
+                        <i class="fas fa-clock me-2"></i>Timeout Padrão
+                    </label>
+                    <input type="text" class="form-control" value="{{ cache_timeout }} segundos" readonly>
+                </div>
+            </div>
+        </div>
+
+        <div class="setting-item">
+            <h6 class="mb-3">Banco de Dados</h6>
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label">
+                        <i class="fas fa-database me-2"></i>Banco Atual
+                    </label>
+                    <input type="text" class="form-control" value="{{ db_type }}" readonly>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">
+                        <i class="fas fa-plug me-2"></i>Modo Async
+                    </label>
+                    <input type="text" class="form-control" value="{{ 'Habilitado' if async_enabled else 'Desabilitado' }}" readonly>
+                </div>
+            </div>
+        </div>
+
+        <div class="setting-item">
+            <h6 class="mb-3">Índices de Performance</h6>
+            <div class="row">
+                <div class="col-md-4">
+                    <label class="form-label">
+                        <i class="fas fa-table me-2"></i>Signature
+                    </label>
+                    <input type="text" class="form-control" value="{{ signature_indexes }} índices" readonly>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">
+                        <i class="fas fa-users me-2"></i>User
+                    </label>
+                    <input type="text" class="form-control" value="{{ user_indexes }} índices" readonly>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">
+                        <i class="fas fa-id-card me-2"></i>UserSession
+                    </label>
+                    <input type="text" class="form-control" value="{{ session_indexes }} índices" readonly>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Configurações de Logs -->
+    <div class="settings-card">
+        <h5 class="mb-4">
+            <i class="fas fa-file-alt me-2 text-warning"></i>
+            Logs e Auditoria
+        </h5>
+
+        <div class="setting-item">
+            <h6 class="mb-3">Logs de Auditoria</h6>
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label">
+                        <i class="fas fa-file me-2"></i>Arquivo de Log
+                    </label>
+                    <input type="text" class="form-control" value="{{ audit_log_path }}" readonly>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">
+                        <i class="fas fa-list me-2"></i>Eventos Registrados
+                    </label>
+                    <input type="text" class="form-control" value="{{ audit_log_count }} eventos" readonly>
+                </div>
+            </div>
+        </div>
+
+        <div class="setting-item">
+            <h6 class="mb-3">Diretórios</h6>
+            <div class="row">
+                <div class="col-md-4">
+                    <label class="form-label">
+                        <i class="fas fa-signature me-2"></i>Assinaturas
+                    </label>
+                    <input type="text" class="form-control" value="Registrado" readonly>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">
+                        <i class="fas fa-check-circle me-2"></i>Validações
+                    </label>
+                    <input type="text" class="form-control" value="Registrado" readonly>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">
+                        <i class="fas fa-user-shield me-2"></i>Ações Admin
+                    </label>
+                    <input type="text" class="form-control" value="Registrado" readonly>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Limpeza de Arquivos -->
+    <div class="settings-card">
+        <h5 class="mb-4">
+            <i class="fas fa-broom me-2 text-warning"></i>
+            Limpeza de Arquivos
+        </h5>
+
+        <!-- Estatísticas dos Diretórios -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="setting-item">
+                    <div class="text-center">
+                        <i class="fas fa-folder-open fa-2x text-warning mb-3"></i>
+                        <div class="stats-number">{{ temp_files_count }}</div>
+                        <div class="stats-label">Arquivos Temporários</div>
+                        <small class="text-muted">Pasta: temp_files/</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="setting-item">
+                    <div class="text-center">
+                        <i class="fas fa-file-pdf fa-2x text-info mb-3"></i>
+                        <div class="stats-number">{{ signed_files_count }}</div>
+                        <div class="stats-label">PDFs Assinados</div>
+                        <small class="text-muted">Pasta: pdf_assinados/</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ações de Limpeza Manual -->
+        <div class="setting-item">
+            <h6 class="mb-3">Ações de Limpeza Manual</h6>
+            <form method="POST" action="{{ url_for('admin_cleanup') }}">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <button type="submit" name="action" value="cleanup_temp" class="btn btn-warning w-100">
+                            <i class="fas fa-clock me-2"></i>Limpar Temporários
+                        </button>
+                        <small class="text-muted">Remove arquivos da pasta temp_files/ (mais de 1 hora)</small>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Ações Rápidas -->
+    <div class="settings-card">
+        <h5 class="mb-4">
+            <i class="fas fa-bolt me-2 text-danger"></i>
+            Ações Rápidas
+        </h5>
+
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-primary w-100">
+                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                </a>
+            </div>
+            <div class="col-md-4 mb-3">
+                <a href="{{ url_for('admin_reports') }}" class="btn btn-info w-100">
+                    <i class="fas fa-chart-bar me-2"></i>Relatórios
+                </a>
+            </div>
+            <div class="col-md-4 mb-3">
+                <a href="{{ url_for('index') }}" class="btn btn-secondary w-100">
+                    <i class="fas fa-home me-2"></i>Início
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informações do Sistema -->
+    <div class="settings-card">
+        <h5 class="mb-4">
+            <i class="fas fa-server me-2 text-primary"></i>
+            Informações do Servidor
+        </h5>
+
+        <div class="setting-item">
+            <h6 class="mb-3">Ambiente</h6>
+            <div class="row">
+                <div class="col-md-4">
+                    <label class="form-label">
+                        <i class="fas fa-cogs me-2"></i>Modo
+                    </label>
+                    <input type="text" class="form-control" value="{{ 'Produção' if is_production else 'Desenvolvimento' }}" readonly>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">
+                        <i class="fas fa-server me-2"></i>Serviço
+                    </label>
+                    <input type="text" class="form-control" value="{{ 'Gunicorn' if is_service else 'Flask Dev' }}" readonly>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">
+                        <i class="fas fa-clock me-2"></i>Horário Servidor
+                    </label>
+                    <input type="text" class="form-control" value="{{ server_time }} {{ timezone }}" readonly>
+                </div>
+            </div>
+        </div>
+
+        <div class="setting-item">
+            <h6 class="mb-3">Plataforma</h6>
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label">
+                        <i class="fab fa-windows me-2"></i>Sistema Operacional
+                    </label>
+                    <input type="text" class="form-control" value="{{ platform_info }}" readonly>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">
+                        <i class="fas fa-microchip me-2"></i>Processador
+                    </label>
+                    <input type="text" class="form-control" value="{{ processor }}" readonly>
+                </div>
+            </div>
+        </div>
+
+        <div class="setting-item">
+            <h6 class="mb-3">Hardware</h6>
+            <div class="row">
+                <div class="col-md-4">
+                    <label class="form-label">
+                        <i class="fas fa-microchip me-2"></i>CPU
+                    </label>
+                    <input type="text" class="form-control" value="{{ cpu_count }} cores ({{ cpu_percent }}%)" readonly>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">
+                        <i class="fas fa-memory me-2"></i>Memória RAM
+                    </label>
+                    <input type="text" class="form-control" value="{{ memory_used_gb }}GB / {{ memory_total_gb }}GB ({{ memory_percent }}%)" readonly>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">
+                        <i class="fas fa-hdd me-2"></i>Disco
+                    </label>
+                    <input type="text" class="form-control" value="{{ disk_used_gb }}GB / {{ disk_total_gb }}GB ({{ disk_percent }}%)" readonly>
+                </div>
+            </div>
+        </div>
+
+        <div class="setting-item">
+            <h6 class="mb-3">Versões</h6>
+            <div class="row">
+                <div class="col-md-4">
+                    <label class="form-label">
+                        <i class="fab fa-python me-2"></i>Python
+                    </label>
+                    <input type="text" class="form-control" value="{{ python_version }}" readonly>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">
+                        <i class="fas fa-flask me-2"></i>Flask
+                    </label>
+                    <input type="text" class="form-control" value="{{ flask_version }}" readonly>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">
+                        <i class="fas fa-database me-2"></i>Banco de Dados
+                    </label>
+                    <input type="text" class="form-control" value="{{ db_type }}" readonly>
+                </div>
+            </div>
+        </div>
+
+        <div class="setting-item">
+            <h6 class="mb-3">Banco de Dados</h6>
+            <div class="row">
+                <div class="col-md-4">
+                    <label class="form-label">
+                        <i class="fas fa-database me-2"></i>Tipo
+                    </label>
+                    <input type="text" class="form-control" value="{{ db_type }}" readonly>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">
+                        <i class="fas fa-network-wired me-2"></i>Host
+                    </label>
+                    <input type="text" class="form-control" value="{{ db_host }}" readonly>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">
+                        <i class="fas fa-plug me-2"></i>Porta
+                    </label>
+                    <input type="text" class="form-control" value="{{ db_port }}" readonly>
+                </div>
+            </div>
+        </div>
+
+        <div class="setting-item">
+            <h6 class="mb-3">Recursos</h6>
+            <div class="row">
+                <div class="col-md-4">
+                    <label class="form-label">
+                        <i class="fas fa-bolt me-2"></i>Async
+                    </label>
+                    <input type="text" class="form-control" value="{{ 'Habilitado' if async_enabled else 'Desabilitado (SQLite)' }}" readonly>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">
+                        <i class="fas fa-memory me-2"></i>Cache
+                    </label>
+                    <input type="text" class="form-control" value="{{ cache_type }}{% if cache_timeout > 0 %} ({{ cache_timeout }}s){% endif %}" readonly>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">
+                        <i class="fas fa-shield-alt me-2"></i>Rate Limit
+                    </label>
+                    <input type="text" class="form-control" value="{{ 'Habilitado' if rate_limit_enabled else 'Desabilitado' }}" readonly>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,57 +1,148 @@
-# Arquivos temporários
-temp_files/
+# ============================================
+# PYTHON
+# ============================================
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
+*.so
 .Python
-env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# ============================================
+# VIRTUAL ENVIRONMENT
+# ============================================
 venv/
+env/
+ENV/
 .venv/
-pip-log.txt
-pip-delete-this-directory.txt
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
+
+# ============================================
+# FLASK
+# ============================================
+instance/
+.webassets-cache
+
+# ============================================
+# BANCO DE DADOS
+# ============================================
+*.db
+*.sqlite
+*.sqlite3
+
+# ============================================
+# ARQUIVOS DE CONFIGURAÇÃO SENSÍVEIS
+# ============================================
+.env
+.env.local
+.env.production
+.env.*.local
+
+# ============================================
+# ARQUIVOS DE UPLOAD E TEMPORÁRIOS
+# ============================================
+temp_files/
+pdf_assinados/
+signatures/
+certificates/
+keys/
+logs/
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.txt
+
+# ============================================
+# LOGS
+# ============================================
 *.log
-.git
-.mypy_cache
-.pytest_cache
-.hypothesis
+logs/
 
-# Arquivos do sistema
-.DS_Store
+# ============================================
+# SISTEMA OPERACIONAL
+# ============================================
+# Windows
 Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
 
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Linux
+*~
+.directory
+
+# ============================================
 # IDEs
+# ============================================
+# VSCode
 .vscode/
+*.code-workspace
+
+# PyCharm
 .idea/
+*.iml
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# ============================================
+# TESTES
+# ============================================
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# ============================================
+# UV PACKAGE MANAGER
+# ============================================
+uv.lock
+
+# ============================================
+# BACKUP E ARQUIVOS TEMPORÁRIOS
+# ============================================
+*.bak
+*.tmp
 *.swp
 *.swo
 *~
 
-# Arquivos de configuração local
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# ============================================
+# DOCUMENTAÇÃO GERADA
+# ============================================
+docs/_build/
 
-# Logs
-logs/
-*.log
+# ============================================
+# MÍDIA E ASSETS
+# ============================================
+*.mp4
+*.avi
+*.mov
+*.wmv
 
-# Cryptographic keys
-keys/
-
-# Signature metadata (contains sensitive information)
-signatures/
-
-# Digital certificates (contains sensitive information)
-certificates/
-temp_files/
-pdf_assinados/
+# ============================================
+# MANTER APENAS EXEMPLOS
+# ============================================
+!env_example.txt
+!static/images/logo.png

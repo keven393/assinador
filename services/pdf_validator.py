@@ -28,7 +28,7 @@ class PDFValidator:
     
     def calculate_pdf_hash(self, pdf_content):
         """Calcula o hash SHA-256 do conteúdo do PDF"""
-        from crypto_utils import calculate_content_hash
+        from utils.crypto_utils import calculate_content_hash
         return calculate_content_hash(pdf_content)
     
     def extract_signature_metadata(self, pdf_path):
@@ -71,69 +71,13 @@ class PDFValidator:
     
     def verify_digital_signature(self, pdf_content, signature_info):
         """Verifica a assinatura digital do PDF"""
-        try:
-            # Carrega chave pública
-            with open(self.public_key_path, "rb") as f:
-                public_key = serialization.load_pem_public_key(f.read(), backend=default_backend())
-            
-            # Decodifica a assinatura
-            signature_data = base64.b64decode(signature_info['signature'])
-            
-            # Calcula o hash do PDF
-            pdf_hash = self.calculate_pdf_hash(pdf_content)
-            
-            # Verifica se o hash corresponde
-            if pdf_hash != signature_info['hash']:
-                print(f"Hash do PDF não corresponde ao hash assinado")
-                return False
-            
-            # Verifica a assinatura do hash
-            public_key.verify(
-                signature_data,
-                pdf_hash.encode('utf-8'),
-                padding.PSS(
-                    mgf=padding.MGF1(hashes.SHA256()),
-                    salt_length=padding.PSS.MAX_LENGTH
-                ),
-                hashes.SHA256()
-            )
-            return True
-        except Exception as e:
-            print(f"Erro na verificação da assinatura digital: {e}")
-            return False
+        from utils.crypto_utils import verify_pdf_signature_unified
+        return verify_pdf_signature_unified(pdf_content, signature_info, self.public_key_path)
     
     def verify_certificate_signature(self, pdf_content, signature_info):
         """Verifica a assinatura usando a chave pública do sistema"""
-        try:
-            # Carrega chave pública (mesma usada para assinar)
-            with open(self.public_key_path, "rb") as f:
-                public_key = serialization.load_pem_public_key(f.read(), backend=default_backend())
-            
-            # Decodifica a assinatura
-            signature_data = base64.b64decode(signature_info['signature'])
-            
-            # Calcula o hash do PDF
-            pdf_hash = self.calculate_pdf_hash(pdf_content)
-            
-            # Verifica se o hash corresponde
-            if pdf_hash != signature_info['hash']:
-                print(f"Hash do PDF não corresponde ao hash assinado")
-                return False
-            
-            # Verifica a assinatura do hash
-            public_key.verify(
-                signature_data,
-                pdf_hash.encode('utf-8'),
-                padding.PSS(
-                    mgf=padding.MGF1(hashes.SHA256()),
-                    salt_length=padding.PSS.MAX_LENGTH
-                ),
-                hashes.SHA256()
-            )
-            return True
-        except Exception as e:
-            print(f"Erro na verificação da assinatura: {e}")
-            return False
+        from utils.crypto_utils import verify_pdf_signature_unified
+        return verify_pdf_signature_unified(pdf_content, signature_info, self.public_key_path)
     
     def validate_pdf(self, pdf_path, signature_record=None):
         """

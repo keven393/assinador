@@ -1,276 +1,159 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Assinador Digital - Página Inicial</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        body {
-            background-color: #f8f9fa;
-        }
-        .hero-section {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 4rem 0;
-            margin-bottom: 2rem;
-        }
-        .action-card {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            padding: 2rem;
-            margin-bottom: 2rem;
-            transition: transform 0.3s ease;
-        }
-        .action-card:hover {
-            transform: translateY(-5px);
-        }
-        .action-icon {
-            font-size: 3rem;
-            color: #667eea;
-            margin-bottom: 1rem;
-        }
-        .pending-card {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-        }
-        .client-header {
-            background: #e3f2fd;
-            padding: 1rem;
-            border-radius: 10px;
-            margin-bottom: 1rem;
-        }
-        .document-item {
-            background: #f8f9fa;
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 0.5rem;
-            border-left: 4px solid #667eea;
-        }
-        .btn-custom {
-            border-radius: 10px;
-            padding: 0.75rem 1.5rem;
-            font-weight: 600;
-        }
-        .status-badge {
-            font-size: 0.8rem;
-        }
-    </style>
-</head>
-<body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+{% extends "base.html" %}
+
+{% block title %}Assinador Digital - Página Inicial{% endblock %}
+
+{% block extra_css %}
+<style>
+    .hero-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 3rem 0;
+        margin-bottom: 2rem;
+        border-radius: 15px;
+    }
+    .action-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        padding: 2rem;
+        margin-bottom: 2rem;
+        transition: transform 0.3s ease;
+        height: 100%;
+    }
+    .action-card:hover {
+        transform: translateY(-5px);
+    }
+    .action-icon {
+        font-size: 3rem;
+        color: #667eea;
+        margin-bottom: 1rem;
+    }
+    .pending-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    .client-header {
+        background: #e3f2fd;
+        padding: 1rem;
+        border-radius: 10px;
+        margin-bottom: 1rem;
+    }
+    .document-item {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+        border-left: 4px solid #667eea;
+    }
+    .btn-custom {
+        border-radius: 10px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+    }
+    .status-badge {
+        font-size: 0.8rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Hero Section -->
+    <div class="hero-section text-center">
         <div class="container">
-            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('index') }}">
-                <i class="fas fa-signature me-2"></i>
-                Assinador Digital
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain" aria-controls="navbarMain" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarMain">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('internal_signature_upload') }}">
-                            <i class="fas fa-upload me-1"></i> Nova Assinatura
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('internal_pending_signatures') }}">
-                            <i class="fas fa-clock me-1"></i> Pendentes
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('internal_completed_signatures') }}">
-                            <i class="fas fa-check me-1"></i> Concluídas
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('validate_pdf') }}">
-                            <i class="fas fa-shield-alt me-1"></i> Validador
-                        </a>
-                    </li>
-                    
-                    {% if current_user.is_authenticated and current_user.is_admin() %}
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="adminMenu" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-cogs me-1"></i> Admin
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="adminMenu">
-                            <li><a class="dropdown-item" href="{{ url_for('admin_dashboard') }}"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('admin_reports') }}"><i class="fas fa-chart-bar me-2"></i>Relatórios</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('admin_settings') }}"><i class="fas fa-cog me-2"></i>Configurações</a></li>
-                        </ul>
-                    </li>
-                    {% endif %}
-                </ul>
-                <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('profile') }}">
-                            <i class="fas fa-user me-1"></i> Meu Perfil
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('logout') }}">
-                            <i class="fas fa-sign-out-alt me-1"></i> Sair
-                        </a>
-                    </li>
-                </ul>
-            </div>
+            <h1 class="display-4 mb-3">
+                <i class="fas fa-file-signature me-2"></i>
+                Bem-vindo ao Assinador Digital
+            </h1>
+            <p class="lead">Sistema completo de assinatura digital de documentos</p>
         </div>
-    </nav>
-
-    <div class="container mt-4">
-        <!-- Mensagens Flash -->
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
-        <!-- Ações Principais -->
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="action-card text-center">
-                    <div class="action-icon">
-                        <i class="fas fa-upload"></i>
-                    </div>
-                    <h4>Nova Assinatura</h4>
-                    <p class="text-muted">Faça upload de documentos e preencha os dados do cliente</p>
-                    <a href="{{ url_for('internal_signature_upload') }}" class="btn btn-primary btn-custom">
-                        <i class="fas fa-plus me-2"></i>Iniciar Assinatura
-                    </a>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="action-card text-center">
-                    <div class="action-icon">
-                        <i class="fas fa-tablet-alt"></i>
-                    </div>
-                    <h4>Tela do Cliente</h4>
-                    <p class="text-muted">Acesse a interface para assinatura pelos clientes</p>
-                    <a href="{{ url_for('client_select_document') }}" class="btn btn-success btn-custom" target="_blank">
-                        <i class="fas fa-external-link-alt me-2"></i>Abrir Tela Cliente
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Assinaturas Pendentes -->
-        {% if pending_count > 0 %}
-        <div class="row">
-            <div class="col-12">
-                <div class="action-card">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h4 class="mb-0">
-                            <i class="fas fa-clock me-2 text-warning"></i>
-                            Assinaturas Pendentes ({{ pending_count }})
-                        </h4>
-                        <a href="{{ url_for('internal_pending_signatures') }}" class="btn btn-outline-primary">
-                            <i class="fas fa-list me-2"></i>Ver Todas
-                        </a>
-                    </div>
-                    
-                    {% for client_key, client_data in clients.items() %}
-                    <div class="pending-card">
-                        <div class="client-header">
-                            <div class="row align-items-center">
-                                <div class="col-md-6">
-                                    <h6 class="mb-1">
-                                        <i class="fas fa-user me-2"></i>
-                                        {{ client_data.client_name }}
-                                    </h6>
-                                    <small class="text-muted">
-                                        CPF: {{ client_data.client_cpf|cpf }}
-                                    </small>
-                                </div>
-                                <div class="col-md-3">
-                                    <small class="text-muted">
-                                        <i class="fas fa-envelope me-1"></i>
-                                        {{ client_data.client_email or 'Não informado' }}
-                                    </small>
-                                </div>
-                                <div class="col-md-3">
-                                    <small class="text-muted">
-                                        <i class="fas fa-phone me-1"></i>
-                                        {{ client_data.client_phone or 'Não informado' }}
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="documents-list">
-                            <h6 class="mb-2">
-                                <i class="fas fa-file-pdf me-2 text-danger"></i>
-                                Documentos Pendentes:
-                            </h6>
-                            {% for signature in client_data.signatures %}
-                            <div class="document-item">
-                                <div class="row align-items-center">
-                                    <div class="col-md-6">
-                                        <strong>{{ signature.original_filename }}</strong>
-                                        <br>
-                                        <small class="text-muted">
-                                            Enviado em: {{ signature.timestamp.strftime('%d/%m/%Y %H:%M') }}
-                                        </small>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <span class="badge bg-warning status-badge">
-                                            <i class="fas fa-clock me-1"></i>Pendente
-                                        </span>
-                                    </div>
-                                    <div class="col-md-3 text-end">
-                                        <small class="text-muted">
-                                            {{ (signature.file_size / 1024)|round(1) }} KB
-                                        </small>
-                                    </div>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
-                        
-                        <div class="text-center mt-3">
-                            <small class="text-muted">
-                                <i class="fas fa-info-circle me-1"></i>
-                                O cliente deve acessar a tela de assinatura para finalizar
-                            </small>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-        {% else %}
-        <!-- Sem Assinaturas Pendentes -->
-        <div class="row">
-            <div class="col-12">
-                <div class="action-card text-center">
-                    <div class="action-icon text-success">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
-                    <h4>Nenhuma Assinatura Pendente</h4>
-                    <p class="text-muted">Todos os documentos foram processados ou você ainda não iniciou nenhuma assinatura.</p>
-                    <a href="{{ url_for('internal_signature_upload') }}" class="btn btn-primary btn-custom">
-                        <i class="fas fa-plus me-2"></i>Iniciar Primeira Assinatura
-                    </a>
-                </div>
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- Links Rápidos removidos: opções foram movidas para a navbar -->
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+    <!-- Action Cards -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="action-card text-center">
+                <div class="action-icon">
+                    <i class="fas fa-upload"></i>
+                </div>
+                <h4>Nova Assinatura</h4>
+                <p class="text-muted">Faça upload de um documento para assinatura</p>
+                <a href="{{ url_for('internal_signature_upload') }}" class="btn btn-primary btn-custom">
+                    <i class="fas fa-plus me-2"></i>Criar Assinatura
+                </a>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="action-card text-center">
+                <div class="action-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h4>Assinaturas Pendentes</h4>
+                <p class="text-muted">Visualize e gerencie documentos pendentes</p>
+                <a href="{{ url_for('internal_pending_signatures') }}" class="btn btn-warning btn-custom">
+                    <i class="fas fa-list me-2"></i>Ver Pendentes
+                    {% if pending_signatures|length > 0 %}
+                        <span class="badge bg-danger ms-2">{{ pending_signatures|length }}</span>
+                    {% endif %}
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Signatures -->
+    {% if pending_signatures %}
+    <div class="pending-card">
+        <h5 class="mb-3">
+            <i class="fas fa-clock me-2 text-warning"></i>
+            Assinaturas Pendentes ({{ pending_signatures|length }})
+        </h5>
+        
+        {% for signature in pending_signatures[:5] %}
+        <div class="document-item">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-1">{{ signature.original_filename }}</h6>
+                    <small class="text-muted">
+                        <i class="fas fa-calendar me-1"></i>
+                        {{ signature.created_at.strftime('%d/%m/%Y %H:%M') }}
+                    </small>
+                </div>
+                <div>
+                    {% if signature.client_name %}
+                    <div class="client-header mb-2">
+                        <small><strong>Cliente:</strong> {{ signature.client_name }}</small>
+                    </div>
+                    {% endif %}
+                    <a href="{{ url_for('internal_edit_signature', signature_id=signature.id) }}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-edit me-1"></i>Editar
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        
+        {% if pending_signatures|length > 5 %}
+        <div class="text-center mt-3">
+            <a href="{{ url_for('internal_pending_signatures') }}" class="btn btn-outline-primary">
+                Ver todas as pendentes ({{ pending_signatures|length }})
+            </a>
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="pending-card text-center">
+        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+        <h5>Nenhuma assinatura pendente</h5>
+        <p class="text-muted">Comece criando uma nova assinatura</p>
+        <a href="{{ url_for('internal_signature_upload') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Criar Assinatura
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

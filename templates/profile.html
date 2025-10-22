@@ -1,64 +1,61 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Perfil - Assinador de PDFs</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        body {
-            background-color: #f8f9fa;
-        }
-        .profile-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 3rem 0;
-            margin-bottom: 2rem;
-        }
-        .profile-avatar {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 3rem;
-            margin: 0 auto 1rem;
-        }
-        .profile-card {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            padding: 2rem;
-            margin-bottom: 2rem;
-        }
-        .stats-card {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            padding: 1.5rem;
-            text-align: center;
-            margin-bottom: 1rem;
-        }
-        .stats-number {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #667eea;
-        }
-        .stats-label {
-            color: #6c757d;
-            font-size: 0.9rem;
-        }
-        .btn-custom {
-            border-radius: 10px;
-            padding: 0.75rem 1.5rem;
-            font-weight: 600;
-        }
-    </style>
-</head>
-<body>
+{% extends "base.html" %}
+
+{% block title %}Perfil - Assinador de PDFs{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 3rem 0;
+        margin-bottom: 2rem;
+        border-radius: 15px;
+    }
+    .profile-avatar {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        margin: 0 auto 1rem;
+    }
+    .profile-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    .stats-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        padding: 1.5rem;
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+    .stats-number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #667eea;
+    }
+    .stats-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    .btn-custom {
+        border-radius: 10px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
     <!-- Header -->
     <div class="profile-header">
         <div class="container">
@@ -76,177 +73,164 @@
         </div>
     </div>
 
-    <div class="container">
-        <!-- Mensagens Flash -->
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
-        <div class="row">
-            <!-- Informações do Usuário -->
-            <div class="col-lg-8">
-                <div class="profile-card">
-                    <h4 class="mb-4">
-                        <i class="fas fa-user-circle me-2"></i>
-                        Informações Pessoais
-                    </h4>
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Nome de Usuário</label>
-                            <p class="form-control-plaintext">{{ current_user.username }}</p>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Email</label>
-                            <p class="form-control-plaintext">{{ current_user.email }}</p>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Nome Completo</label>
-                            <p class="form-control-plaintext">{{ current_user.full_name }}</p>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Função</label>
-                            <p class="form-control-plaintext">
-                                <span class="badge bg-{{ 'primary' if current_user.role == 'admin' else 'secondary' }}">
-                                    {{ 'Administrador' if current_user.role == 'admin' else 'Usuário' }}
+    <div class="row">
+        <!-- Informações do Usuário -->
+        <div class="col-lg-8">
+            <div class="profile-card">
+                <h4 class="mb-4">
+                    <i class="fas fa-user-circle me-2"></i>
+                    Informações Pessoais
+                </h4>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Nome de Usuário</label>
+                        <p class="form-control-plaintext">
+                            {{ current_user.username }}
+                            {% if current_user.is_ldap_user %}
+                                <span class="badge bg-info ms-2">
+                                    <i class="fas fa-server me-1"></i>LDAP
                                 </span>
-                            </p>
-                        </div>
+                            {% endif %}
+                        </p>
                     </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Data de Criação</label>
-                            <p class="form-control-plaintext">{{ current_user.created_at.strftime('%d/%m/%Y %H:%M') }}</p>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Último Login</label>
-                            <p class="form-control-plaintext">
-                                {{ current_user.last_login.strftime('%d/%m/%Y %H:%M') if current_user.last_login else 'Nunca' }}
-                            </p>
-                        </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Email</label>
+                        <p class="form-control-plaintext">{{ current_user.email }}</p>
                     </div>
-                    
-                    <div class="mt-4">
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Nome Completo</label>
+                        <p class="form-control-plaintext">{{ current_user.full_name }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Função</label>
+                        <p class="form-control-plaintext">
+                            <span class="badge bg-{{ 'primary' if current_user.role == 'admin' else 'secondary' }}">
+                                {{ 'Administrador' if current_user.role == 'admin' else 'Usuário' }}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Data de Criação</label>
+                        <p class="form-control-plaintext">{{ current_user.created_at.strftime('%d/%m/%Y %H:%M') }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Último Login</label>
+                        <p class="form-control-plaintext">
+                            {{ current_user.last_login.strftime('%d/%m/%Y %H:%M') if current_user.last_login else 'Nunca' }}
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    {% if not current_user.is_ldap_user %}
                         <a href="{{ url_for('change_password') }}" class="btn btn-primary btn-custom me-2">
                             <i class="fas fa-key me-2"></i>Alterar Senha
                         </a>
-                        {% if current_user.is_admin() %}
-                            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-success btn-custom">
-                                <i class="fas fa-tachometer-alt me-2"></i>Painel Admin
-                            </a>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Estatísticas -->
-            <div class="col-lg-4">
-                <div class="stats-card">
-                    <div class="stats-number">{{ current_user.signatures|length }}</div>
-                    <div class="stats-label">Documentos Assinados</div>
-                </div>
-                
-                <div class="stats-card">
-                    <div class="stats-number">
-                        {% if current_user.last_login %}
-                            {{ ((current_user.last_login - current_user.created_at).days) }}
-                        {% else %}
-                            0
-                        {% endif %}
-                    </div>
-                    <div class="stats-label">Dias no Sistema</div>
-                </div>
-                
-                <div class="stats-card">
-                    <div class="stats-number">
-                        {{ current_user.signatures|length }}
-                    </div>
-                    <div class="stats-label">Total de Assinaturas</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Histórico de Assinaturas -->
-        {% if current_user.signatures %}
-        <div class="row">
-            <div class="col-12">
-                <div class="profile-card">
-                    <h4 class="mb-4">
-                        <i class="fas fa-history me-2"></i>
-                        Histórico de Assinaturas
-                    </h4>
-                    
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Arquivo</th>
-                                    <th>Data</th>
-                                    <th>Algoritmo</th>
-                                    <th>Tamanho</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% set recent_signatures = current_user.signatures|sort(attribute='timestamp', reverse=true)|list %}
-                                {% for signature in recent_signatures[:10] %}
-                                <tr>
-                                    <td>
-                                        <i class="fas fa-file-pdf me-2 text-danger"></i>
-                                        {{ signature.original_filename }}
-                                    </td>
-                                    <td>{{ signature.timestamp.strftime('%d/%m/%Y %H:%M') }}</td>
-                                    <td>
-                                        <span class="badge bg-info">{{ signature.signature_algorithm }}</span>
-                                    </td>
-                                    <td>{{ (signature.file_size / 1024)|round(1) }} KB</td>
-                                    <td>
-                                        {% if signature.signature_valid %}
-                                            <span class="badge bg-success">Válida</span>
-                                        {% else %}
-                                            <span class="badge bg-danger">Inválida</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    {% if current_user.signatures|length > 10 %}
-                    <div class="text-center mt-3">
-                        <small class="text-muted">Mostrando as 10 assinaturas mais recentes</small>
-                    </div>
+                    {% else %}
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Usuário LDAP:</strong> Sua senha e username são gerenciados pelo Active Directory.
+                        </div>
+                    {% endif %}
+                    {% if current_user.is_admin() %}
+                        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-success btn-custom">
+                            <i class="fas fa-tachometer-alt me-2"></i>Painel Admin
+                        </a>
                     {% endif %}
                 </div>
             </div>
         </div>
-        {% endif %}
-    </div>
 
-    <!-- Footer -->
-    <div class="mt-5 py-4 bg-light">
-        <div class="container text-center">
-            <a href="{{ url_for('index') }}" class="btn btn-outline-primary me-2">
-                <i class="fas fa-home me-2"></i>Voltar ao Início
-            </a>
-            <a href="{{ url_for('logout') }}" class="btn btn-outline-danger">
-                <i class="fas fa-sign-out-alt me-2"></i>Sair
-            </a>
+        <!-- Estatísticas -->
+        <div class="col-lg-4">
+            <div class="stats-card">
+                <div class="stats-number">{{ current_user.signatures.count() }}</div>
+                <div class="stats-label">Documentos Assinados</div>
+            </div>
+            
+            <div class="stats-card">
+                <div class="stats-number">
+                    {% if current_user.last_login %}
+                        {{ ((current_user.last_login - current_user.created_at).days) }}
+                    {% else %}
+                    0
+                    {% endif %}
+                </div>
+                <div class="stats-label">Dias no Sistema</div>
+            </div>
+            
+            <div class="stats-card">
+                <div class="stats-number">
+                    {{ current_user.signatures.count() }}
+                </div>
+                <div class="stats-label">Total de Assinaturas</div>
+            </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+    <!-- Histórico de Assinaturas -->
+    {% if current_user.signatures %}
+    <div class="row">
+        <div class="col-12">
+            <div class="profile-card">
+                <h4 class="mb-4">
+                    <i class="fas fa-history me-2"></i>
+                    Histórico de Assinaturas
+                </h4>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Arquivo</th>
+                                <th>Data</th>
+                                <th>Algoritmo</th>
+                                <th>Tamanho</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% set recent_signatures = current_user.signatures|sort(attribute='timestamp', reverse=true)|list %}
+                            {% for signature in recent_signatures[:10] %}
+                            <tr>
+                                <td>
+                                    <i class="fas fa-file-pdf me-2 text-danger"></i>
+                                    {{ signature.original_filename }}
+                                </td>
+                                <td>{{ signature.timestamp.strftime('%d/%m/%Y %H:%M') }}</td>
+                                <td>
+                                    <span class="badge bg-info">{{ signature.signature_algorithm }}</span>
+                                </td>
+                                <td>{{ (signature.file_size / 1024)|round(1) }} KB</td>
+                                <td>
+                                    {% if signature.signature_valid %}
+                                        <span class="badge bg-success">Válida</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Inválida</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                {% if current_user.signatures.count() > 10 %}
+                <div class="text-center mt-3">
+                    <small class="text-muted">Mostrando as 10 assinaturas mais recentes</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

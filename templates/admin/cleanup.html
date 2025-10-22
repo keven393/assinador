@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Limpeza de Arquivos - Assinador de PDFs{% endblock %}
+
+{% block extra_css %}
+<style>
+body {
+            background-color: #f8f9fa;
+        }
+        .admin-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+        .stats-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        .stats-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .stats-label {
+            color: #6c757d;
+            font-size: 1rem;
+            margin-top: 0.5rem;
+        }
+        .action-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .btn-cleanup {
+            border-radius: 10px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            margin: 0.25rem;
+        }
+        .info-card {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Header -->
+
+    <div class="container">
+        <!-- Mensagens Flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Informações sobre Limpeza -->
+        <div class="info-card">
+            <h6 class="mb-2">
+                <i class="fas fa-info-circle me-2"></i>
+                Sobre a Limpeza Automática
+            </h6>
+            <p class="mb-1">
+                <strong>Arquivos Temporários:</strong> Removidos após 1 hora
+            </p>
+            <p class="mb-1">
+                <strong>PDFs Assinados:</strong> Removidos após 7 dias
+            </p>
+            <p class="mb-0">
+                <strong>Execução:</strong> Diariamente às 02:00 (horário configurável)
+            </p>
+        </div>
+
+        <!-- Estatísticas dos Diretórios -->
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="stats-card">
+                    <i class="fas fa-folder-open fa-2x text-warning mb-3"></i>
+                    <div class="stats-number">{{ temp_files_count }}</div>
+                    <div class="stats-label">Arquivos Temporários</div>
+                    <small class="text-muted">Pasta: temp_files/</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ações de Limpeza -->
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="action-card">
+                    <h5 class="mb-3">
+                        <i class="fas fa-tools me-2"></i>
+                        Ações de Limpeza Manual
+                    </h5>
+                    
+                    <form method="POST" action="{{ url_for('admin_cleanup') }}">
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <div class="d-grid">
+                                    <button type="submit" name="action" value="cleanup_temp" 
+                                            class="btn btn-warning btn-cleanup">
+                                        <i class="fas fa-clock me-2"></i>
+                                        Limpar Arquivos Temporários
+                                    </button>
+                                </div>
+                                <small class="text-muted">Remove arquivos da pasta temp_files/ (mais de 1 hora). A limpeza automática é executada diariamente às 02:00.</small>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <div class="action-card">
+                    <h5 class="mb-3">
+                        <i class="fas fa-cog me-2"></i>
+                        Configurações
+                    </h5>
+                    
+                    <div class="mb-3">
+                        <h6>Retenção de Arquivos</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-clock text-warning me-2"></i>Temporários: 1 hora</li>
+                            <li><i class="fas fa-calendar text-info me-2"></i>Assinados: 7 dias</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6>Execução Automática</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-clock text-success me-2"></i>Horário: 02:00</li>
+                            <li><i class="fas fa-globe text-primary me-2"></i>Fuso: America/Sao_Paulo</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <a href="{{ url_for('admin_settings') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-cog me-2"></i>Alterar Configurações
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    
+{% endblock %}

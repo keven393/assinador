@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}Logs de Auditoria{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="d-flex align-items-center mb-3">
+        <h3 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Logs de Auditoria</h3>
+        <div class="ms-auto d-flex gap-2">
+            <a class="btn btn-outline-secondary" href="{{ url_for('admin_audit_logs_download') }}">
+                <i class="fas fa-file-download me-1"></i> Baixar audit.log
+            </a>
+            <a class="btn btn-success" href="{{ url_for('admin_audit_logs_export_csv', q=q, action=action_filter, status=status_filter, user_id=user_id_filter, date_from=date_from, date_to=date_to) }}">
+                <i class="fas fa-file-csv me-1"></i> Exportar CSV
+            </a>
+        </div>
+    </div>
+
+    <form class="row g-3 mb-3" method="GET" action="{{ url_for('admin_audit_logs') }}">
+        <div class="col-md-3">
+            <label class="form-label">Data Inicial</label>
+            <input type="date" class="form-control" name="date_from" value="{{ date_from or '' }}">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Data Final</label>
+            <input type="date" class="form-control" name="date_to" value="{{ date_to or '' }}">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Usuário (ID)</label>
+            <input type="number" class="form-control" name="user_id" value="{{ user_id_filter or '' }}">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Ação</label>
+            <select class="form-select" name="action">
+                <option value="">Todas</option>
+                {% for act in actions_available %}
+                    <option value="{{ act }}" {% if action_filter == act %}selected{% endif %}>{{ act }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Status</label>
+            <select class="form-select" name="status">
+                <option value="">Todos</option>
+                <option value="success" {% if status_filter == 'success' %}selected{% endif %}>success</option>
+                <option value="error" {% if status_filter == 'error' %}selected{% endif %}>error</option>
+            </select>
+        </div>
+        <div class="col-12">
+            <label class="form-label">Busca Livre</label>
+            <input type="text" class="form-control" name="q" value="{{ q or '' }}" placeholder="Buscar em todo o JSON do evento...">
+        </div>
+        <div class="col-12 d-flex justify-content-end">
+            <button class="btn btn-primary" type="submit"><i class="fas fa-search me-1"></i> Filtrar</button>
+        </div>
+    </form>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>Data/Hora (UTC)</th>
+                            <th>Ação</th>
+                            <th>Status</th>
+                            <th>Usuário</th>
+                            <th>IP</th>
+                            <th>Detalhes</th>
+                            <th>Alterações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for e in items %}
+                        <tr>
+                            <td><small class="text-muted">{{ e.timestamp }}</small></td>
+                            <td><span class="badge bg-info">{{ e.action }}</span></td>
+                            <td>
+                                {% if e.status == 'success' %}
+                                <span class="badge bg-success">success</span>
+                                {% elif e.status == 'error' %}
+                                <span class="badge bg-danger">error</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ e.status or 'n/a' }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if e.actor_user_id %}
+                                    <span class="badge bg-secondary">ID {{ e.actor_user_id }}</span>
+                                    <span class="ms-2">
+                                        {{ id_to_username.get(e.actor_user_id) or 'Desconhecido' }}
+                                    </span>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td><small class="text-muted">{{ e.ip_address or '-' }}</small></td>
+                             <td>
+                                 {% set details = (e.details if e.details is defined else {}) %}
+                                 <div class="small">
+                                     {% if details.user_id is defined %}
+                                         <div class="mb-1">
+                                             <strong>Usuário alvo:</strong>
+                                             <span class="badge bg-secondary">ID {{ details.user_id }}</span>
+                                             <span class="ms-2">{{ details.username if details.username is defined else (id_to_username.get(details.user_id) or 'Desconhecido') }}</span>
+                                         </div>
+                                     {% endif %}
+                                     {% if details.files is defined %}
+                                         <div><strong>Arquivos:</strong> {{ details.files }}</div>
+                                     {% endif %}
+                                     {% if details.hash is defined %}
+                                         <div><strong>Hash:</strong> <span class="text-muted">{{ details.hash }}</span></div>
+                                     {% endif %}
+                                     {% if details.message is defined %}
+                                         <div><strong>Msg:</strong> {{ details.message }}</div>
+                                     {% endif %}
+                                 </div>
+                                 <div class="mt-1"><code class="small">{{ details | tojson(indent=0) }}</code></div>
+                             </td>
+                            <td>
+                                {% set changes = (e.details.changes if e.details is defined and e.details.changes is defined else {}) %}
+                                {% if changes and changes|length > 0 %}
+                                    <ul class="mb-0 small">
+                                        {% for field, diff in changes.items() %}
+                                            <li><strong>{{ field }}</strong>: <span class="text-muted">{{ diff.from }}</span> → <span class="text-muted">{{ diff.to }}</span></li>
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">Nenhum evento encontrado</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-2">
+                <small class="text-muted">Total: {{ total }}</small>
+                <div>
+                    {% if page > 1 %}
+                        <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('admin_audit_logs', page=page-1, per_page=per_page, q=q, action=action_filter, status=status_filter, user_id=user_id_filter, date_from=date_from, date_to=date_to) }}">Anterior</a>
+                    {% endif %}
+                    {% if (page * per_page) < total %}
+                        <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('admin_audit_logs', page=page+1, per_page=per_page, q=q, action=action_filter, status=status_filter, user_id=user_id_filter, date_from=date_from, date_to=date_to) }}">Próxima</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

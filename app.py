@@ -2,7 +2,11 @@ from flask import Flask, render_template, request, jsonify, send_file, session, 
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_caching import Cache
 from flask_compress import Compress
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 import PyPDF2
+import aiofiles
+import asyncio
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.lib import colors
@@ -23,9 +27,14 @@ import uuid
 import shutil
 import json
 from functools import wraps
-from crypto_utils import signature_manager
-from certificate_manager import certificate_manager
-from pdf_validator import pdf_validator
+import logging
+
+# Configurar logging
+logger = logging.getLogger(__name__)
+
+# Imports dos serviços e utilitários
+from services import certificate_manager, pdf_validator
+from utils import signature_manager
 from models import db, User, Signature, AppSetting
 from forms import LoginForm, UserEditForm, ChangePasswordForm, AdminUserForm, ReportFilterForm
 from auth import admin_required, create_user_session, cleanup_expired_sessions, get_user_stats, get_signature_stats
@@ -34,12 +43,59 @@ from config import config
 import os
 import re
 from datetime import date
-from mobile_optimizations import (
+from utils.mobile_optimizations import (
     is_mobile_device, is_tablet, optimize_for_device, 
     get_optimized_query_limits, should_use_compression,
     get_cache_timeout, optimize_database_queries,
     get_mobile_headers, log_performance_metrics
 )
+from audit_logger import log_event, log_signature_event, log_validation_event
+
+def save_pdf_to_filesystem(pdf_content, file_id):
+    """
+    Salva PDF no filesystem e retorna o caminho
+    
+    Args:
+        pdf_content: Conteúdo binário do PDF
+        file_id: ID único do arquivo
+        
+    Returns:
+        str: Caminho completo do arquivo salvo
+    """
+    now = datetime.now()
+    year_dir = os.path.join(app.config['PDF_SIGNED_DIR'], str(now.year))
+    month_dir = os.path.join(year_dir, f"{now.month:02d}")
+    
+    os.makedirs(month_dir, exist_ok=True)
+    
+    pdf_path = os.path.join(month_dir, f"{file_id}.pdf")
+    with open(pdf_path, 'wb') as f:
+        f.write(pdf_content)
+    
+    return pdf_path
+
+async def save_pdf_to_filesystem_async(pdf_content, file_id):
+    """
+    Versão assíncrona de save_pdf_to_filesystem
+    
+    Args:
+        pdf_content: Conteúdo binário do PDF
+        file_id: ID único do arquivo
+        
+    Returns:
+        str: Caminho completo do arquivo salvo
+    """
+    now = datetime.now()
+    year_dir = os.path.join(app.config['PDF_SIGNED_DIR'], str(now.year))
+    month_dir = os.path.join(year_dir, f"{now.month:02d}")
+    
+    os.makedirs(month_dir, exist_ok=True)
+    
+    pdf_path = os.path.join(month_dir, f"{file_id}.pdf")
+    async with aiofiles.open(pdf_path, 'wb') as f:
+        await f.write(pdf_content)
+    
+    return pdf_path
 
 def detect_device_info(user_agent, request_obj):
     """Detecta informações completas do dispositivo e conexão"""
@@ -162,6 +218,27 @@ def create_app(config_name=None):
     
     # Inicializa extensões
     db.init_app(app)
+
+    # Garante schema de Tipos de Documento
+    try:
+        from models import DocumentType
+        with app.app_context():
+            # Cria tabela document_types se não existir
+            try:
+                DocumentType.__table__.create(bind=db.engine, checkfirst=True)
+            except Exception:
+                pass
+            # Adiciona coluna document_type_id em signatures se não existir
+            try:
+                inspector = db.inspect(db.engine)
+                cols = [c['name'] for c in inspector.get_columns('signatures')]
+                if 'document_type_id' not in cols:
+                    with db.engine.connect() as conn:
+                        conn.execute(db.text('ALTER TABLE signatures ADD COLUMN document_type_id INTEGER'))
+            except Exception:
+                pass
+    except Exception:
+        pass
     
     # Inicializa cache
     cache = Cache()
@@ -171,8 +248,17 @@ def create_app(config_name=None):
     compress = Compress()
     compress.init_app(app)
     
-    # Disponibiliza cache globalmente
+    # Inicializa rate limiter
+    limiter = Limiter(
+        app=app,
+        key_func=get_remote_address,
+        default_limits=["200 per day", "50 per hour"],
+        storage_uri="memory://"
+    )
+    
+    # Disponibiliza cache e limiter globalmente
     app.cache = cache
+    app.limiter = limiter
     
     login_manager = LoginManager()
     login_manager.init_app(app)
@@ -236,6 +322,23 @@ def create_app(config_name=None):
             if duration > 1.0:  # Log apenas requests lentos
                 app.logger.warning(f'Slow request: {request.endpoint} took {duration:.2f}s')
         
+        try:
+            if current_user and getattr(current_user, 'is_authenticated', False):
+                monitored = {
+                    'login', 'logout', 'admin_sync', 'admin_users', 'admin_new_user', 'admin_edit_user',
+                    'internal_signature_upload', 'internal_cancel_signature', 'internal_completed_signatures',
+                    'client_sign_document', 'validate_pdf', 'admin_reports'
+                }
+                if request.endpoint in monitored:
+                    log_event(
+                        action=f"endpoint:{request.endpoint}",
+                        actor_user_id=current_user.id,
+                        status=str(response.status_code),
+                        ip_address=get_client_ip(request),
+                        details={"method": request.method}
+                    )
+        except Exception:
+            pass
         return response
     
     # Função para invalidar cache
@@ -271,6 +374,68 @@ def create_app(config_name=None):
     return app
 
 def register_routes(app):
+    # === ADMIN: Tipos de Documento ===
+    @app.route('/admin/document-types', methods=['GET', 'POST'])
+    @login_required
+    @admin_required
+    def admin_document_types():
+        from models import DocumentType
+        if request.method == 'POST':
+            action = request.form.get('action')
+            if action == 'create':
+                name = request.form.get('name', '').strip()
+                description = request.form.get('description', '').strip()
+                if not name:
+                    flash('Nome do tipo é obrigatório', 'error')
+                else:
+                    # Verifica duplicado
+                    if DocumentType.query.filter(db.func.lower(DocumentType.name) == name.lower()).first():
+                        flash('Já existe um tipo com este nome.', 'error')
+                    else:
+                        dt = DocumentType(name=name, description=description)
+                        db.session.add(dt)
+                        db.session.commit()
+                        flash('Tipo de documento criado com sucesso!', 'success')
+                return redirect(url_for('admin_document_types'))
+            elif action == 'update':
+                dt_id = request.form.get('id')
+                name = request.form.get('name', '').strip()
+                description = request.form.get('description', '').strip()
+                active = request.form.get('active') == 'on'
+                dt = DocumentType.query.get_or_404(dt_id)
+                if not name:
+                    flash('Nome do tipo é obrigatório', 'error')
+                else:
+                    # Confere conflito por nome
+                    exists = DocumentType.query.filter(db.func.lower(DocumentType.name) == name.lower(), DocumentType.id != dt.id).first()
+                    if exists:
+                        flash('Já existe outro tipo com este nome.', 'error')
+                    else:
+                        dt.name = name
+                        dt.description = description
+                        dt.active = active
+                        db.session.commit()
+                        flash('Tipo de documento atualizado!', 'success')
+                return redirect(url_for('admin_document_types'))
+            elif action == 'delete':
+                dt_id = request.form.get('id')
+                dt = DocumentType.query.get_or_404(dt_id)
+                try:
+                    db.session.delete(dt)
+                    db.session.commit()
+                    flash('Tipo de documento removido.', 'success')
+                except Exception:
+                    db.session.rollback()
+                    flash('Não foi possível remover. Verifique se há assinaturas vinculadas.', 'error')
+                return redirect(url_for('admin_document_types'))
+        # GET
+        q = request.args.get('q', '').strip()
+        query = DocumentType.query
+        if q:
+            like = f"%{q}%"
+            query = query.filter(db.or_(DocumentType.name.ilike(like), DocumentType.description.ilike(like)))
+        items = query.order_by(DocumentType.active.desc(), DocumentType.name.asc()).all()
+        return render_template('admin/document_types.html', items=items, q=q)
     """Register all application routes"""
     
     # Helpers de configuração de armazenamento de PDFs
@@ -297,7 +462,237 @@ def register_routes(app):
             set_store_pdfs_flag(value)
             flash('Configurações atualizadas.', 'success')
             return redirect(url_for('admin_settings'))
-        return render_template('admin/settings.html', store_pdfs=get_store_pdfs_flag())
+        
+        # Informações do sistema
+        import sys
+        import flask
+        import importlib.util
+        import platform
+        import psutil
+        from datetime import datetime
+        
+        # Detectar tipo de banco
+        db_uri = app.config['SQLALCHEMY_DATABASE_URI']
+        if 'postgresql' in db_uri:
+            db_type = 'PostgreSQL'
+            # Extrair host e porta se disponível
+            try:
+                import re
+                match = re.search(r'@([^:]+):(\d+)/', db_uri)
+                if match:
+                    db_host = match.group(1)
+                    db_port = match.group(2)
+                else:
+                    db_host = 'localhost'
+                    db_port = '5432'
+            except:
+                db_host = 'localhost'
+                db_port = '5432'
+        elif 'mysql' in db_uri:
+            db_type = 'MySQL'
+            db_host = 'localhost'
+            db_port = '3306'
+        else:
+            db_type = 'SQLite'
+            db_host = 'Local'
+            db_port = 'N/A'
+        
+        # Verificar se async está habilitado
+        from async_db import IS_SQLITE
+        async_enabled = not IS_SQLITE
+        
+        # Versões
+        python_version = sys.version.split()[0]
+        flask_version = flask.__version__
+        platform_info = platform.platform()
+        machine = platform.machine()
+        processor = platform.processor()
+        
+        # Informações de memória e CPU
+        try:
+            cpu_count = psutil.cpu_count()
+            cpu_percent = psutil.cpu_percent(interval=1)
+            memory = psutil.virtual_memory()
+            memory_total_gb = round(memory.total / (1024**3), 2)
+            memory_used_gb = round(memory.used / (1024**3), 2)
+            memory_percent = memory.percent
+            disk = psutil.disk_usage('/')
+            disk_total_gb = round(disk.total / (1024**3), 2)
+            disk_used_gb = round(disk.used / (1024**3), 2)
+            disk_percent = disk.percent
+        except:
+            cpu_count = 'N/A'
+            cpu_percent = 'N/A'
+            memory_total_gb = 'N/A'
+            memory_used_gb = 'N/A'
+            memory_percent = 'N/A'
+            disk_total_gb = 'N/A'
+            disk_used_gb = 'N/A'
+            disk_percent = 'N/A'
+        
+        # Verificar recursos
+        async_supported = True
+        cache_enabled = hasattr(app, 'cache')
+        rate_limit_enabled = hasattr(app, 'limiter')
+        
+        # Tipo de cache
+        if cache_enabled:
+            try:
+                cache_type = app.cache.config['CACHE_TYPE']
+                cache_timeout = app.cache.config.get('CACHE_DEFAULT_TIMEOUT', 300)
+            except:
+                cache_type = 'SimpleCache'
+                cache_timeout = 300
+        else:
+            cache_type = 'Desabilitado'
+            cache_timeout = 0
+        
+        # Caminhos
+        pdf_signed_dir = app.config.get('PDF_SIGNED_DIR', 'pdf_assinados/')
+        keys_dir = app.config.get('KEYS_DIR', 'keys/')
+        audit_log_path = os.path.join(app.config.get('LOGS_DIR', 'logs/'), 'audit.log')
+        
+        # Verificar se diretórios existem
+        pdf_dir_exists = os.path.exists(pdf_signed_dir)
+        keys_dir_exists = os.path.exists(keys_dir)
+        audit_log_exists = os.path.exists(audit_log_path)
+        
+        # Contar arquivos de log de auditoria
+        audit_log_count = 0
+        if audit_log_exists:
+            try:
+                with open(audit_log_path, 'r') as f:
+                    audit_log_count = len(f.readlines())
+            except:
+                pass
+        
+        # Verificar índices do banco
+        from models import Signature, User, UserSession
+        signature_indexes = len(Signature.__table__.indexes)
+        user_indexes = len(User.__table__.indexes)
+        session_indexes = len(UserSession.__table__.indexes)
+        
+        # Verificar se está rodando em produção
+        is_production = app.config.get('ENV') == 'production' or os.environ.get('FLASK_ENV') == 'production'
+        
+        # Verificar se está rodando como serviço
+        is_service = False
+        try:
+            # Verificar se está rodando com gunicorn
+            import sys
+            is_service = 'gunicorn' in sys.modules
+        except:
+            pass
+        
+        # Horário do servidor
+        server_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        timezone = datetime.now().astimezone().strftime('%Z %z')
+        
+        # Verificar se LDAP está habilitado
+        ldap_enabled = os.environ.get('LDAP_ENABLED', 'false').lower() == 'true'
+        ldap_server = os.environ.get('LDAP_SERVER', 'N/A')
+        
+        # Contagens de arquivos para limpeza
+        temp_files_count = 0
+        signed_files_count = 0
+        
+        try:
+            temp_dir = app.config.get('TEMP_FILES_DIR', 'temp_files')
+            signed_dir = app.config.get('PDF_SIGNED_DIR', 'pdf_assinados')
+            
+            if os.path.exists(temp_dir):
+                temp_files_count = len([f for f in os.listdir(temp_dir) if os.path.isfile(os.path.join(temp_dir, f))])
+            
+            if os.path.exists(signed_dir):
+                for root, dirs, files in os.walk(signed_dir):
+                    signed_files_count += len(files)
+        except Exception:
+            pass
+        
+        return render_template('admin/settings.html', 
+                             store_pdfs=get_store_pdfs_flag(),
+                             db_type=db_type,
+                             db_host=db_host,
+                             db_port=db_port,
+                             async_enabled=async_enabled,
+                             python_version=python_version,
+                             flask_version=flask_version,
+                             platform_info=platform_info,
+                             machine=machine,
+                             processor=processor,
+                             cpu_count=cpu_count,
+                             cpu_percent=cpu_percent,
+                             memory_total_gb=memory_total_gb,
+                             memory_used_gb=memory_used_gb,
+                             memory_percent=memory_percent,
+                             disk_total_gb=disk_total_gb,
+                             disk_used_gb=disk_used_gb,
+                             disk_percent=disk_percent,
+                             async_supported=async_supported,
+                             cache_enabled=cache_enabled,
+                             cache_type=cache_type,
+                             cache_timeout=cache_timeout,
+                             rate_limit_enabled=rate_limit_enabled,
+                             pdf_signed_dir=pdf_signed_dir,
+                             pdf_dir_exists=pdf_dir_exists,
+                             keys_dir=keys_dir,
+                             keys_dir_exists=keys_dir_exists,
+                             audit_log_path=audit_log_path,
+                             audit_log_exists=audit_log_exists,
+                             audit_log_count=audit_log_count,
+                             signature_indexes=signature_indexes,
+                             user_indexes=user_indexes,
+                             session_indexes=session_indexes,
+                             is_production=is_production,
+                             is_service=is_service,
+                             server_time=server_time,
+                             timezone=timezone,
+                             temp_files_count=temp_files_count,
+                             signed_files_count=signed_files_count,
+                             ldap_enabled=ldap_enabled,
+                             ldap_server=ldap_server)
+    
+    @app.route('/admin/cleanup', methods=['GET', 'POST'])
+    @login_required
+    @admin_required
+    def admin_cleanup():
+        """Página administrativa para gerenciar limpeza de arquivos"""
+        if request.method == 'POST':
+            action = request.form.get('action')
+            
+            if action == 'cleanup_temp':
+                cleanup_temp_files()
+                flash('Limpeza de arquivos temporários executada.', 'success')
+            elif action == 'cleanup_old':
+                cleanup_old_files()
+                flash('Limpeza de arquivos antigos executada.', 'success')
+            elif action == 'cleanup_database':
+                cleanup_old_files_by_database()
+                flash('Limpeza baseada no banco de dados executada.', 'success')
+            elif action == 'cleanup_all':
+                cleanup_temp_files_all()  # Remove TODOS os arquivos temporários
+                cleanup_signed_pdfs_temp()
+                cleanup_old_files()
+                cleanup_old_files_by_database()
+                flash('Limpeza completa executada.', 'success')
+            
+            return redirect(url_for('admin_settings'))
+        
+        # Estatísticas dos diretórios
+        temp_files_count = 0
+        signed_files_count = 0
+        
+        try:
+            if os.path.exists(TEMP_DIR):
+                temp_files_count = len([f for f in os.listdir(TEMP_DIR) if os.path.isfile(os.path.join(TEMP_DIR, f))])
+            if os.path.exists(PDF_SIGNED_DIR):
+                signed_files_count = len([f for f in os.listdir(PDF_SIGNED_DIR) if os.path.isfile(os.path.join(PDF_SIGNED_DIR, f))])
+        except Exception as e:
+            flash(f'Erro ao obter estatísticas: {e}', 'error')
+        
+        return render_template('admin/cleanup.html', 
+                             temp_files_count=temp_files_count,
+                             signed_files_count=signed_files_count)
     
     @app.route('/')
     @login_required
@@ -347,30 +742,104 @@ def register_routes(app):
     def login():
         if current_user.is_authenticated:
             return redirect(url_for('index'))
-        
         form = LoginForm()
         if form.validate_on_submit():
-            user = User.query.filter_by(username=form.username.data).first()
-            if user and user.check_password(form.password.data) and user.is_active:
-                login_user(user, remember=form.remember_me.data)
-                user.last_login = datetime.utcnow()
-                db.session.commit()
-                
-                # Cria sessão personalizada
-                session_id = create_user_session(user, request)
-                session['user_session_id'] = session_id
-                
-                # Se forçar troca de senha estiver habilitado
-                if getattr(user, 'must_change_password', False):
-                    session['must_change_password_user'] = user.id
-                    return redirect(url_for('force_change_password'))
-
-                flash(f'Bem-vindo, {user.full_name}!', 'success')
-                next_page = request.args.get('next')
-                return redirect(next_page) if next_page else redirect(url_for('index'))
+            username = form.username.data
+            password = form.password.data
+            ldap_enabled = os.environ.get('LDAP_ENABLED', 'false').lower() == 'true'
+            if ldap_enabled:
+                from services import LDAPAuthenticator, ADSyncService
+                ldap_auth = LDAPAuthenticator()
+                ad_sync = ADSyncService()
+                try:
+                    ldap_user_info = ldap_auth.authenticate(username, password)
+                    if ldap_user_info:
+                        user = User.query.filter_by(username=username).first()
+                        if not user:
+                            email = (ldap_user_info.get('email') or '').strip() or f"{username}@psc.local"
+                            full_name = (ldap_user_info.get('full_name') or '').strip() or username.title()
+                            user = User(
+                                username=username,
+                                email=email,
+                                full_name=full_name,
+                                role='user',
+                                is_active=False,
+                                is_ldap_user=True,
+                                ldap_dn=ldap_user_info.get('ldap_dn'),
+                                department=ldap_user_info.get('department'),
+                                position=ldap_user_info.get('position'),
+                                phone=ldap_user_info.get('phone'),
+                                mobile=ldap_user_info.get('mobile'),
+                                city=ldap_user_info.get('city'),
+                                state=ldap_user_info.get('state'),
+                                postal_code=ldap_user_info.get('postal_code'),
+                                country=ldap_user_info.get('country'),
+                                street_address=ldap_user_info.get('street_address'),
+                                home_phone=ldap_user_info.get('home_phone'),
+                                work_address=ldap_user_info.get('work_address'),
+                                fax=ldap_user_info.get('fax'),
+                                pager=ldap_user_info.get('pager')
+                            )
+                            db.session.add(user)
+                            db.session.commit()
+                            logger.info(f"Novo usuário criado do AD: {username} - Aguardando aprovação do admin")
+                            flash('Usuário criado com sucesso do Active Directory. Por favor, entre em contato com o administrador para designar permissões e ativar sua conta.', 'warning')
+                            return render_template('login.html', form=form)
+                        else:
+                            email = (ldap_user_info.get('email') or '').strip()
+                            if email:
+                                user.email = email
+                            full_name = (ldap_user_info.get('full_name') or '').strip()
+                            if full_name:
+                                user.full_name = full_name
+                            user.is_ldap_user = True
+                            db.session.commit()
+                        if not user.is_active:
+                            flash('Sua conta está inativa. Por favor, entre em contato com o administrador para designar permissões e ativar sua conta.', 'error')
+                            return render_template('login.html', form=form)
+                        login_user(user, remember=form.remember_me.data)
+                        user.last_login = datetime.utcnow()
+                        db.session.commit()
+                        try:
+                            log_event(action='login', actor_user_id=user.id, status='success', ip_address=get_client_ip(request))
+                        except Exception:
+                            pass
+                        flash(f'Bem-vindo, {user.full_name}!', 'success')
+                        next_page = request.args.get('next')
+                        return redirect(next_page) if next_page else redirect(url_for('index'))
+                    else:
+                        flash('Credenciais inválidas ou usuário não encontrado no Active Directory.', 'error')
+                        try:
+                            log_event(action='login', actor_user_id=None, status='error', ip_address=get_client_ip(request), details={"reason": "ldap_invalid"})
+                        except Exception:
+                            pass
+                except Exception as e:
+                    logger.error(f"Erro de autenticação LDAP: {str(e)}")
+                    flash('Erro ao conectar com o Active Directory. Tente novamente.', 'error')
             else:
-                flash('Usuário ou senha inválidos, ou usuário inativo.', 'error')
-        
+                user = User.query.filter_by(username=username).first()
+                if user and user.check_password(password) and user.is_active:
+                    login_user(user, remember=form.remember_me.data)
+                    user.last_login = datetime.utcnow()
+                    db.session.commit()
+                    session_id = create_user_session(user, request)
+                    session['user_session_id'] = session_id
+                    if getattr(user, 'must_change_password', False):
+                        session['must_change_password_user'] = user.id
+                        return redirect(url_for('force_change_password'))
+                    try:
+                        log_event(action='login', actor_user_id=user.id, status='success', ip_address=get_client_ip(request))
+                    except Exception:
+                        pass
+                    flash(f'Bem-vindo, {user.full_name}!', 'success')
+                    next_page = request.args.get('next')
+                    return redirect(next_page) if next_page else redirect(url_for('index'))
+                else:
+                    flash('Usuário ou senha inválidos, ou usuário inativo.', 'error')
+                    try:
+                        log_event(action='login', actor_user_id=(user.id if user else None), status='error', ip_address=get_client_ip(request), details={"reason": "invalid"})
+                    except Exception:
+                        pass
         return render_template('login.html', form=form)
 
     @app.route('/logout')
@@ -379,6 +848,10 @@ def register_routes(app):
         logout_user()
         session.pop('user_session_id', None)
         flash('Você foi desconectado.', 'info')
+        try:
+            log_event(action='logout', actor_user_id=(current_user.id if current_user and current_user.is_authenticated else None), status='success', ip_address=get_client_ip(request))
+        except Exception:
+            pass
         return redirect(url_for('login'))
 
     @app.route('/profile')
@@ -389,6 +862,11 @@ def register_routes(app):
     @app.route('/change_password', methods=['GET', 'POST'])
     @login_required
     def change_password():
+        # Bloquear usuários LDAP
+        if current_user.is_ldap_user:
+            flash('Usuários LDAP não podem alterar senha através do sistema. Entre em contato com o administrador do Active Directory.', 'error')
+            return redirect(url_for('profile'))
+        
         form = ChangePasswordForm()
         if form.validate_on_submit():
             if current_user.check_password(form.current_password.data):
@@ -406,6 +884,12 @@ def register_routes(app):
     @login_required
     def force_change_password():
         """Tela obrigatória de troca de senha quando marcado pelo admin"""
+        # Bloquear usuários LDAP
+        if current_user.is_ldap_user:
+            flash('Usuários LDAP não podem alterar senha através do sistema. Entre em contato com o administrador do Active Directory.', 'error')
+            session.pop('must_change_password_user', None)
+            return redirect(url_for('index'))
+        
         if session.get('must_change_password_user') != current_user.id:
             return redirect(url_for('index'))
         form = ChangePasswordForm()
@@ -422,7 +906,9 @@ def register_routes(app):
 
     # Rotas administrativas
     @app.route('/admin')
+    @login_required
     @admin_required
+    @app.cache.cached(timeout=600)
     def admin_dashboard():
         # Cache das estatísticas por 10 minutos
         cache_key = "admin_dashboard_stats"
@@ -441,10 +927,65 @@ def register_routes(app):
                              store_pdfs=get_store_pdfs_flag())
 
     @app.route('/admin/users')
+    @login_required
     @admin_required
     def admin_users():
-        users = User.query.all()
-        return render_template('admin/users.html', users=users)
+        # Parâmetros de busca e paginação
+        search_query = request.args.get('search', '').strip()
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
+        status_filter = request.args.get('status', 'all')
+        role_filter = request.args.get('role', 'all')
+        
+        # Query base
+        query = User.query
+        
+        # Aplicar filtro de busca
+        if search_query:
+            query = query.filter(
+                db.or_(
+                    User.username.ilike(f'%{search_query}%'),
+                    User.full_name.ilike(f'%{search_query}%'),
+                    User.email.ilike(f'%{search_query}%')
+                )
+            )
+        
+        # Aplicar filtro de status
+        if status_filter == 'active':
+            query = query.filter(User.is_active == True)
+        elif status_filter == 'inactive':
+            query = query.filter(User.is_active == False)
+        
+        # Aplicar filtro de role
+        if role_filter == 'admin':
+            query = query.filter(User.role == 'admin')
+        elif role_filter == 'user':
+            query = query.filter(User.role == 'user')
+        
+        # Ordenar por data de criação (mais recentes primeiro)
+        query = query.order_by(User.created_at.desc())
+        
+        # Paginação
+        pagination = query.paginate(
+            page=page,
+            per_page=per_page,
+            error_out=False
+        )
+        
+        users = pagination.items
+        
+        # Verificar se LDAP está habilitado
+        ldap_enabled = os.environ.get('LDAP_ENABLED', 'false').lower() == 'true'
+        ldap_server = os.environ.get('LDAP_SERVER', 'N/A')
+        
+        return render_template('admin/users.html', 
+                             users=users,
+                             pagination=pagination,
+                             search_query=search_query,
+                             status_filter=status_filter,
+                             role_filter=role_filter,
+                             ldap_enabled=ldap_enabled,
+                             ldap_server=ldap_server)
 
     @app.route('/admin/users/new', methods=['GET', 'POST'])
     @admin_required
@@ -465,31 +1006,88 @@ def register_routes(app):
             db.session.commit()
             
             flash(f'Usuário {user.username} criado com sucesso!', 'success')
+            try:
+                log_event(action='admin_user_create', actor_user_id=current_user.id, status='success', ip_address=get_client_ip(request), details={"user_id": user.id})
+            except Exception:
+                pass
             return redirect(url_for('admin_users'))
         
         return render_template('admin/new_user.html', form=form)
 
     @app.route('/admin/users/<int:user_id>/edit', methods=['GET', 'POST'])
+    @login_required
     @admin_required
     def admin_edit_user(user_id):
         user = User.query.get_or_404(user_id)
         form = UserEditForm(obj=user)
         
         if form.validate_on_submit():
-            user.username = form.username.data
-            user.email = form.email.data
-            user.full_name = form.full_name.data
+            # Valores antigos
+            old_values = {
+                'username': user.username,
+                'email': user.email,
+                'full_name': user.full_name,
+                'must_change_password': bool(getattr(user, 'must_change_password', False)),
+                'role': user.role,
+                'is_active': bool(user.is_active),
+            }
+            # Bloquear alteração de username para usuários LDAP
+            if user.is_ldap_user and form.username.data != user.username:
+                flash('Não é possível alterar o username de usuários LDAP. O username é gerenciado pelo Active Directory.', 'error')
+                return render_template('admin/edit_user.html', form=form, user=user)
+            
+            # Bloquear alteração de email para usuários LDAP
+            if user.is_ldap_user and form.email.data != user.email:
+                flash('Não é possível alterar o email de usuários LDAP. O email é gerenciado pelo Active Directory.', 'error')
+                return render_template('admin/edit_user.html', form=form, user=user)
+            
+            # Bloquear alteração de nome completo para usuários LDAP
+            if user.is_ldap_user and form.full_name.data != user.full_name:
+                flash('Não é possível alterar o nome completo de usuários LDAP. O nome é gerenciado pelo Active Directory.', 'error')
+                return render_template('admin/edit_user.html', form=form, user=user)
+            
+            # Bloquear alteração de senha para usuários LDAP
+            if user.is_ldap_user and form.must_change_password.data:
+                flash('Não é possível forçar troca de senha para usuários LDAP. A senha é gerenciada pelo Active Directory.', 'error')
+                return render_template('admin/edit_user.html', form=form, user=user)
+            
+            # Atualizar apenas se não for usuário LDAP
+            if not user.is_ldap_user:
+                user.username = form.username.data
+                user.email = form.email.data
+                user.full_name = form.full_name.data
+                user.must_change_password = form.must_change_password.data
+            
+            # Permitir alteração de role e status para todos os usuários
             user.role = form.role.data
             user.is_active = form.is_active.data
-            user.must_change_password = form.must_change_password.data
             
             db.session.commit()
             flash(f'Usuário {user.username} atualizado com sucesso!', 'success')
+            try:
+                # Detecta mudanças
+                new_values = {
+                    'username': user.username,
+                    'email': user.email,
+                    'full_name': user.full_name,
+                    'must_change_password': bool(getattr(user, 'must_change_password', False)),
+                    'role': user.role,
+                    'is_active': bool(user.is_active),
+                }
+                changes = {}
+                for k, old_v in old_values.items():
+                    new_v = new_values.get(k)
+                    if old_v != new_v:
+                        changes[k] = {'from': old_v, 'to': new_v}
+                log_event(action='admin_user_update', actor_user_id=current_user.id, status='success', ip_address=get_client_ip(request), details={"user_id": user.id, "username": user.username, "changes": changes})
+            except Exception:
+                pass
             return redirect(url_for('admin_users'))
         
         return render_template('admin/edit_user.html', form=form, user=user)
 
     @app.route('/admin/users/<int:user_id>/delete', methods=['POST'])
+    @login_required
     @admin_required
     def admin_delete_user(user_id):
         user = User.query.get_or_404(user_id)
@@ -502,7 +1100,76 @@ def register_routes(app):
         db.session.commit()
         
         flash(f'Usuário {username} deletado com sucesso!', 'success')
+        try:
+            # Inclui username do alvo para não depender do banco após a exclusão
+            log_event(action='admin_user_delete', actor_user_id=current_user.id, status='success', ip_address=get_client_ip(request), details={"user_id": user_id, "username": username})
+        except Exception:
+            pass
         return redirect(url_for('admin_users'))
+
+    @app.route('/admin/sync', methods=['GET', 'POST'])
+    @login_required
+    @admin_required
+    def admin_sync():
+        """Página administrativa para sincronização com Active Directory"""
+        from services import ADSyncService
+        
+        if request.method == 'POST':
+            action = request.form.get('action')
+            
+            if action == 'sync_all':
+                # Sincronizar todos os usuários do AD
+                ad_sync = ADSyncService()
+                stats = ad_sync.sync_all_users()
+                
+                flash(f'Sincronização concluída: {stats["users_created"]} criados, '
+                      f'{stats["users_updated"]} atualizados, '
+                      f'{stats["users_deactivated"]} desativados.', 'success')
+                try:
+                    log_event(action='ad_sync_all', actor_user_id=current_user.id, status='success', ip_address=get_client_ip(request), details=stats)
+                except Exception:
+                    pass
+                return redirect(url_for('admin_sync'))
+            
+            elif action == 'sync_single':
+                # Sincronizar usuário específico
+                username = request.form.get('username')
+                if username:
+                    ad_sync = ADSyncService()
+                    result = ad_sync.sync_single_user(username)
+                    
+                    if result:
+                        flash(f'Usuário {username} sincronizado com sucesso!', 'success')
+                        try:
+                            log_event(action='ad_sync_single', actor_user_id=current_user.id, status='success', ip_address=get_client_ip(request), details={"username": username})
+                        except Exception:
+                            pass
+                    else:
+                        flash(f'Usuário {username} não encontrado no Active Directory.', 'error')
+                        try:
+                            log_event(action='ad_sync_single', actor_user_id=current_user.id, status='error', ip_address=get_client_ip(request), details={"username": username})
+                        except Exception:
+                            pass
+                else:
+                    flash('Nome de usuário é obrigatório.', 'error')
+                
+                return redirect(url_for('admin_sync'))
+        
+        # Estatísticas de usuários LDAP
+        total_users = User.query.count()
+        ldap_users = User.query.filter_by(is_ldap_user=True).count()
+        active_users = User.query.filter_by(is_active=True).count()
+        inactive_users = User.query.filter_by(is_active=False).count()
+        
+        # Verificar se LDAP está habilitado
+        ldap_enabled = os.environ.get('LDAP_ENABLED', 'false').lower() == 'true'
+        
+        return render_template('admin/sync.html',
+                             total_users=total_users,
+                             ldap_users=ldap_users,
+                             active_users=active_users,
+                             inactive_users=inactive_users,
+                             ldap_enabled=ldap_enabled)
 
     @app.route('/admin/reports')
     @admin_required
@@ -519,6 +1186,10 @@ def register_routes(app):
             users_list = [(0, 'Todos os usuários')] + [(u.id, u.username) for u in User.query.all()]
             form.user_id.choices = users_list
             app.cache.set(cache_key_users, users_list, timeout=3600)
+        # Carrega tipos de documento
+        from models import DocumentType
+        type_choices = [(0, 'Todos os tipos')] + [(t.id, t.name) for t in DocumentType.query.order_by(DocumentType.name.asc()).all()]
+        form.document_type_id.choices = type_choices
         
         # Filtros padrão com paginação
         signatures = Signature.query.order_by(Signature.timestamp.desc()).limit(100)
@@ -540,11 +1211,40 @@ def register_routes(app):
                     signatures = signatures.filter(Signature.timestamp < date_to)
                 except ValueError:
                     pass
+            if form.document_type_id.data and form.document_type_id.data != 0:
+                signatures = signatures.filter(Signature.document_type_id == form.document_type_id.data)
         
         # Executa a query para obter os resultados
         signatures_list = signatures.all()
         
-        return render_template('admin/reports.html', form=form, signatures=signatures_list)
+        # Agrupamento por tipo de documento (apenas concluídas)
+        from models import DocumentType
+        type_counts_query = db.session.query(
+            DocumentType.name.label('type_name'),
+            db.func.count(Signature.id).label('count')
+        ).join(Signature, Signature.document_type_id == DocumentType.id)
+        type_counts_query = type_counts_query.filter(Signature.status == 'completed')
+        
+        # Aplicar mesmos filtros de período/usuário ao agrupamento
+        if form.user_id.data and form.user_id.data != 0:
+            type_counts_query = type_counts_query.filter(Signature.user_id == form.user_id.data)
+        if form.date_from.data:
+            try:
+                date_from = datetime.strptime(form.date_from.data, '%Y-%m-%d')
+                type_counts_query = type_counts_query.filter(Signature.timestamp >= date_from)
+            except ValueError:
+                pass
+        if form.date_to.data:
+            try:
+                date_to = datetime.strptime(form.date_to.data, '%Y-%m-%d') + timedelta(days=1)
+                type_counts_query = type_counts_query.filter(Signature.timestamp < date_to)
+            except ValueError:
+                pass
+        if form.document_type_id.data and form.document_type_id.data != 0:
+            type_counts_query = type_counts_query.filter(Signature.document_type_id == form.document_type_id.data)
+        type_counts = type_counts_query.group_by(DocumentType.name).order_by(DocumentType.name.asc()).all()
+        
+        return render_template('admin/reports.html', form=form, signatures=signatures_list, type_counts=type_counts)
 
     @app.route('/admin/reports/export')
     @admin_required
@@ -565,12 +1265,300 @@ def register_routes(app):
                 'valid': sig.signature_valid
             })
         
+        try:
+            log_event(action='admin_export_json', actor_user_id=current_user.id, status='success', ip_address=get_client_ip(request), details={"count": len(report_data)})
+        except Exception:
+            pass
         return jsonify({
             'success': True,
             'total_signatures': len(report_data),
             'export_date': datetime.utcnow().isoformat(),
             'data': report_data
         })
+
+    @app.route('/admin/reports/export_csv')
+    @admin_required
+    def admin_export_reports_csv():
+        """Exporta agrupamento por tipo de documento em CSV"""
+        from models import DocumentType
+        type_counts_query = db.session.query(
+            DocumentType.name.label('type_name'),
+            db.func.count(Signature.id).label('count')
+        ).join(Signature, Signature.document_type_id == DocumentType.id)
+        type_counts_query = type_counts_query.filter(Signature.status == 'completed')
+
+        # Filtros simples por querystring (opcional)
+        user_id = request.args.get('user_id', type=int)
+        if user_id:
+            type_counts_query = type_counts_query.filter(Signature.user_id == user_id)
+        document_type_id = request.args.get('document_type_id', type=int)
+        if document_type_id:
+            type_counts_query = type_counts_query.filter(Signature.document_type_id == document_type_id)
+        date_from = request.args.get('date_from')
+        if date_from:
+            try:
+                df = datetime.strptime(date_from, '%Y-%m-%d')
+                type_counts_query = type_counts_query.filter(Signature.timestamp >= df)
+            except Exception:
+                pass
+        date_to = request.args.get('date_to')
+        if date_to:
+            try:
+                dtl = datetime.strptime(date_to, '%Y-%m-%d') + timedelta(days=1)
+                type_counts_query = type_counts_query.filter(Signature.timestamp < dtl)
+            except Exception:
+                pass
+
+        rows = type_counts_query.group_by(DocumentType.name).order_by(DocumentType.name.asc()).all()
+
+        # Gera CSV em memória
+        import io, csv
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(['Tipo de Documento', 'Quantidade'])
+        for row in rows:
+            writer.writerow([row.type_name or 'Sem Tipo', row.count])
+        output.seek(0)
+
+        # Responde como arquivo CSV
+        try:
+            log_event(action='admin_export_csv', actor_user_id=current_user.id, status='success', ip_address=get_client_ip(request), details={"rows": len(rows)})
+        except Exception:
+            pass
+        return send_file(
+            io.BytesIO(output.getvalue().encode('utf-8-sig')),
+            as_attachment=True,
+            download_name='assinaturas_por_tipo.csv',
+            mimetype='text/csv; charset=utf-8'
+        )
+
+    @app.route('/admin/audit-logs')
+    @login_required
+    @admin_required
+    def admin_audit_logs():
+        """Lista logs de auditoria (últimos N) com filtros simples"""
+        logs_path = os.path.join(app.config.get('LOGS_DIR', 'logs'), 'audit.log')
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 50, type=int)
+        q = request.args.get('q', '', type=str).strip().lower()
+        action_filter = request.args.get('action', '', type=str).strip()
+        status_filter = request.args.get('status', '', type=str).strip()
+        user_id_filter = request.args.get('user_id', type=int)
+        date_from = request.args.get('date_from', type=str)
+        date_to = request.args.get('date_to', type=str)
+
+        entries = []
+        if os.path.exists(logs_path):
+            try:
+                with open(logs_path, 'r', encoding='utf-8') as f:
+                    lines = f.readlines()
+                # Pega no máximo 5000 últimos registros para não pesar
+                lines = lines[-5000:]
+                for line in reversed(lines):  # mais recentes primeiro
+                    try:
+                        evt = json.loads(line)
+                        entries.append(evt)
+                    except Exception:
+                        continue
+            except Exception:
+                pass
+
+        # Filtros
+        def match(e):
+            if action_filter and e.get('action') != action_filter:
+                return False
+            if status_filter and (e.get('status') or '') != status_filter:
+                return False
+            if user_id_filter is not None and (e.get('actor_user_id') != user_id_filter):
+                return False
+            if date_from:
+                try:
+                    dt_from = datetime.strptime(date_from, '%Y-%m-%d')
+                    if datetime.fromisoformat(e.get('timestamp')) < dt_from:
+                        return False
+                except Exception:
+                    pass
+            if date_to:
+                try:
+                    dt_to = datetime.strptime(date_to, '%Y-%m-%d') + timedelta(days=1)
+                    if datetime.fromisoformat(e.get('timestamp')) >= dt_to:
+                        return False
+                except Exception:
+                    pass
+            if q:
+                hay = json.dumps(e, ensure_ascii=False).lower()
+                if q not in hay:
+                    return False
+            return True
+
+        filtered = [e for e in entries if match(e)]
+        total = len(filtered)
+        start = (page - 1) * per_page
+        end = start + per_page
+        page_items = filtered[start:end]
+
+        # Enriquecer com username a partir de actor_user_id e details.user_id
+        id_to_username = {}
+        try:
+            user_ids = set()
+            for e in page_items:
+                if e.get('actor_user_id'):
+                    user_ids.add(e.get('actor_user_id'))
+                details = e.get('details') or {}
+                target_id = details.get('user_id')
+                if target_id:
+                    user_ids.add(target_id)
+            if user_ids:
+                users = User.query.filter(User.id.in_(sorted(user_ids))).all()
+                id_to_username = {u.id: u.username for u in users}
+        except Exception:
+            pass
+
+        # Ações disponíveis para filtro rápido
+        actions_available = sorted(list({e.get('action') for e in entries if e.get('action')}))
+
+        return render_template('admin/audit_logs.html',
+                               items=page_items,
+                               total=total,
+                               page=page,
+                               per_page=per_page,
+                               q=q,
+                               action_filter=action_filter,
+                               status_filter=status_filter,
+                               user_id_filter=user_id_filter,
+                               date_from=date_from,
+                               date_to=date_to,
+                               actions_available=actions_available,
+                               id_to_username=id_to_username)
+
+    @app.route('/admin/audit-logs/download')
+    @login_required
+    @admin_required
+    def admin_audit_logs_download():
+        """Baixa o audit.log completo"""
+        logs_path = os.path.join(app.config.get('LOGS_DIR', 'logs'), 'audit.log')
+        if not os.path.exists(logs_path):
+            flash('Arquivo de log não encontrado.', 'error')
+            return redirect(url_for('admin_audit_logs'))
+        return send_file(logs_path, as_attachment=True, download_name='audit.log', mimetype='text/plain; charset=utf-8')
+
+    @app.route('/admin/audit-logs/export_csv')
+    @login_required
+    @admin_required
+    def admin_audit_logs_export_csv():
+        """Exporta os logs filtrados em CSV (colunas amigáveis)."""
+        logs_path = os.path.join(app.config.get('LOGS_DIR', 'logs'), 'audit.log')
+        q = request.args.get('q', '', type=str).strip().lower()
+        action_filter = request.args.get('action', '', type=str).strip()
+        status_filter = request.args.get('status', '', type=str).strip()
+        user_id_filter = request.args.get('user_id', type=int)
+        date_from = request.args.get('date_from', type=str)
+        date_to = request.args.get('date_to', type=str)
+
+        entries = []
+        if os.path.exists(logs_path):
+            try:
+                with open(logs_path, 'r', encoding='utf-8') as f:
+                    lines = f.readlines()
+                lines = lines[-5000:]
+                for line in lines:
+                    try:
+                        evt = json.loads(line)
+                        entries.append(evt)
+                    except Exception:
+                        continue
+            except Exception:
+                pass
+
+        def match(e):
+            if action_filter and e.get('action') != action_filter:
+                return False
+            if status_filter and (e.get('status') or '') != status_filter:
+                return False
+            if user_id_filter is not None and (e.get('actor_user_id') != user_id_filter):
+                return False
+            if date_from:
+                try:
+                    dt_from = datetime.strptime(date_from, '%Y-%m-%d')
+                    if datetime.fromisoformat(e.get('timestamp')) < dt_from:
+                        return False
+                except Exception:
+                    pass
+            if date_to:
+                try:
+                    dt_to = datetime.strptime(date_to, '%Y-%m-%d') + timedelta(days=1)
+                    if datetime.fromisoformat(e.get('timestamp')) >= dt_to:
+                        return False
+                except Exception:
+                    pass
+            if q:
+                hay = json.dumps(e, ensure_ascii=False).lower()
+                if q not in hay:
+                    return False
+            return True
+
+        filtered = [e for e in entries if match(e)]
+
+        # Resolver usernames (ator e alvo)
+        id_to_username = {}
+        try:
+            user_ids = set()
+            for e in filtered:
+                if e.get('actor_user_id'):
+                    user_ids.add(e.get('actor_user_id'))
+                details = e.get('details') or {}
+                target_id = details.get('user_id')
+                if target_id:
+                    user_ids.add(target_id)
+            if user_ids:
+                users = User.query.filter(User.id.in_(sorted(user_ids))).all()
+                id_to_username = {u.id: u.username for u in users}
+        except Exception:
+            pass
+
+        # Montar CSV
+        import io, csv
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(['timestamp', 'action', 'status', 'actor_user_id', 'actor_username', 'ip', 'target_user_id', 'target_username', 'changes'])
+
+        for e in filtered:
+            details = e.get('details') or {}
+            target_id = details.get('user_id')
+            actor_id = e.get('actor_user_id')
+            actor_username = id_to_username.get(actor_id) if actor_id else ''
+            target_username = id_to_username.get(target_id) if target_id else (details.get('username') or '')
+            # changes como string amigável "campo: from -> to" separados por ;
+            changes = details.get('changes') or {}
+            if isinstance(changes, dict):
+                change_parts = []
+                for field, diff in changes.items():
+                    try:
+                        change_parts.append(f"{field}: {diff.get('from')} -> {diff.get('to')}")
+                    except Exception:
+                        change_parts.append(f"{field}")
+                changes_str = '; '.join(change_parts)
+            else:
+                changes_str = ''
+            writer.writerow([
+                e.get('timestamp'),
+                e.get('action'),
+                e.get('status'),
+                actor_id or '',
+                actor_username or '',
+                e.get('ip_address') or '',
+                target_id or '',
+                target_username or '',
+                changes_str
+            ])
+
+        output.seek(0)
+        return send_file(
+            io.BytesIO(output.getvalue().encode('utf-8-sig')),
+            as_attachment=True,
+            download_name='audit_logs.csv',
+            mimetype='text/csv; charset=utf-8'
+        )
 
     # === NOVO FLUXO DE ASSINATURA ===
     
@@ -991,15 +1979,17 @@ def register_routes(app):
     @login_required
     def internal_signature_upload():
         """Tela interna: Upload de arquivos e dados do cliente"""
+        from models import DocumentType
+        document_types = DocumentType.query.filter_by(active=True).order_by(DocumentType.name.asc()).all()
         if request.method == 'POST':
             if 'pdf_files' not in request.files:
                 flash('Nenhum arquivo PDF foi enviado', 'error')
-                return render_template('internal/upload.html')
+                return render_template('internal/upload.html', document_types=document_types)
             
             pdf_files = request.files.getlist('pdf_files')
             if not pdf_files or pdf_files[0].filename == '':
                 flash('Nenhum arquivo selecionado', 'error')
-                return render_template('internal/upload.html')
+                return render_template('internal/upload.html', document_types=document_types)
             
             # Valida arquivos
             valid_files = []
@@ -1010,7 +2000,7 @@ def register_routes(app):
                     flash(f'Arquivo {pdf_file.filename} não é um PDF válido', 'error')
             
             if not valid_files:
-                return render_template('internal/upload.html')
+                return render_template('internal/upload.html', document_types=document_types)
             
             # Coleta dados do cliente
             client_info = {
@@ -1022,6 +2012,16 @@ def register_routes(app):
                 'endereco': request.form.get('client_address', '').strip(),
                 'observacoes': request.form.get('client_notes', '').strip()
             }
+
+            # Tipo de Documento (obrigatório)
+            document_type_id_raw = request.form.get('document_type_id', '').strip()
+            try:
+                document_type_id = int(document_type_id_raw)
+            except Exception:
+                document_type_id = None
+            if not document_type_id:
+                flash('Tipo de documento é obrigatório', 'error')
+                return render_template('internal/upload.html', client_info=client_info, document_types=document_types)
             
             # Converte a data de nascimento para objeto date se fornecida
             birth_date = None
@@ -1030,12 +2030,12 @@ def register_routes(app):
                     birth_date = datetime.strptime(client_info['data_nascimento'], '%Y-%m-%d').date()
                 except ValueError:
                     flash('Data de nascimento inválida. Use o formato AAAA-MM-DD', 'error')
-                    return render_template('internal/upload.html', client_info=client_info)
+                    return render_template('internal/upload.html', client_info=client_info, document_types=document_types)
             
             # Validação básica
             if not client_info['nome']:
                 flash('Nome do cliente é obrigatório', 'error')
-                return render_template('internal/upload.html', client_info=client_info)
+                return render_template('internal/upload.html', client_info=client_info, document_types=document_types)
             
             if not client_info['cpf']:
                 flash('CPF do cliente é obrigatório', 'error')
@@ -1060,6 +2060,7 @@ def register_routes(app):
                     file_size=os.path.getsize(temp_path),
                     signature_valid=False,
                     status='pending',  # Novo campo para status
+                    document_type_id=document_type_id,
                     client_name=client_info['nome'],
                     client_cpf=client_info['cpf'],
                     client_email=client_info['email'],
@@ -1077,9 +2078,13 @@ def register_routes(app):
             db.session.commit()
             
             flash(f'{len(valid_files)} arquivo(s) enviado(s) com sucesso! Aguardando assinatura do cliente.', 'success')
+            try:
+                log_event(action='internal_upload', actor_user_id=current_user.id, status='success', ip_address=get_client_ip(request), details={"files": len(valid_files)})
+            except Exception:
+                pass
             return redirect(url_for('internal_pending_signatures'))
         
-        return render_template('internal/upload.html')
+        return render_template('internal/upload.html', document_types=document_types)
     
     @app.route('/internal/pending')
     @login_required
@@ -1111,6 +2116,7 @@ def register_routes(app):
     @login_required
     def internal_edit_signature(signature_id):
         """Tela interna: Edição de assinatura pendente"""
+        from models import DocumentType
         signature = Signature.query.get_or_404(signature_id)
         
         # Verifica se a assinatura pertence ao usuário logado
@@ -1123,6 +2129,8 @@ def register_routes(app):
             flash('Apenas assinaturas pendentes podem ser editadas', 'error')
             return redirect(url_for('internal_pending_signatures'))
         
+        document_types = DocumentType.query.filter_by(active=True).order_by(DocumentType.name.asc()).all()
+        
         if request.method == 'POST':
             # Atualiza os dados do cliente
             signature.client_name = request.form.get('client_name', '').strip()
@@ -1130,6 +2138,13 @@ def register_routes(app):
             signature.client_email = request.form.get('client_email', '').strip()
             signature.client_phone = request.form.get('client_phone', '').strip()
             signature.client_address = request.form.get('client_address', '').strip()
+
+            # Tipo de documento
+            dt_raw = request.form.get('document_type_id', '').strip()
+            try:
+                signature.document_type_id = int(dt_raw) if dt_raw else None
+            except Exception:
+                signature.document_type_id = None
             
             # Converte a data de nascimento se fornecida
             birth_date_str = request.form.get('client_birth_date', '').strip()
@@ -1145,7 +2160,7 @@ def register_routes(app):
             flash('Informações da assinatura atualizadas com sucesso!', 'success')
             return redirect(url_for('internal_pending_signatures'))
         
-        return render_template('internal/edit_signature.html', signature=signature)
+        return render_template('internal/edit_signature.html', signature=signature, document_types=document_types)
     
     @app.route('/internal/signature/cancel/<int:signature_id>', methods=['POST'])
     @login_required
@@ -1180,6 +2195,10 @@ def register_routes(app):
             db.session.rollback()
             flash(f'Erro ao cancelar assinatura: {str(e)}', 'error')
         
+        try:
+            log_event(action='internal_cancel', actor_user_id=current_user.id, status='success', ip_address=get_client_ip(request), details={"signature_id": signature_id})
+        except Exception:
+            pass
         return redirect(url_for('internal_pending_signatures'))
     
     @app.route('/internal/completed')
@@ -1369,7 +2388,7 @@ def register_routes(app):
                                 final_content = f.read()
                             
                             # Calcula hash do PDF FINAL (com carimbo + metadados)
-                            from crypto_utils import calculate_content_hash
+                            from utils.crypto_utils import calculate_content_hash
                             final_hash = calculate_content_hash(final_content)
                             
                             # Assina o hash do PDF final
@@ -1427,6 +2446,10 @@ def register_routes(app):
                 session.pop('signature_confirmed', None)
                 session.pop('client_sign_queue', None)
                 
+                try:
+                    log_event(action='client_sign', actor_user_id=None, status='success', ip_address=get_client_ip(request), details={"signature_id": signature_id})
+                except Exception:
+                    pass
                 return jsonify({
                     'success': True, 
                     'message': 'Documento assinado com sucesso!',
@@ -1496,6 +2519,7 @@ def register_routes(app):
         return redirect(url_for('client_confirm_document', signature_id=first_id))
 
     @app.route('/validate', methods=['GET', 'POST'])
+    @app.limiter.limit("20 per minute")
     def validate_pdf():
         """Página para validação de PDFs assinados"""
         if request.method == 'POST':
@@ -1522,7 +2546,7 @@ def register_routes(app):
                 with open(temp_path, 'rb') as f:
                     pdf_content = f.read()
                 
-                from crypto_utils import calculate_content_hash
+                from utils.crypto_utils import calculate_content_hash
                 current_hash = calculate_content_hash(pdf_content)
                 
                 # Busca registro de assinatura com hash correspondente
@@ -1531,9 +2555,27 @@ def register_routes(app):
                 # Valida o PDF (com ou sem registro)
                 validation_result = pdf_validator.validate_pdf(temp_path, signature_record)
                 
+                # Log de auditoria
+                from audit_logger import log_validation_event
+                log_validation_event(
+                    file_id=signature_record.file_id if signature_record else None,
+                    status='validated',
+                    ip_address=get_client_ip(request),
+                    is_valid=validation_result.get('valid', False)
+                )
+                
                 # Limpa arquivo temporário
                 os.remove(temp_path)
                 
+                try:
+                    log_validation_event(
+                        file_id=signature_record.file_id if signature_record else None,
+                        status='validated',
+                        ip_address=get_client_ip(request),
+                        is_valid=validation_result.get('valid', False)
+                    )
+                except Exception:
+                    pass
                 return render_template('validate.html', result=validation_result)
                 
             except Exception as e:
@@ -1627,14 +2669,25 @@ if not os.path.exists(PDF_SIGNED_DIR):
     os.makedirs(PDF_SIGNED_DIR)
 
 def cleanup_temp_files():
-    """Remove arquivos temporários antigos"""
+    """Remove arquivos temporários antigos baseado na configuração"""
     try:
+        from config import config
+        current_time = datetime.now().timestamp()
+        
+        # Usa configuração do ambiente ou padrão (1 hora)
+        retention_hours = getattr(config.get('default'), 'TEMP_FILE_RETENTION_HOURS', 1)
+        retention_seconds = retention_hours * 60 * 60
+        
         for filename in os.listdir(TEMP_DIR):
             file_path = os.path.join(TEMP_DIR, filename)
             if os.path.isfile(file_path):
-                # Remove arquivos mais antigos que 1 hora
-                if os.path.getmtime(file_path) < (datetime.now().timestamp() - 3600):
-                    os.remove(file_path)
+                # Remove arquivos mais antigos que o tempo configurado
+                if os.path.getmtime(file_path) < (current_time - retention_seconds):
+                    try:
+                        os.remove(file_path)
+                        print(f"🗑️  Arquivo temporário removido: {filename}")
+                    except Exception as e:
+                        print(f"❌ Falha ao remover {file_path}: {e}")
     except Exception as e:
         print(f"Erro ao limpar arquivos temporários: {e}")
 
@@ -1646,8 +2699,9 @@ def cleanup_temp_files_all():
             if os.path.isfile(file_path):
                 try:
                     os.remove(file_path)
+                    print(f"🗑️  Arquivo temporário removido: {filename}")
                 except Exception as e:
-                    print(f"Falha ao remover {file_path}: {e}")
+                    print(f"❌ Falha ao remover {file_path}: {e}")
     except Exception as e:
         print(f"Erro ao limpar diretório temporário: {e}")
 
@@ -1660,10 +2714,101 @@ def cleanup_signed_pdfs_temp():
                 if os.path.isfile(file_path):
                     try:
                         os.remove(file_path)
+                        print(f"🗑️  PDF temporário removido: {filename}")
                     except Exception as e:
-                        print(f"Falha ao remover PDF temporário {file_path}: {e}")
+                        print(f"❌ Falha ao remover PDF temporário {file_path}: {e}")
     except Exception as e:
         print(f"Erro ao limpar PDFs temporários: {e}")
+
+def cleanup_old_files():
+    """Remove arquivos antigos baseado na configuração de temp_files e pdf_assinados"""
+    try:
+        from config import config
+        current_time = datetime.now().timestamp()
+        
+        # Usa configuração do ambiente ou padrão (7 dias)
+        retention_days = getattr(config.get('default'), 'FILE_RETENTION_DAYS', 7)
+        retention_seconds = retention_days * 24 * 60 * 60
+        cutoff_time = current_time - retention_seconds
+        
+        removed_count = 0
+        
+        # Limpa arquivos da pasta temp_files
+        if os.path.exists(TEMP_DIR):
+            for filename in os.listdir(TEMP_DIR):
+                file_path = os.path.join(TEMP_DIR, filename)
+                if os.path.isfile(file_path):
+                    file_mtime = os.path.getmtime(file_path)
+                    if file_mtime < cutoff_time:
+                        try:
+                            os.remove(file_path)
+                            removed_count += 1
+                            print(f"🗑️  Arquivo antigo removido de temp_files: {filename}")
+                        except Exception as e:
+                            print(f"❌ Falha ao remover {file_path}: {e}")
+        
+        # Limpa arquivos da pasta pdf_assinados
+        if os.path.exists(PDF_SIGNED_DIR):
+            for filename in os.listdir(PDF_SIGNED_DIR):
+                file_path = os.path.join(PDF_SIGNED_DIR, filename)
+                if os.path.isfile(file_path):
+                    file_mtime = os.path.getmtime(file_path)
+                    if file_mtime < cutoff_time:
+                        try:
+                            os.remove(file_path)
+                            removed_count += 1
+                            print(f"🗑️  PDF assinado antigo removido: {filename}")
+                        except Exception as e:
+                            print(f"❌ Falha ao remover {file_path}: {e}")
+        
+        if removed_count > 0:
+            print(f"✅ Limpeza concluída: {removed_count} arquivos removidos (mais de {retention_days} dias)")
+        else:
+            print(f"ℹ️  Nenhum arquivo antigo encontrado para remoção")
+            
+    except Exception as e:
+        print(f"❌ Erro durante limpeza de arquivos antigos: {e}")
+
+def cleanup_old_files_by_database():
+    """Remove arquivos baseado nos registros do banco de dados (mais preciso)"""
+    try:
+        from models import Signature
+        from datetime import timedelta
+        from config import config
+        
+        # Usa configuração do ambiente ou padrão (7 dias)
+        retention_days = getattr(config.get('default'), 'FILE_RETENTION_DAYS', 7)
+        cutoff_date = datetime.now() - timedelta(days=retention_days)
+        old_signatures = Signature.query.filter(
+            Signature.timestamp < cutoff_date
+        ).all()
+        
+        removed_count = 0
+        
+        for signature in old_signatures:
+            # Remove arquivo da pasta pdf_assinados
+            if signature.file_id:
+                # Procura arquivos com o file_id
+                for directory in [PDF_SIGNED_DIR, TEMP_DIR]:
+                    if os.path.exists(directory):
+                        for filename in os.listdir(directory):
+                            if filename.startswith(signature.file_id):
+                                file_path = os.path.join(directory, filename)
+                                if os.path.isfile(file_path):
+                                    try:
+                                        os.remove(file_path)
+                                        removed_count += 1
+                                        print(f"🗑️  Arquivo removido por idade no BD: {filename}")
+                                    except Exception as e:
+                                        print(f"❌ Falha ao remover {file_path}: {e}")
+        
+        if removed_count > 0:
+            print(f"✅ Limpeza por banco de dados concluída: {removed_count} arquivos removidos")
+        else:
+            print(f"ℹ️  Nenhum arquivo antigo encontrado no banco de dados")
+            
+    except Exception as e:
+        print(f"❌ Erro durante limpeza por banco de dados: {e}")
 
 def run_daily_cleanup(hour: int = 2, minute: int = 0, tz_name: str = 'America/Sao_Paulo'):
     """Loop em background que executa a limpeza diariamente no horário configurado.
@@ -1688,10 +2833,23 @@ def run_daily_cleanup(hour: int = 2, minute: int = 0, tz_name: str = 'America/Sa
         except Exception:
             pass
         try:
-            cleanup_temp_files_all()
+            print(f"🧹 Iniciando rotina diária de limpeza - {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
+            
+            # Limpeza de arquivos temporários (1 hora)
+            cleanup_temp_files()
+            
+            # Limpeza de PDFs temporários
             cleanup_signed_pdfs_temp()
+            
+            # Limpeza de arquivos antigos (7 dias) - baseada em timestamp do arquivo
+            cleanup_old_files()
+            
+            # Limpeza de arquivos antigos (7 dias) - baseada no banco de dados
+            cleanup_old_files_by_database()
+            
+            print(f"✅ Rotina diária de limpeza concluída - {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
         except Exception as e:
-            print(f"Erro durante rotina diária de limpeza: {e}")
+            print(f"❌ Erro durante rotina diária de limpeza: {e}")
 
 SCHEDULER_STARTED = False
 
@@ -1801,33 +2959,7 @@ def add_signature_to_all_pages(pdf_file, signature_text, output_path, signature_
                 logo_height = signature_height  # Logo na mesma altura da assinatura
                 logo_width = logo_height * 1.5  # Reduzida proporção para 1.5:1
                 
-                # Adiciona o logo (redimensionado proporcionalmente à assinatura)
-                if os.path.exists(logo_path):
-                    try:
-                        logo_img = RLImage(logo_path)
-                        logo_img.drawHeight = logo_height
-                        logo_img.drawWidth = logo_width
-                        logo_img.drawOn(c, signature_x, signature_y)  # Logo alinhado com a assinatura
-                    except:
-                        pass
-                
-                # Adiciona informações pessoais no meio (alinhadas com a assinatura)
-                if personal_info:
-                    info_x = signature_x + logo_width + 0.3*cm  # Posição após o logo (mais próximo)
-                    info_y = signature_y + 0.8*cm  # Alinhado com a assinatura (mesma altura)
-                    c.setFont("Helvetica-Bold", 8)
-                    c.setFillColor(colors.darkblue)
-                    
-                    if personal_info.get('nome'):
-                        c.drawString(info_x, info_y, f"Nome: {personal_info['nome']}")
-                        info_y -= 0.3*cm
-                    if personal_info.get('cpf'):
-                        c.drawString(info_x, info_y, f"CPF: {personal_info['cpf']}")
-                        info_y -= 0.3*cm
-                    if personal_info.get('data_nascimento'):
-                        c.drawString(info_x, info_y, f"Data: {personal_info['data_nascimento']}")
-                
-                # Adiciona a assinatura desenhada (alinhada com o logo e info)
+                # Adiciona a assinatura desenhada PRIMEIRO (em cima)
                 if signature_image:
                     try:
                         # Salva a imagem da assinatura temporariamente
@@ -1840,15 +2972,41 @@ def add_signature_to_all_pages(pdf_file, signature_text, output_path, signature_
                         signature_img.drawHeight = signature_height
                         signature_img.drawWidth = 2.5*cm  # Largura fixa para a assinatura
                         
-                        # Posiciona a assinatura após as informações pessoais
-                        signature_img_x = signature_x + logo_width + 2.5*cm  # Posição após logo + info (mais próximo da borda)
-                        signature_img_y = signature_y  # Mesma altura do logo
+                        # Posiciona a assinatura ACIMA do logo e dados
+                        signature_img_x = signature_x + logo_width + 1*cm  # Centraliza a rubrica
+                        signature_img_y = signature_y + 1.5*cm  # Posiciona acima dos dados
                         signature_img.drawOn(c, signature_img_x, signature_img_y)
                         
                         # Limpa arquivo temporário
                         os.remove(signature_temp)
                     except Exception as e:
                         print(f"Erro ao adicionar assinatura desenhada: {e}")
+                
+                # Adiciona o logo (redimensionado proporcionalmente à assinatura)
+                if os.path.exists(logo_path):
+                    try:
+                        logo_img = RLImage(logo_path)
+                        logo_img.drawHeight = logo_height
+                        logo_img.drawWidth = logo_width
+                        logo_img.drawOn(c, signature_x, signature_y)  # Logo alinhado na base
+                    except:
+                        pass
+                
+                # Adiciona informações pessoais ao lado do logo (alinhadas com o logo)
+                if personal_info:
+                    info_x = signature_x + logo_width + 0.3*cm  # Posição após o logo (mais próximo)
+                    info_y = signature_y + 0.8*cm  # Alinhado com o logo (mesma altura)
+                    c.setFont("Helvetica-Bold", 8)
+                    c.setFillColor(colors.darkblue)
+                    
+                    if personal_info.get('nome'):
+                        c.drawString(info_x, info_y, f"Nome: {personal_info['nome']}")
+                        info_y -= 0.3*cm
+                    if personal_info.get('cpf'):
+                        c.drawString(info_x, info_y, f"CPF: {personal_info['cpf']}")
+                        info_y -= 0.3*cm
+                    if personal_info.get('data_nascimento'):
+                        c.drawString(info_x, info_y, f"Data: {personal_info['data_nascimento']}")
                 
                 # Adiciona timestamp
                 timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")

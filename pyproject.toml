@@ -24,6 +24,8 @@ dependencies = [
     "bcrypt>=4.0.1",
     "numpy>=2.0.2",
     "email-validator>=2.3.0",
+    "psutil>=7.1.1",
+    "ldap3>=2.9.1",
 ]
 
 [project.optional-dependencies]

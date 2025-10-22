@@ -1,13 +1,10 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciar Usuários - Assinador de PDFs</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        body {
+{% extends "base.html" %}
+
+{% block title %}Gerenciar Usuários - Assinador de PDFs{% endblock %}
+
+{% block extra_css %}
+<style>
+body {
             background-color: #f8f9fa;
         }
         .admin-header {
@@ -35,31 +32,11 @@
         .role-badge {
             font-size: 0.875rem;
         }
-    </style>
-</head>
-<body>
-    <!-- Header -->
-    <div class="admin-header">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <h1 class="mb-2">
-                        <i class="fas fa-users me-3"></i>
-                        Gerenciar Usuários
-                    </h1>
-                    <p class="mb-0">Gerencie contas de usuários do sistema</p>
-                </div>
-                <div class="col-md-4 text-end">
-                    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-light me-2">
-                        <i class="fas fa-tachometer-alt me-2"></i>Dashboard
-                    </a>
-                    <a href="{{ url_for('index') }}" class="btn btn-outline-light">
-                        <i class="fas fa-home me-2"></i>Início
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Header -->
 
     <div class="container">
         <!-- Mensagens Flash -->
@@ -74,15 +51,69 @@
             {% endif %}
         {% endwith %}
 
+        <!-- Sincronização com Active Directory -->
+        <div class="users-card">
+            <h5 class="mb-4">
+                <i class="fas fa-sync me-2 text-success"></i>
+                Sincronização com Active Directory
+            </h5>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">
+                        <i class="fas fa-toggle-on me-2"></i>Status LDAP
+                    </label>
+                    <input type="text" class="form-control" value="{{ 'Habilitada' if ldap_enabled else 'Desabilitada' }}" readonly>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">
+                        <i class="fas fa-server me-2"></i>Servidor
+                    </label>
+                    <input type="text" class="form-control" value="{{ ldap_server if ldap_enabled else 'N/A' }}" readonly>
+                </div>
+            </div>
+
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <a href="{{ url_for('admin_sync') }}" class="btn btn-success">
+                    <i class="fas fa-sync me-2"></i>Sincronizar Usuários do AD
+                </a>
+            </div>
+
+            {% if ldap_enabled %}
+            <div class="alert alert-info mt-3 mb-0">
+                <h6 class="mb-2">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Como Funciona
+                </h6>
+                <ul class="mb-0">
+                    <li><strong>Usuários novos</strong> são criados <strong>INATIVOS</strong> e precisam de aprovação do administrador</li>
+                    <li><strong>Permissões</strong> devem ser definidas manualmente pelo admin</li>
+                    <li><strong>Sincronização</strong> atualiza informações do Active Directory</li>
+                    <li><strong>Contas desabilitadas</strong> no AD são desativadas no sistema</li>
+                </ul>
+            </div>
+            {% else %}
+            <div class="alert alert-warning mt-3 mb-0">
+                <h6 class="mb-2">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    LDAP Desabilitado
+                </h6>
+                <p class="mb-0">
+                    Para habilitar a sincronização com Active Directory, configure as variáveis de ambiente no arquivo <code>.env</code>.
+                </p>
+            </div>
+            {% endif %}
+        </div>
+
         <!-- Cabeçalho da Lista -->
         <div class="users-card">
-            <div class="row align-items-center">
+            <div class="row align-items-center mb-3">
                 <div class="col-md-8">
                     <h4 class="mb-0">
                         <i class="fas fa-list me-2"></i>
                         Lista de Usuários
                     </h4>
-                    <p class="text-muted mb-0">Total de {{ users|length }} usuários registrados</p>
+                    <p class="text-muted mb-0">Total de {{ pagination.total }} usuários registrados</p>
                 </div>
                 <div class="col-md-4 text-end">
                     <a href="{{ url_for('admin_new_user') }}" class="btn btn-success">
@@ -90,10 +121,68 @@
                     </a>
                 </div>
             </div>
+
+            <!-- Barra de Busca e Filtros -->
+            <form method="GET" action="{{ url_for('admin_users') }}" class="mb-3">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-search"></i>
+                            </span>
+                            <input type="text" 
+                                   class="form-control" 
+                                   name="search" 
+                                   placeholder="Buscar por nome, email ou username..."
+                                   value="{{ search_query }}">
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <select name="status" class="form-select">
+                            <option value="all" {% if status_filter == 'all' %}selected{% endif %}>Todos os Status</option>
+                            <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Ativos</option>
+                            <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inativos</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <select name="role" class="form-select">
+                            <option value="all" {% if role_filter == 'all' %}selected{% endif %}>Todas as Funções</option>
+                            <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>Administradores</option>
+                            <option value="user" {% if role_filter == 'user' %}selected{% endif %}>Usuários</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <select name="per_page" class="form-select">
+                            <option value="10" {% if request.args.get('per_page', '10') == '10' %}selected{% endif %}>10 por página</option>
+                            <option value="25" {% if request.args.get('per_page') == '25' %}selected{% endif %}>25 por página</option>
+                            <option value="50" {% if request.args.get('per_page') == '50' %}selected{% endif %}>50 por página</option>
+                            <option value="100" {% if request.args.get('per_page') == '100' %}selected{% endif %}>100 por página</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-filter me-2"></i>Filtrar
+                        </button>
+                    </div>
+                </div>
+                
+                {% if search_query or status_filter != 'all' or role_filter != 'all' %}
+                <div class="mt-2">
+                    <a href="{{ url_for('admin_users') }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-times me-2"></i>Limpar Filtros
+                    </a>
+                </div>
+                {% endif %}
+            </form>
         </div>
 
         <!-- Lista de Usuários -->
         <div class="users-card">
+            {% if users %}
             <div class="table-responsive">
                 <table class="table table-hover">
                     <thead class="table-light">
@@ -118,6 +207,11 @@
                                     </div>
                                     <div>
                                         <strong>{{ user.username }}</strong>
+                                        {% if user.is_ldap_user %}
+                                            <span class="badge bg-info ms-2" style="font-size: 0.7rem;">
+                                                <i class="fas fa-server me-1"></i>LDAP
+                                            </span>
+                                        {% endif %}
                                         {% if user.id == current_user.id %}
                                             <small class="text-muted d-block">(Você)</small>
                                         {% endif %}
@@ -189,6 +283,84 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- Paginação -->
+            {% if pagination.pages > 1 %}
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div>
+                    <p class="text-muted mb-0">
+                        Mostrando {{ pagination.per_page * (pagination.page - 1) + 1 }} a 
+                        {{ pagination.per_page * (pagination.page - 1) + pagination.items|length }} 
+                        de {{ pagination.total }} usuários
+                    </p>
+                </div>
+                
+                <nav>
+                    <ul class="pagination mb-0">
+                        {% if pagination.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('admin_users', page=pagination.prev_num, search=search_query, status=status_filter, role=role_filter, per_page=request.args.get('per_page')) }}">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">
+                                <i class="fas fa-chevron-left"></i>
+                            </span>
+                        </li>
+                        {% endif %}
+                        
+                        {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                            {% if page_num %}
+                                {% if page_num == pagination.page %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                                {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('admin_users', page=page_num, search=search_query, status=status_filter, role=role_filter, per_page=request.args.get('per_page')) }}">
+                                        {{ page_num }}
+                                    </a>
+                                </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">…</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if pagination.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('admin_users', page=pagination.next_num, search=search_query, status=status_filter, role=role_filter, per_page=request.args.get('per_page')) }}">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">
+                                <i class="fas fa-chevron-right"></i>
+                            </span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Nenhum usuário encontrado</h5>
+                <p class="text-muted">
+                    {% if search_query or status_filter != 'all' or role_filter != 'all' %}
+                        Tente ajustar os filtros de busca.
+                    {% else %}
+                        Comece criando um novo usuário.
+                    {% endif %}
+                </p>
+            </div>
+            {% endif %}
         </div>
     </div>
 
@@ -196,10 +368,6 @@
     <div class="modal fade" id="deleteModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Confirmar Exclusão</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
                 <div class="modal-body">
                     <p>Tem certeza que deseja excluir o usuário <strong id="deleteUsername"></strong>?</p>
                     <p class="text-danger">
@@ -217,7 +385,7 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
     <script>
         function confirmDelete(userId, username) {
             document.getElementById('deleteUsername').textContent = username;
@@ -227,5 +395,4 @@
             deleteModal.show();
         }
     </script>
-</body>
-</html>
+{% endblock %}
