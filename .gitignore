@@ -58,6 +58,7 @@ temp_files/
 pdf_assinados/
 signatures/
 certificates/
+instance/assinador.db
 keys/
 logs/
 *.pdf
