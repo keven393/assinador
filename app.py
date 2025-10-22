@@ -105,16 +105,17 @@ async def save_pdf_to_filesystem_async(pdf_content, file_id):
 
 def detect_device_info(user_agent, request_obj):
     """Detecta informações completas do dispositivo e conexão"""
+    collect_device = os.environ.get('COLLECT_DEVICE_INFO', 'true').lower() == 'true'
     device_info = {
         'user_agent': user_agent or '',
         'ip_address': get_client_ip(request_obj),
-        'mac_address': None,  # Será tentado via JavaScript
+        'mac_address': None if collect_device else None,
         'browser_name': 'Unknown',
         'browser_version': 'Unknown',
         'operating_system': 'Unknown',
         'device_type': 'Unknown',
-        'screen_resolution': None,
-        'timezone': None,
+        'screen_resolution': None if collect_device else None,
+        'timezone': None if collect_device else None,
         'location_country': None,
         'location_city': None
     }
@@ -190,6 +191,36 @@ def detect_device_info(user_agent, request_obj):
     
     return device_info
 
+def scan_pdf_safeness(file_path: str):
+    """Retorna (ok, mensagem). Bloqueia PDFs com JavaScript/ações perigosas."""
+    try:
+        with open(file_path, 'rb') as f:
+            reader = PyPDF2.PdfReader(f)
+            try:
+                num_pages = len(reader.pages)
+            except Exception:
+                num_pages = 0
+            if num_pages == 0:
+                return False, 'PDF sem páginas'
+            tokens = ['/JavaScript', '/JS', '/AA', '/OpenAction']
+            # Verifica trailer/catalog
+            try:
+                root_str = str(reader.trailer)
+                if any(tok in root_str for tok in tokens):
+                    return False, 'PDF contém ações/scripts'
+            except Exception:
+                pass
+            # Varre páginas
+            try:
+                for p in reader.pages:
+                    if any(tok in str(p) for tok in tokens):
+                        return False, 'PDF contém ações/scripts em páginas'
+            except Exception:
+                pass
+            return True, 'OK'
+    except Exception as e:
+        return False, f'Falha ao abrir PDF: {e}'
+
 def get_client_ip(request_obj):
     """Obtém o IP real do cliente, considerando proxies"""
     # Prioridade para headers de proxy
@@ -238,21 +269,23 @@ def create_app(config_name=None):
         CSRFProtect(app)
     # HSTS/CSP via Talisman em produção (opcional)
     if (env_name == 'production') and Talisman is not None:
+        # CSP sem 'unsafe-inline'; nonces serão usados em templates
         csp = {
             'default-src': ["'self'"],
             'img-src': ["'self'", 'data:'],
-            'style-src': ["'self'", "'unsafe-inline'"],
-            'script-src': ["'self'", "'unsafe-inline'"]
+            'style-src': ["'self'", 'https://cdn.jsdelivr.net', 'https://cdnjs.cloudflare.com'],
+            'script-src': ["'self'", 'https://cdn.jsdelivr.net', 'https://cdnjs.cloudflare.com']
         }
         Talisman(
             app,
-            force_https=False,  # HTTPS deve ser forçado pelo proxy; ajustar para True se necessário
+            force_https=False,
             strict_transport_security=True,
             strict_transport_security_max_age=31536000,
             strict_transport_security_include_subdomains=True,
-            content_security_policy=csp
+            content_security_policy=csp,
+            content_security_policy_nonce_in=['script-src', 'style-src']
         )
-
+    
     # Inicializa extensões
     db.init_app(app)
 
@@ -373,7 +406,7 @@ def create_app(config_name=None):
                 monitored = {
                     'login', 'logout', 'admin_sync', 'admin_users', 'admin_new_user', 'admin_edit_user',
                     'internal_signature_upload', 'internal_cancel_signature', 'internal_completed_signatures',
-                    'client_sign_document', 'validate_pdf', 'admin_reports'
+                    'client_sign_document', 'admin_reports'
                 }
                 if request.endpoint in monitored:
                     log_event(
@@ -1611,6 +1644,7 @@ def register_routes(app):
     
     @app.route('/signature/upload', methods=['GET', 'POST'])
     @login_required
+    @app.limiter.limit("10 per minute")
     def signature_upload():
         """Etapa 1: Upload do PDF"""
         if request.method == 'POST':
@@ -1632,6 +1666,14 @@ def register_routes(app):
             filename = f"{file_id}_{pdf_file.filename}"
             temp_path = os.path.join(TEMP_DIR, filename)
             pdf_file.save(temp_path)
+            ok_pdf, msg_pdf = scan_pdf_safeness(temp_path)
+            if not ok_pdf:
+                try:
+                    os.remove(temp_path)
+                except Exception:
+                    pass
+                flash(f'PDF rejeitado: {msg_pdf}', 'error')
+                return render_template('signature/upload.html')
             
             # Salva informações na sessão
             session['signature_process'] = {
@@ -1753,7 +1795,8 @@ def register_routes(app):
             process_data = session['signature_process']
             
             # Cria arquivo de saída
-            output_path = tempfile.mktemp(suffix='.pdf')
+            fd, output_path = tempfile.mkstemp(suffix='.pdf')
+            os.close(fd)
             
             # Lê a imagem da assinatura do arquivo
             signature_image_data = None
@@ -1940,7 +1983,8 @@ def register_routes(app):
                 return jsonify({'success': False, 'message': 'Nenhum arquivo selecionado'})
             
             # Salva o arquivo temporariamente
-            temp_file = tempfile.mktemp(suffix='.pdf')
+            fd, temp_file = tempfile.mkstemp(suffix='.pdf')
+            os.close(fd)
             pdf_file.save(temp_file)
             
             # Processa verificação
@@ -2024,6 +2068,7 @@ def register_routes(app):
     
     @app.route('/internal/signature/upload', methods=['GET', 'POST'])
     @login_required
+    @app.limiter.limit("10 per minute")
     def internal_signature_upload():
         """Tela interna: Upload de arquivos e dados do cliente"""
         from models import DocumentType
@@ -2110,6 +2155,15 @@ def register_routes(app):
                     except Exception:
                         pass
                     flash(f'Falha ao ler {safe_name}', 'error')
+                    continue
+                # varredura de segurança
+                ok_pdf, msg_pdf = scan_pdf_safeness(temp_path)
+                if not ok_pdf:
+                    try:
+                        os.remove(temp_path)
+                    except Exception:
+                        pass
+                    flash(f'Arquivo rejeitado: {msg_pdf}', 'error')
                     continue
                 
                 # Cria registro de assinatura pendente
@@ -2460,7 +2514,7 @@ def register_routes(app):
                             # Lê o PDF final (com carimbo + metadados)
                             with open(final_path, 'rb') as f:
                                 final_content = f.read()
-
+                            
                             # Assina o PDF final usando o certificado X.509 do sistema
                             signature_info = certificate_manager.sign_pdf_with_certificate(final_content)
                             if not signature_info:
@@ -2611,8 +2665,14 @@ def register_routes(app):
             
             try:
                 # Salva arquivo temporariamente
-                temp_path = tempfile.mktemp(suffix='.pdf')
+                fd, temp_path = tempfile.mkstemp(suffix='.pdf')
+                os.close(fd)
                 file.save(temp_path)
+                ok_pdf, msg_pdf = scan_pdf_safeness(temp_path)
+                if not ok_pdf:
+                    os.remove(temp_path)
+                    flash(f'PDF rejeitado: {msg_pdf}', 'error')
+                    return render_template('validate.html')
                 
                 # Tenta encontrar um registro de assinatura correspondente
                 # Procura por arquivos na pasta pdf_assinados que correspondam ao hash
@@ -2628,27 +2688,8 @@ def register_routes(app):
                 # Valida o PDF (com ou sem registro)
                 validation_result = pdf_validator.validate_pdf(temp_path, signature_record)
                 
-                # Log de auditoria
-                from audit_logger import log_validation_event
-                log_validation_event(
-                    file_id=signature_record.file_id if signature_record else None,
-                    status='validated',
-                    ip_address=get_client_ip(request),
-                    is_valid=validation_result.get('valid', False)
-                )
-                
                 # Limpa arquivo temporário
                 os.remove(temp_path)
-                
-                try:
-                    log_validation_event(
-                        file_id=signature_record.file_id if signature_record else None,
-                        status='validated',
-                        ip_address=get_client_ip(request),
-                        is_valid=validation_result.get('valid', False)
-                    )
-                except Exception:
-                    pass
                 return render_template('validate.html', result=validation_result)
                 
             except Exception as e:
@@ -2707,8 +2748,13 @@ def register_routes(app):
                 return jsonify({'error': 'Arquivo deve ser um PDF'}), 400
             
             # Salva arquivo temporariamente
-            temp_path = tempfile.mktemp(suffix='.pdf')
+            fd, temp_path = tempfile.mkstemp(suffix='.pdf')
+            os.close(fd)
             file.save(temp_path)
+            ok_pdf, msg_pdf = scan_pdf_safeness(temp_path)
+            if not ok_pdf:
+                os.remove(temp_path)
+                return jsonify({'error': f'PDF rejeitado: {msg_pdf}'}), 400
             
             # Valida o PDF
             validation_result = pdf_validator.validate_pdf(temp_path)
@@ -3018,7 +3064,7 @@ def add_signature_to_all_pages(pdf_file, signature_text, output_path, signature_
             for page_num, page in enumerate(pdf_reader.pages):
                 # Cria um PDF temporário para a página atual em memória
                 temp_buffer = io.BytesIO()
-
+                
                 # Usa o tamanho REAL da página como base (evita problemas de corte/posição)
                 try:
                     page_width = float(page.mediabox.width)
@@ -3044,7 +3090,8 @@ def add_signature_to_all_pages(pdf_file, signature_text, output_path, signature_
                 if signature_image:
                     try:
                         # Salva a imagem da assinatura temporariamente
-                        signature_temp = tempfile.mktemp(suffix='.png')
+                        fd, signature_temp = tempfile.mkstemp(suffix='.png')
+                        os.close(fd)
                         with open(signature_temp, 'wb') as f:
                             f.write(base64.b64decode(signature_image.split(',')[1]))
                         
