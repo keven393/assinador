@@ -234,7 +234,6 @@ body {
                                 <th>Algoritmo</th>
                                 <th>Tamanho</th>
                                 <th>Status</th>
-                                <th>Hash</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -280,11 +279,6 @@ body {
                                             <i class="fas fa-times me-1"></i>Inválida
                                         </span>
                                     {% endif %}
-                                </td>
-                                <td>
-                                    <small class="text-muted" title="{{ signature.signature_hash }}">
-                                        {{ signature.signature_hash[:16] }}...
-                                    </small>
                                 </td>
                             </tr>
                             {% endfor %}
