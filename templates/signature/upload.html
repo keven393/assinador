@@ -134,7 +134,7 @@
                                 <p class="text-muted mb-3">
                                     Formatos aceitos: PDF (máximo 10MB)
                                 </p>
-                                <input type="file" name="pdf_file" id="pdfFile" accept=".pdf" style="display: none;" required>
+                                <input type="file" name="pdf_file" id="pdfFile" accept=".pdf" class="hidden-input" required>
                                 <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('pdfFile').click()">
                                     <i class="fas fa-folder-open me-2"></i>Selecionar Arquivo
                                 </button>
@@ -142,7 +142,7 @@
 
                             <div class="file-info" id="fileInfo">
                                 <div class="d-flex align-items-center">
-                                    <i class="fas fa-file-pdf text-danger me-3" style="font-size: 2rem;"></i>
+                                    <i class="fas fa-file-pdf text-danger me-3 large-icon"></i>
                                     <div class="flex-grow-1">
                                         <h6 class="mb-1" id="fileName">arquivo.pdf</h6>
                                         <small class="text-muted" id="fileSize">Tamanho: 0 KB</small>

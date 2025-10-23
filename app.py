@@ -269,12 +269,12 @@ def create_app(config_name=None):
         CSRFProtect(app)
     # HSTS/CSP via Talisman em produção (opcional)
     if (env_name == 'production') and Talisman is not None:
-        # CSP sem 'unsafe-inline'; nonces serão usados em templates
+        # CSP sem 'unsafe-inline'; usando apenas arquivos locais e CDN
         csp = {
             'default-src': ["'self'"],
             'img-src': ["'self'", 'data:'],
-            'style-src': ["'self'", 'https://cdnjs.cloudflare.com', "'nonce-{nonce}'"],
-            'script-src': ["'self'", 'https://cdnjs.cloudflare.com', "'nonce-{nonce}'"],
+            'style-src': ["'self'", 'https://cdnjs.cloudflare.com'],
+            'script-src': ["'self'", 'https://cdnjs.cloudflare.com'],
             'font-src': ["'self'", 'https://cdnjs.cloudflare.com']
         }
         Talisman(
@@ -283,8 +283,7 @@ def create_app(config_name=None):
             strict_transport_security=True,
             strict_transport_security_max_age=31536000,
             strict_transport_security_include_subdomains=True,
-            content_security_policy=csp,
-            content_security_policy_nonce_in=['script-src', 'style-src']
+            content_security_policy=csp
         )
 
     # Fallback: disponibiliza csp_nonce() mesmo quando Talisman não está ativo

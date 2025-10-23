@@ -238,3 +238,12 @@ body {
     transition: box-shadow 0.3s ease-in-out;
 }
 
+/* Classes para substituir estilos inline */
+.hidden-input {
+    display: none;
+}
+
+.large-icon {
+    font-size: 2rem;
+}
+
