@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -6,14 +6,7 @@
     <title>Meus Documentos para Assinatura</title>
     <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/font-awesome.min.css') }}" rel="stylesheet">
-    <style>
-        body { background: #f8fafc; }
-        .card { border-radius: 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.06); }
-        .header { background: linear-gradient(135deg,#28a745,#20c997); color:#fff; border-radius:14px; padding:1.25rem 1.5rem; }
-        .doc-item { border-left: 4px solid #0d6efd; }
-        .badge-pending { background:#ffc1071a; color:#a07400; border:1px solid #ffc107; }
-        .badge-done { background:#20c9971a; color:#0f6f5f; border:1px solid #20c997; }
-    </style>
+    
     <script>
         function signAll() { window.location.href = "{{ url_for('client_sign_all') }}"; }
     </script>
@@ -80,5 +73,6 @@
 <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
 </body>
 </html>
+
 
 
