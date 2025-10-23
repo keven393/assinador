@@ -4,7 +4,7 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-assinador_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
-      POSTGRES_DB: ${POSTGRES_DB:-assinador_db}
+      POSTGRES_DB: ${POSTGRES_DB:-assinador}
     volumes:
       - /home/assinador/data/postgres:/var/lib/postgresql/data
     healthcheck:
@@ -38,11 +38,11 @@ services:
       redis:
         condition: service_healthy
     environment:
-      FLASK_ENV: production
+      FLASK_ENV: ${FLASK_ENV:-production}
       FLASK_DEBUG: "False"
       SECRET_KEY: ${SECRET_KEY}
-      DATABASE_URL: postgresql://${POSTGRES_USER:-assinador_user}:${POSTGRES_PASSWORD:-change_me}@db:5432/${POSTGRES_DB:-assinador_db}
-      RATE_LIMIT_STORAGE: redis://redis:6379/0
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://${POSTGRES_USER:-assinador_user}:${POSTGRES_PASSWORD:-change_me}@db:5432/${POSTGRES_DB:-assinador}}
+      RATE_LIMIT_STORAGE: ${RATE_LIMIT_STORAGE:-redis://redis:6379/0}
       # SERVER_NAME: ${SERVER_NAME}
       COOKIE_DOMAIN: ${COOKIE_DOMAIN}
       LDAP_ENABLED: ${LDAP_ENABLED:-false}
@@ -57,8 +57,13 @@ services:
       WTF_CSRF_ENABLED: ${WTF_CSRF_ENABLED:-true}
       WTF_CSRF_TIME_LIMIT: ${WTF_CSRF_TIME_LIMIT:-3600}
       COLLECT_DEVICE_INFO: ${COLLECT_DEVICE_INFO:-false}
-      HOST: 0.0.0.0
-      PORT: 5001
+      LOGS_DIR: ${LOGS_DIR:-/app/logs}
+      PDF_SIGNED_DIR: ${PDF_SIGNED_DIR:-/app/pdf_assinados}
+      TEMP_FILES_DIR: ${TEMP_FILES_DIR:-/app/temp_files}
+      KEYS_DIR: ${KEYS_DIR:-/app/keys}
+      CERTIFICATES_DIR: ${CERTIFICATES_DIR:-/app/certificates}
+      HOST: ${HOST:-0.0.0.0}
+      PORT: ${PORT:-5001}
     ports:
       - "5001:5001"
     volumes:
