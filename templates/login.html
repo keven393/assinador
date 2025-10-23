@@ -6,65 +6,9 @@
     <title>Login - Assinador de PDFs</title>
     <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/font-awesome.min.css') }}" rel="stylesheet">
-    <style>
-        body {
-            background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .login-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-            padding: 2rem;
-            width: 100%;
-            max-width: 400px;
-        }
-        .logo-section {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-        .logo-section i {
-            font-size: 3rem;
-            color: #667eea;
-            margin-bottom: 1rem;
-        }
-        .form-control {
-            border-radius: 10px;
-            border: 2px solid #e9ecef;
-            padding: 0.75rem 1rem;
-            transition: all 0.3s ease;
-        }
-        .form-control:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-        }
-        .btn-login {
-            background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
-            border: none;
-            border-radius: 10px;
-            padding: 0.75rem 2rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
-        }
-        .register-link {
-            text-align: center;
-            margin-top: 1.5rem;
-        }
-        .alert {
-            border-radius: 10px;
-            border: none;
-        }
-    </style>
+    <link href="{{ url_for('static', filename='css/custom.css') }}" rel="stylesheet">
 </head>
-<body>
+<body class="login-page-body">
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-md-6 col-lg-4">
@@ -78,10 +22,10 @@
                     {% with messages = get_flashed_messages(with_categories=true) %}
                         {% if messages %}
                             {% for category, message in messages %}
-                                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-                                    {{ message }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                </div>
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show login-alert" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
                             {% endfor %}
                         {% endif %}
                     {% endwith %}
@@ -93,7 +37,7 @@
                             <label for="{{ form.username.id }}" class="form-label">
                                 <i class="fas fa-user me-2"></i>Usuário
                             </label>
-                            {{ form.username(class="form-control", placeholder="Digite seu usuário") }}
+                            {{ form.username(class="form-control login-form-control", placeholder="Digite seu usuário") }}
                             {% if form.username.errors %}
                                 <div class="text-danger small mt-1">
                                     {% for error in form.username.errors %}
@@ -107,7 +51,7 @@
                             <label for="{{ form.password.id }}" class="form-label">
                                 <i class="fas fa-lock me-2"></i>Senha
                             </label>
-                            {{ form.password(class="form-control", placeholder="Digite sua senha") }}
+                            {{ form.password(class="form-control login-form-control", placeholder="Digite sua senha") }}
                             {% if form.password.errors %}
                                 <div class="text-danger small mt-1">
                                     {% for error in form.password.errors %}
