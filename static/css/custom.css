@@ -320,3 +320,152 @@ body {
     border-radius: 4px;
 }
 
+/* Estilos do dashboard (index.html) */
+.hero-section {
+    background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
+    color: white;
+    padding: 3rem 0;
+    margin-bottom: 2rem;
+    border-radius: 15px;
+}
+
+.action-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    transition: transform 0.3s ease;
+    height: 100%;
+}
+
+.action-card:hover {
+    transform: translateY(-5px);
+}
+
+.action-icon {
+    font-size: 3rem;
+    color: #667eea;
+    margin-bottom: 1rem;
+}
+
+.pending-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.client-header {
+    background: #e3f2fd;
+    padding: 1rem;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+}
+
+.document-item {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    border-left: 4px solid #667eea;
+}
+
+.btn-custom {
+    border-radius: 10px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+}
+
+.status-badge {
+    font-size: 0.8rem;
+}
+
+/* Estilos do base.html */
+.base-body {
+    background-color: #f8f9fa;
+    padding-top: 76px; /* Espaço para navbar fixa */
+}
+
+.base-navbar {
+    background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1030;
+}
+
+.base-navbar-brand {
+    font-weight: 600;
+    font-size: 1.3rem;
+}
+
+.base-navbar-nav .nav-link {
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    transition: all 0.3s ease;
+    position: relative; /* permite posicionar o badge dentro do link */
+}
+
+.base-navbar-nav .nav-link:hover {
+    color: white !important;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+}
+
+.base-navbar-nav .nav-link.active {
+    color: white !important;
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 5px;
+}
+
+.base-navbar-toggler {
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.base-navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.9%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+.user-dropdown {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    margin-left: 1rem;
+}
+
+.base-dropdown-menu {
+    border: none;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+}
+
+.base-dropdown-item {
+    padding: 0.5rem 1rem;
+    transition: all 0.3s ease;
+}
+
+.base-dropdown-item:hover {
+    background-color: #667eea;
+    color: white;
+}
+
+.badge-notification {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background-color: #dc3545;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 0.7rem;
+}
+
+.main-content {
+    min-height: calc(100vh - 76px);
+}
+
