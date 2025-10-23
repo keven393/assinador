@@ -6,7 +6,114 @@
     <title>Confirmação - Assinatura Digital</title>
     <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/font-awesome.min.css') }}" rel="stylesheet">
-    
+    <style>
+        body {
+            background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .client-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            margin: 2rem auto;
+            max-width: 600px;
+            overflow: hidden;
+        }
+        .client-header {
+            background: linear-gradient(135deg, #ffc107, #fd7e14);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        .client-body {
+            padding: 2rem;
+        }
+        .info-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid #28a745;
+        }
+        .document-list {
+            background: #e3f2fd;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid #2196f3;
+        }
+        .terms-section {
+            background: #fff3cd;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid #ffc107;
+        }
+        .form-check-input:checked {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+        .btn-client {
+            border-radius: 10px;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+        .btn-client:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        .btn-client:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .logo-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        .client-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        .client-cpf {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .client-info-item {
+            background: white;
+            border-radius: 6px;
+            padding: 0.5rem 0.75rem;
+            margin-bottom: 0.5rem;
+            border-left: 3px solid #28a745;
+            font-size: 0.95rem;
+        }
+        
+        .client-info-item:last-child {
+            margin-bottom: 0;
+        }
+        .document-item {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-left: 3px solid #2196f3;
+        }
+        .terms-text {
+            max-height: 200px;
+            overflow-y: auto;
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -240,4 +347,3 @@
     </script>
 </body>
 </html>
-

@@ -3,7 +3,36 @@
 {% block title %}Gerenciar Usuários - Assinador de PDFs{% endblock %}
 
 {% block extra_css %}
-
+<style>
+body {
+            background-color: #f8f9fa;
+        }
+        .admin-header {
+            background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+        .users-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .btn-action {
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            margin: 0.25rem;
+        }
+        .status-badge {
+            font-size: 0.875rem;
+        }
+        .role-badge {
+            font-size: 0.875rem;
+        }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -179,7 +208,7 @@
                                     <div>
                                         <strong>{{ user.username }}</strong>
                                         {% if user.is_ldap_user %}
-                                            <span class="badge bg-info ms-2" style="font-size: 0.7rem;">
+                                            <span class="badge bg-info ms-2 badge-small">
                                                 <i class="fas fa-server me-1"></i>LDAP
                                             </span>
                                         {% endif %}
@@ -348,7 +377,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <form id="deleteForm" method="POST" style="display: inline;">
+                    <form id="deleteForm" method="POST" class="inline-form">
                         <button type="submit" class="btn btn-danger">Excluir</button>
                     </form>
                 </div>
@@ -367,4 +396,3 @@
         }
     </script>
 {% endblock %}
-

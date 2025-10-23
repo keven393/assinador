@@ -6,7 +6,54 @@
     <title>Revisão de Informações - Assinador Digital</title>
     <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/font-awesome.min.css') }}" rel="stylesheet">
-    
+    <style>
+        .step-indicator {
+            margin-bottom: 2rem;
+        }
+        .step {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e9ecef;
+            color: #6c757d;
+            line-height: 40px;
+            text-align: center;
+            margin: 0 10px;
+            font-weight: bold;
+        }
+        .step.active {
+            background: #007bff;
+            color: white;
+        }
+        .step.completed {
+            background: #28a745;
+            color: white;
+        }
+        .info-card {
+            border-left: 4px solid #007bff;
+            background: #f8f9fa;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        .info-value {
+            color: #212529;
+        }
+        .file-preview {
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 1rem;
+        }
+        .warning-box {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 1rem;
+        }
+    </style>
 </head>
 <body class="bg-light">
     <!-- User Navigation -->
@@ -65,7 +112,7 @@
                         <!-- Aviso Importante -->
                         <div class="warning-box mb-4">
                             <div class="d-flex align-items-center">
-                                <i class="fas fa-exclamation-triangle text-warning me-3" style="font-size: 1.5rem;"></i>
+                                <i class="fas fa-exclamation-triangle text-warning me-3 icon-1-5rem"></i>
                                 <div>
                                     <h6 class="mb-1">Atenção: Verifique Todas as Informações</h6>
                                     <small class="text-muted">
@@ -86,7 +133,7 @@
                                         </h6>
                                         <div class="file-preview">
                                             <div class="d-flex align-items-center">
-                                                <i class="fas fa-file-pdf text-danger me-3" style="font-size: 2.5rem;"></i>
+                                                <i class="fas fa-file-pdf text-danger me-3 icon-2-5rem"></i>
                                                 <div>
                                                     <h6 class="mb-1">{{ filename }}</h6>
                                                     <small class="text-muted">
@@ -144,7 +191,7 @@
                                     {% if client_info.nome %}
                                     <div class="col-md-6">
                                         <div class="d-flex">
-                                            <span class="info-label me-3" style="min-width: 120px;">Nome Completo:</span>
+                                            <span class="info-label me-3">Nome Completo:</span>
                                             <span class="info-value">{{ client_info.nome }}</span>
                                         </div>
                                     </div>
@@ -153,7 +200,7 @@
                                     {% if client_info.cpf %}
                                     <div class="col-md-6">
                                         <div class="d-flex">
-                                            <span class="info-label me-3" style="min-width: 120px;">CPF:</span>
+                                            <span class="info-label me-3">CPF:</span>
                                             <span class="info-value">{{ client_info.cpf }}</span>
                                         </div>
                                     </div>
@@ -162,7 +209,7 @@
                                     {% if client_info.email %}
                                     <div class="col-md-6">
                                         <div class="d-flex">
-                                            <span class="info-label me-3" style="min-width: 120px;">Email:</span>
+                                            <span class="info-label me-3">Email:</span>
                                             <span class="info-value">{{ client_info.email }}</span>
                                         </div>
                                     </div>
@@ -171,7 +218,7 @@
                                     {% if client_info.telefone %}
                                     <div class="col-md-6">
                                         <div class="d-flex">
-                                            <span class="info-label me-3" style="min-width: 120px;">Telefone:</span>
+                                            <span class="info-label me-3">Telefone:</span>
                                             <span class="info-value">{{ client_info.telefone }}</span>
                                         </div>
                                     </div>
@@ -180,7 +227,7 @@
                                     {% if client_info.data_nascimento %}
                                     <div class="col-md-6">
                                         <div class="d-flex">
-                                            <span class="info-label me-3" style="min-width: 120px;">Data de Nascimento:</span>
+                                            <span class="info-label me-3">Data de Nascimento:</span>
                                             <span class="info-value">{{ client_info.data_nascimento }}</span>
                                         </div>
                                     </div>
@@ -189,7 +236,7 @@
                                     {% if client_info.endereco %}
                                     <div class="col-12">
                                         <div class="d-flex">
-                                            <span class="info-label me-3" style="min-width: 120px;">Endereço:</span>
+                                            <span class="info-label me-3">Endereço:</span>
                                             <span class="info-value">{{ client_info.endereco }}</span>
                                         </div>
                                     </div>
@@ -198,7 +245,7 @@
                                     {% if client_info.observacoes %}
                                     <div class="col-12">
                                         <div class="d-flex">
-                                            <span class="info-label me-3" style="min-width: 120px;">Observações:</span>
+                                            <span class="info-label me-3">Observações:</span>
                                             <span class="info-value">{{ client_info.observacoes }}</span>
                                         </div>
                                     </div>
@@ -217,13 +264,13 @@
                                 <div class="row g-3">
                                     <div class="col-md-6">
                                         <div class="d-flex">
-                                            <span class="info-label me-3" style="min-width: 120px;">Algoritmo:</span>
+                                            <span class="info-label me-3">Algoritmo:</span>
                                             <span class="info-value">RSA-SHA256</span>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="d-flex">
-                                            <span class="info-label me-3" style="min-width: 120px;">Timestamp:</span>
+                                            <span class="info-label me-3">Timestamp:</span>
                                             <span class="info-value" id="currentTimestamp">-</span>
                                         </div>
                                     </div>
@@ -271,7 +318,7 @@
                         </div>
 
                         <!-- Etapa 2: Termo de Aceite (Inicialmente oculto) -->
-                        <div id="termsStep" class="mb-4" style="display: none;">
+                        <div id="termsStep" class="mb-4 hidden-element">
                             <div class="card border-success">
                                 <div class="card-header bg-success text-white">
                                     <h6 class="mb-0">
@@ -280,7 +327,7 @@
                                     </h6>
                                 </div>
                                 <div class="card-body">
-                                    <div class="terms-content mb-3" style="max-height: 300px; overflow-y: auto; border: 1px solid #dee2e6; padding: 1rem; border-radius: 5px; background: #f8f9fa;">
+                                    <div class="terms-content mb-3">
                                         <h6 class="text-primary">TERMO DE ACEITE PARA ASSINATURA DIGITAL</h6>
                                         
                                         <p><strong>1. DEFINIÇÕES</strong></p>
@@ -500,4 +547,3 @@
     </script>
 </body>
 </html>
-

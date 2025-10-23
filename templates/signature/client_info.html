@@ -6,7 +6,38 @@
     <title>Dados do Assinante - Assinador Digital</title>
     <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/font-awesome.min.css') }}" rel="stylesheet">
-    
+    <style>
+        .step-indicator {
+            margin-bottom: 2rem;
+        }
+        .step {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e9ecef;
+            color: #6c757d;
+            line-height: 40px;
+            text-align: center;
+            margin: 0 10px;
+            font-weight: bold;
+        }
+        .step.active {
+            background: #007bff;
+            color: white;
+        }
+        .step.completed {
+            background: #28a745;
+            color: white;
+        }
+        .form-floating {
+            margin-bottom: 1rem;
+        }
+        .required-field::after {
+            content: " *";
+            color: #dc3545;
+        }
+    </style>
 </head>
 <body class="bg-light">
     <!-- User Navigation -->
@@ -122,8 +153,8 @@
                                     </div>
 
                                     <div class="form-floating">
-                                        <textarea class="form-control" id="endereco" name="endereco" 
-                                                  placeholder="Endereço completo" style="height: 80px;">{{ client_info.endereco if client_info else '' }}</textarea>
+                                        <textarea class="form-control textarea-80px" id="endereco" name="endereco" 
+                                                  placeholder="Endereço completo">{{ client_info.endereco if client_info else '' }}</textarea>
                                         <label for="endereco">Endereço</label>
                                     </div>
                                 </div>
@@ -137,8 +168,8 @@
                                     </h6>
                                     
                                     <div class="form-floating">
-                                        <textarea class="form-control" id="observacoes" name="observacoes" 
-                                                  placeholder="Observações adicionais..." style="height: 100px;">{{ client_info.observacoes if client_info else '' }}</textarea>
+                                        <textarea class="form-control textarea-100px" id="observacoes" name="observacoes" 
+                                                  placeholder="Observações adicionais...">{{ client_info.observacoes if client_info else '' }}</textarea>
                                         <label for="observacoes">Observações</label>
                                         <div class="form-text">Campo opcional para informações complementares</div>
                                     </div>
@@ -301,4 +332,3 @@
     </script>
 </body>
 </html>
-

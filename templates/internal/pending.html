@@ -3,7 +3,75 @@
 {% block title %}Assinaturas Pendentes - Assinador Digital{% endblock %}
 
 {% block extra_css %}
-
+<style>
+body {
+            background-color: #f8f9fa;
+        }
+        .pending-header {
+            background: linear-gradient(135deg, #ffc107, #fd7e14);
+            color: white;
+            padding: 3rem 0;
+            margin-bottom: 2rem;
+        }
+        .pending-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .client-header {
+            background: #e3f2fd;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid #2196f3;
+        }
+        .document-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid #ffc107;
+            transition: all 0.3s ease;
+        }
+        .document-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+        .btn-custom {
+            border-radius: 10px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+        }
+        .status-badge {
+            font-size: 0.9rem;
+        }
+        .client-info {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .qr-code-section {
+            background: #fff3cd;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid #ffc107;
+            text-align: center;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #6c757d;
+        }
+        .empty-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -266,7 +334,7 @@
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         <i class="fas fa-times me-2"></i>Não, Manter
                     </button>
-                    <form id="cancelForm" method="POST" style="display: inline;">
+                    <form id="cancelForm" method="POST" class="inline-form">
                         <button type="submit" class="btn btn-danger">
                             <i class="fas fa-check me-2"></i>Sim, Cancelar
                         </button>
@@ -369,4 +437,3 @@
 </script>
 
 {% endblock %}
-

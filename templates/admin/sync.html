@@ -3,7 +3,56 @@
 {% block title %}Sincronização AD - Assinador de PDFs{% endblock %}
 
 {% block extra_css %}
-
+<style>
+    body {
+        background-color: #f8f9fa;
+    }
+    .sync-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    .stats-card {
+        background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+    .stats-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+    }
+    .stats-label {
+        font-size: 1rem;
+        margin-top: 0.5rem;
+        opacity: 0.9;
+    }
+    .btn-sync {
+        border-radius: 10px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        margin: 0.25rem;
+    }
+    .info-badge {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+    .badge-enabled {
+        background: #d4edda;
+        color: #155724;
+    }
+    .badge-disabled {
+        background: #f8d7da;
+        color: #721c24;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -42,19 +91,19 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="stats-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <div class="stats-card stats-card-gradient-1">
                 <div class="stats-number">{{ ldap_users }}</div>
                 <div class="stats-label">Usuários LDAP</div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="stats-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+            <div class="stats-card stats-card-gradient-2">
                 <div class="stats-number">{{ active_users }}</div>
                 <div class="stats-label">Usuários Ativos</div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="stats-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+            <div class="stats-card stats-card-gradient-3">
                 <div class="stats-number">{{ inactive_users }}</div>
                 <div class="stats-label">Usuários Inativos</div>
             </div>
@@ -187,5 +236,4 @@ LDAP_USER_SEARCH_FILTER=(&amp;(objectClass=user)(sAMAccountName={username}))</co
 </div>
 
 {% endblock %}
-
 
