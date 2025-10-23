@@ -273,8 +273,9 @@ def create_app(config_name=None):
         csp = {
             'default-src': ["'self'"],
             'img-src': ["'self'", 'data:'],
-            'style-src': ["'self'", 'https://cdn.jsdelivr.net', 'https://cdnjs.cloudflare.com'],
-            'script-src': ["'self'", 'https://cdn.jsdelivr.net', 'https://cdnjs.cloudflare.com']
+            'style-src': ["'self'", 'https://cdnjs.cloudflare.com', "'nonce-{nonce}'"],
+            'script-src': ["'self'", 'https://cdnjs.cloudflare.com', "'nonce-{nonce}'"],
+            'font-src': ["'self'", 'https://cdnjs.cloudflare.com']
         }
         Talisman(
             app,

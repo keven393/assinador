@@ -85,6 +85,11 @@ download_file \
     "$JS_DIR/bootstrap.bundle.min.js" \
     "Bootstrap JS Bundle"
 
+download_file \
+    "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" \
+    "$CSS_DIR/font-awesome.min.css" \
+    "Font Awesome CSS"
+
 # Source maps são opcionais (não falhar se não baixar)
 echo ""
 echo "Baixando source maps (opcionais)..."

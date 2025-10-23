@@ -19,7 +19,7 @@ COPY . .
 
 # Download static files (Bootstrap)
 RUN chmod +x scripts/download_static.sh && \
-    bash scripts/download_static.sh --force
+    FORCE=true bash scripts/download_static.sh
 
 # Create directories expected by app
 RUN mkdir -p logs temp_files pdf_assinados keys

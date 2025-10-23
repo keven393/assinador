@@ -33,6 +33,12 @@ $files = @(
         Output = "$jsDir/bootstrap.bundle.min.js"
         Name = "Bootstrap JS Bundle"
         Essential = $true
+    },
+    @{
+        Url = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        Output = "$cssDir/font-awesome.min.css"
+        Name = "Font Awesome CSS"
+        Essential = $true
     }
 )
 
