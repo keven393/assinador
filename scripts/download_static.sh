@@ -98,9 +98,9 @@ if [ $? -eq 0 ] && [ -f "$FONTAWESOME_ZIP" ]; then
     if [ $? -eq 0 ]; then
         # Copiar CSS
         cp "$FONTAWESOME_DIR/fontawesome-free-6.4.0-web/css/all.min.css" "$CSS_DIR/font-awesome.min.css"
-        # Copiar webfonts
-        mkdir -p "$CSS_DIR/webfonts"
-        cp -r "$FONTAWESOME_DIR/fontawesome-free-6.4.0-web/webfonts/"* "$CSS_DIR/webfonts/"
+        # Copiar webfonts para local correto
+        mkdir -p "static/webfonts"
+        cp -r "$FONTAWESOME_DIR/fontawesome-free-6.4.0-web/webfonts/"* "static/webfonts/"
         echo "✓ Font Awesome completo - CSS + Fonts"
         ((DOWNLOADED++))
     else

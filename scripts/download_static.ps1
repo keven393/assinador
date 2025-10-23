@@ -59,8 +59,8 @@ if (-not (Test-Path $fontAwesomeCss) -or $Force) {
         # Copiar CSS
         Copy-Item "$tempDir/fontawesome-free-6.4.0-web/css/all.min.css" -Destination $fontAwesomeCss -Force
         
-        # Copiar webfonts
-        $webfontsDir = "$cssDir/webfonts"
+        # Copiar webfonts para local correto
+        $webfontsDir = "static/webfonts"
         New-Item -ItemType Directory -Force -Path $webfontsDir | Out-Null
         Copy-Item "$tempDir/fontawesome-free-6.4.0-web/webfonts/*" -Destination $webfontsDir -Recurse -Force
         
