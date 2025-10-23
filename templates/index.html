@@ -2,6 +2,62 @@
 
 {% block title %}Assinador Digital - Página Inicial{% endblock %}
 
+{% block extra_css %}
+<style>
+    .hero-section {
+        background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
+        color: white;
+        padding: 3rem 0;
+        margin-bottom: 2rem;
+        border-radius: 15px;
+    }
+    .action-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        padding: 2rem;
+        margin-bottom: 2rem;
+        transition: transform 0.3s ease;
+        height: 100%;
+    }
+    .action-card:hover {
+        transform: translateY(-5px);
+    }
+    .action-icon {
+        font-size: 3rem;
+        color: #667eea;
+        margin-bottom: 1rem;
+    }
+    .pending-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    .client-header {
+        background: #e3f2fd;
+        padding: 1rem;
+        border-radius: 10px;
+        margin-bottom: 1rem;
+    }
+    .document-item {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+        border-left: 4px solid #667eea;
+    }
+    .btn-custom {
+        border-radius: 10px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+    }
+    .status-badge {
+        font-size: 0.8rem;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container">
