@@ -1,17 +1,20 @@
 /* Custom styles for Assinador de PDFs */
 
 :root {
-    --primary-color: #0d6efd;
-    --secondary-color: #6c757d;
-    --success-color: #198754;
-    --danger-color: #dc3545;
-    --warning-color: #ffc107;
-    --info-color: #0dcaf0;
+    --primary-color: #037334;      /* VERDE PRINCIPAL */
+    --secondary-color: #648C3B;   /* VERDE SECUNDÁRIO */
+    --success-color: #037334;     /* VERDE PRINCIPAL */
+    --danger-color: #dc3545;      /* Mantém vermelho para erros */
+    --warning-color: #F29727;     /* LARANJA */
+    --info-color: #F2BB13;        /* AMARELO */
+    --light-color: #F2F2F2;       /* BRANCO */
+    --accent-orange: #F29727;     /* LARANJA */
+    --accent-yellow: #F2BB13;     /* AMARELO */
 }
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f8f9fa;
+    background-color: var(--light-color);
     min-height: 100vh;
 }
 
@@ -44,13 +47,13 @@ body {
 }
 
 .btn-primary:hover {
-    background-color: #0b5ed7;
-    border-color: #0a58ca;
+    background-color: #025a2a;
+    border-color: #024a24;
 }
 
 .form-control:focus {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    box-shadow: 0 0 0 0.25rem rgba(3, 115, 52, 0.25);
 }
 
 .table {
@@ -68,7 +71,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
 }
 
 .login-card {
@@ -147,10 +150,78 @@ body {
 
 /* Footer */
 .footer {
-    background-color: #f8f9fa;
+    background-color: var(--light-color);
     padding: 1rem 0;
     margin-top: 2rem;
     border-top: 1px solid #dee2e6;
+}
+
+/* Botões com cores da nova paleta */
+.btn-success {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-success:hover {
+    background-color: #025a2a;
+    border-color: #024a24;
+}
+
+.btn-warning {
+    background-color: var(--accent-orange);
+    border-color: var(--accent-orange);
+    color: white;
+}
+
+.btn-warning:hover {
+    background-color: #e0851f;
+    border-color: #d67a1a;
+    color: white;
+}
+
+.btn-info {
+    background-color: var(--accent-yellow);
+    border-color: var(--accent-yellow);
+    color: #333;
+}
+
+.btn-info:hover {
+    background-color: #d4a010;
+    border-color: #c6950f;
+    color: #333;
+}
+
+/* Badges com nova paleta */
+.badge-success {
+    background-color: var(--primary-color);
+}
+
+.badge-warning {
+    background-color: var(--accent-orange);
+}
+
+.badge-info {
+    background-color: var(--accent-yellow);
+    color: #333;
+}
+
+/* Alertas com nova paleta */
+.alert-success {
+    background-color: rgba(3, 115, 52, 0.1);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.alert-warning {
+    background-color: rgba(242, 151, 39, 0.1);
+    border-color: var(--accent-orange);
+    color: #8b5a00;
+}
+
+.alert-info {
+    background-color: rgba(242, 187, 19, 0.1);
+    border-color: var(--accent-yellow);
+    color: #8b6a00;
 }
 
 /* Utility classes */
