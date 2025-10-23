@@ -150,7 +150,6 @@ static/css/bootstrap*.css.map
 static/js/bootstrap*.js
 static/js/bootstrap*.js.map
 static/css/font-awesome*.css
-static/webfonts/
 
 # ============================================
 # MANTER APENAS EXEMPLOS
