@@ -143,7 +143,17 @@ docs/_build/
 *.wmv
 
 # ============================================
+# ARQUIVOS ESTÁTICOS (baixados via script)
+# ============================================
+static/css/bootstrap*.css
+static/css/bootstrap*.css.map
+static/js/bootstrap*.js
+static/js/bootstrap*.js.map
+
+# ============================================
 # MANTER APENAS EXEMPLOS
 # ============================================
 !env_example.txt
 !static/images/logo.png
+!static/css/custom.css
+!static/README.md

@@ -889,9 +889,9 @@ def register_routes(app):
                         if not user.is_active:
                             flash('Sua conta está inativa. Por favor, entre em contato com o administrador para designar permissões e ativar sua conta.', 'error')
                             return render_template('login.html', form=form)
-                        login_user(user, remember=form.remember_me.data)
-                        user.last_login = datetime.utcnow()
-                        db.session.commit()
+                login_user(user, remember=form.remember_me.data)
+                user.last_login = datetime.utcnow()
+                db.session.commit()
                         try:
                             log_event(action='login', actor_user_id=user.id, status='success', ip_address=get_client_ip(request))
                         except Exception:
@@ -914,20 +914,20 @@ def register_routes(app):
                     login_user(user, remember=form.remember_me.data)
                     user.last_login = datetime.utcnow()
                     db.session.commit()
-                    session_id = create_user_session(user, request)
-                    session['user_session_id'] = session_id
-                    if getattr(user, 'must_change_password', False):
-                        session['must_change_password_user'] = user.id
-                        return redirect(url_for('force_change_password'))
+                session_id = create_user_session(user, request)
+                session['user_session_id'] = session_id
+                if getattr(user, 'must_change_password', False):
+                    session['must_change_password_user'] = user.id
+                    return redirect(url_for('force_change_password'))
                     try:
                         log_event(action='login', actor_user_id=user.id, status='success', ip_address=get_client_ip(request))
                     except Exception:
                         pass
-                    flash(f'Bem-vindo, {user.full_name}!', 'success')
-                    next_page = request.args.get('next')
-                    return redirect(next_page) if next_page else redirect(url_for('index'))
-                else:
-                    flash('Usuário ou senha inválidos, ou usuário inativo.', 'error')
+                flash(f'Bem-vindo, {user.full_name}!', 'success')
+                next_page = request.args.get('next')
+                return redirect(next_page) if next_page else redirect(url_for('index'))
+            else:
+                flash('Usuário ou senha inválidos, ou usuário inativo.', 'error')
                     try:
                         log_event(action='login', actor_user_id=(user.id if user else None), status='error', ip_address=get_client_ip(request), details={"reason": "invalid"})
                     except Exception:
@@ -1145,9 +1145,9 @@ def register_routes(app):
             
             # Atualizar apenas se não for usuário LDAP
             if not user.is_ldap_user:
-                user.username = form.username.data
-                user.email = form.email.data
-                user.full_name = form.full_name.data
+            user.username = form.username.data
+            user.email = form.email.data
+            user.full_name = form.full_name.data
                 user.must_change_password = form.must_change_password.data
             
             # Permitir alteração de role e status para todos os usuários
