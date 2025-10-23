@@ -85,10 +85,35 @@ download_file \
     "$JS_DIR/bootstrap.bundle.min.js" \
     "Bootstrap JS Bundle"
 
-download_file \
-    "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" \
-    "$CSS_DIR/font-awesome.min.css" \
-    "Font Awesome CSS"
+# Baixar Font Awesome completo
+echo "↓ Baixando Font Awesome completo..."
+FONTAWESOME_ZIP="fontawesome.zip"
+FONTAWESOME_DIR="temp_fontawesome"
+
+# Baixar ZIP do Font Awesome
+wget -q "https://github.com/FortAwesome/Font-Awesome/releases/download/6.4.0/fontawesome-free-6.4.0-web.zip" -O "$FONTAWESOME_ZIP"
+if [ $? -eq 0 ] && [ -f "$FONTAWESOME_ZIP" ]; then
+    # Extrair ZIP
+    unzip -q "$FONTAWESOME_ZIP" -d "$FONTAWESOME_DIR"
+    if [ $? -eq 0 ]; then
+        # Copiar CSS
+        cp "$FONTAWESOME_DIR/fontawesome-free-6.4.0-web/css/all.min.css" "$CSS_DIR/font-awesome.min.css"
+        # Copiar webfonts
+        mkdir -p "$CSS_DIR/webfonts"
+        cp -r "$FONTAWESOME_DIR/fontawesome-free-6.4.0-web/webfonts/"* "$CSS_DIR/webfonts/"
+        echo "✓ Font Awesome completo - CSS + Fonts"
+        ((DOWNLOADED++))
+    else
+        echo "✗ Erro ao extrair Font Awesome"
+        ((FAILED++))
+    fi
+    # Limpar arquivos temporários
+    rm -f "$FONTAWESOME_ZIP"
+    rm -rf "$FONTAWESOME_DIR"
+else
+    echo "✗ Erro ao baixar Font Awesome"
+    ((FAILED++))
+fi
 
 # Source maps são opcionais (não falhar se não baixar)
 echo ""
