@@ -20,27 +20,33 @@ $jsDir = "static/js"
 New-Item -ItemType Directory -Force -Path $cssDir | Out-Null
 New-Item -ItemType Directory -Force -Path $jsDir | Out-Null
 
-# Arquivos a baixar
+# Arquivos essenciais
 $files = @(
     @{
         Url = "https://cdn.jsdelivr.net/npm/bootstrap@$Version/dist/css/bootstrap.min.css"
         Output = "$cssDir/bootstrap.min.css"
         Name = "Bootstrap CSS"
-    },
-    @{
-        Url = "https://cdn.jsdelivr.net/npm/bootstrap@$Version/dist/css/bootstrap.min.css.map"
-        Output = "$cssDir/bootstrap.min.css.map"
-        Name = "Bootstrap CSS Source Map"
+        Essential = $true
     },
     @{
         Url = "https://cdn.jsdelivr.net/npm/bootstrap@$Version/dist/js/bootstrap.bundle.min.js"
         Output = "$jsDir/bootstrap.bundle.min.js"
         Name = "Bootstrap JS Bundle"
+        Essential = $true
+    }
+)
+
+# Source maps (opcionais)
+$optionalFiles = @(
+    @{
+        Url = "https://cdn.jsdelivr.net/npm/bootstrap@$Version/dist/css/bootstrap.min.css.map"
+        Output = "$cssDir/bootstrap.min.css.map"
+        Name = "CSS Source Map"
     },
     @{
         Url = "https://cdn.jsdelivr.net/npm/bootstrap@$Version/dist/js/bootstrap.bundle.min.js.map"
         Output = "$jsDir/bootstrap.bundle.min.js.map"
-        Name = "Bootstrap JS Source Map"
+        Name = "JS Source Map"
     }
 )
 
@@ -74,6 +80,24 @@ foreach ($file in $files) {
     }
 }
 
+# Baixar source maps (opcionais - não falhar se der erro)
+Write-Host ""
+Write-Host "Baixando source maps (opcionais)..." -ForegroundColor Yellow
+foreach ($file in $optionalFiles) {
+    try {
+        if (Test-Path $file.Output) {
+            Write-Host "⊘ $($file.Name) - Já existe" -ForegroundColor DarkGray
+        } else {
+            Invoke-WebRequest -Uri $file.Url -OutFile $file.Output -UseBasicParsing -ErrorAction SilentlyContinue
+            if (Test-Path $file.Output) {
+                Write-Host "✓ $($file.Name)" -ForegroundColor Green
+            }
+        }
+    } catch {
+        Write-Host "⊘ $($file.Name) - Ignorado" -ForegroundColor DarkGray
+    }
+}
+
 Write-Host ""
 Write-Host "=== Resumo ===" -ForegroundColor Cyan
 Write-Host "Baixados: $downloaded" -ForegroundColor Green
@@ -81,9 +105,24 @@ Write-Host "Ignorados: $skipped" -ForegroundColor DarkGray
 Write-Host "Falhas: $failed" -ForegroundColor $(if ($failed -gt 0) { "Red" } else { "Green" })
 Write-Host ""
 
-if ($failed -gt 0) {
-    Write-Host "⚠ Alguns arquivos falharam ao baixar. Verifique sua conexão." -ForegroundColor Yellow
+# Verificar arquivos essenciais
+$missingEssential = @()
+foreach ($file in $files) {
+    if (!(Test-Path $file.Output) -or (Get-Item $file.Output).Length -eq 0) {
+        $missingEssential += $file.Name
+    }
+}
+
+if ($missingEssential.Count -gt 0) {
+    Write-Host "✗ ERRO: Arquivos essenciais ausentes:" -ForegroundColor Red
+    foreach ($missing in $missingEssential) {
+        Write-Host "  - $missing" -ForegroundColor Red
+    }
     exit 1
+}
+
+if ($failed -gt 0) {
+    Write-Host "⚠ Alguns arquivos opcionais falharam, mas arquivos essenciais OK." -ForegroundColor Yellow
 }
 
 if ($downloaded -eq 0 -and $skipped -gt 0) {

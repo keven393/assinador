@@ -2,12 +2,13 @@
 # Script para baixar arquivos estáticos (Bootstrap) do CDN
 # Executar antes do build ou deploy
 
-set -e
+set -e -o pipefail
 
-VERSION="${1:-5.3.0}"
-FORCE=false
+# Variáveis (podem ser sobrescritas via env)
+VERSION="${BOOTSTRAP_VERSION:-5.3.0}"
+FORCE="${FORCE:-false}"
 
-# Processar argumentos
+# Processar argumentos da linha de comando
 while [[ $# -gt 0 ]]; do
     case $1 in
         -f|--force)
@@ -19,6 +20,7 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         *)
+            echo "Aviso: Argumento desconhecido: $1"
             shift
             ;;
     esac
@@ -55,36 +57,39 @@ download_file() {
     
     echo "↓ Baixando $name..."
     
-    if wget -q --show-progress "$url" -O "$output"; then
+    # Desabilitar set -e temporariamente para capturar erro do wget
+    set +e
+    wget --show-progress "$url" -O "$output" 2>&1
+    local wget_exit=$?
+    set -e
+    
+    if [ $wget_exit -eq 0 ] && [ -f "$output" ] && [ -s "$output" ]; then
         size=$(du -h "$output" | cut -f1)
         echo "✓ $name - $size"
         ((DOWNLOADED++))
     else
-        echo "✗ Erro ao baixar $name"
+        echo "✗ Erro ao baixar $name (exit code: $wget_exit)"
+        rm -f "$output"  # Limpar arquivo corrompido
         ((FAILED++))
     fi
 }
 
-# Baixar arquivos
+# Baixar arquivos essenciais
 download_file \
     "https://cdn.jsdelivr.net/npm/bootstrap@$VERSION/dist/css/bootstrap.min.css" \
     "$CSS_DIR/bootstrap.min.css" \
     "Bootstrap CSS"
 
 download_file \
-    "https://cdn.jsdelivr.net/npm/bootstrap@$VERSION/dist/css/bootstrap.min.css.map" \
-    "$CSS_DIR/bootstrap.min.css.map" \
-    "Bootstrap CSS Source Map"
-
-download_file \
     "https://cdn.jsdelivr.net/npm/bootstrap@$VERSION/dist/js/bootstrap.bundle.min.js" \
     "$JS_DIR/bootstrap.bundle.min.js" \
     "Bootstrap JS Bundle"
 
-download_file \
-    "https://cdn.jsdelivr.net/npm/bootstrap@$VERSION/dist/js/bootstrap.bundle.min.js.map" \
-    "$JS_DIR/bootstrap.bundle.min.js.map" \
-    "Bootstrap JS Source Map"
+# Source maps são opcionais (não falhar se não baixar)
+echo ""
+echo "Baixando source maps (opcionais)..."
+wget -q "https://cdn.jsdelivr.net/npm/bootstrap@$VERSION/dist/css/bootstrap.min.css.map" -O "$CSS_DIR/bootstrap.min.css.map" 2>/dev/null && echo "✓ CSS Source Map" || echo "⊘ CSS Source Map (ignorado)"
+wget -q "https://cdn.jsdelivr.net/npm/bootstrap@$VERSION/dist/js/bootstrap.bundle.min.js.map" -O "$JS_DIR/bootstrap.bundle.min.js.map" 2>/dev/null && echo "✓ JS Source Map" || echo "⊘ JS Source Map (ignorado)"
 
 # Resumo
 echo ""
@@ -94,9 +99,25 @@ echo "Ignorados: $SKIPPED"
 echo "Falhas: $FAILED"
 echo ""
 
-if [ $FAILED -gt 0 ]; then
-    echo "⚠ Alguns arquivos falharam ao baixar. Verifique sua conexão."
+# Verificar se arquivos essenciais existem
+ESSENTIAL_FILES=("$CSS_DIR/bootstrap.min.css" "$JS_DIR/bootstrap.bundle.min.js")
+MISSING=0
+
+for file in "${ESSENTIAL_FILES[@]}"; do
+    if [ ! -f "$file" ] || [ ! -s "$file" ]; then
+        echo "✗ ERRO: Arquivo essencial ausente ou vazio: $file"
+        MISSING=$((MISSING + 1))
+    fi
+done
+
+if [ $MISSING -gt 0 ]; then
+    echo ""
+    echo "⚠ Erro: $MISSING arquivo(s) essencial(is) não encontrado(s)."
     exit 1
+fi
+
+if [ $FAILED -gt 0 ]; then
+    echo "⚠ Alguns arquivos opcionais falharam, mas arquivos essenciais OK."
 fi
 
 if [ $DOWNLOADED -eq 0 ] && [ $SKIPPED -gt 0 ]; then
