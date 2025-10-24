@@ -1,179 +1,140 @@
-# ============================================
-# CONFIGURAÇÕES DA APLICAÇÃO
-# ============================================
+# Configurações principais
+SECRET_KEY=KHCfHPKOi4pVAZYD7/VyXqdlDwdBxw1cyeg7hfhgU1E=
+SERVER_NAME=assinador.senadorcanedo.go.gov.br
+COOKIE_DOMAIN=.senadorcanedo.go.gov.br
 
-# Ambiente (development, production, testing)
-FLASK_ENV=development
-FLASK_DEBUG=True
-SERVER_NAME=
-COOKIE_DOMAIN=
+# Banco de Dados
+POSTGRES_DB=assinador
+POSTGRES_USER=assinador_user
+POSTGRES_PASSWORD=Yq54Hp5CQUyvxF&5k8Wy
 
-# Chave secreta (GERE UMA NOVA PARA PRODUÇÃO!)
-# Use: python -c "import secrets; print(secrets.token_hex(32))"
-SECRET_KEY=sua_chave_secreta_aqui_2024
+# URL completa para SQLAlchemy
+DATABASE_URL=postgresql+psycopg2://assinador_user:Yq54Hp5CQUyvxF&5k8Wy@db:5432/assinador
 
-# ============================================
-# CONFIGURAÇÕES DO BANCO DE DADOS
-# ============================================
+# Redis
+RATE_LIMIT_STORAGE=redis://redis:6379/0
 
-# SQLite (APENAS DESENVOLVIMENTO - NÃO USE EM PRODUÇÃO!)
-DATABASE_URL=sqlite:///assinador.db
-
-# PostgreSQL (PRODUÇÃO - RECOMENDADO!)
-# Descomente e configure para produção
-# DATABASE_URL=postgresql://assinador_user:senha_forte@postgres:5432/assinador_db
-
-# MySQL (PRODUÇÃO - Alternativa)
-# Descomente e configure para produção
-# DATABASE_URL=mysql://assinador_user:senha_forte@localhost:3306/assinador_db
-
-# Async Database URL (para operações assíncronas)
-# Automaticamente gerado a partir de DATABASE_URL, mas pode ser customizado
-# ASYNC_DATABASE_URL=postgresql+asyncpg://assinador_user:senha_forte@localhost:5432/assinador_db
-
-# ============================================
-# CONFIGURAÇÕES DE SEGURANÇA
-# ============================================
-
-# Diretório seguro para chaves (fora do projeto)
-# KEYS_DIR_SECURE=/etc/assinador/keys
-KEYS_DIR_SECURE=
-
-# CSRF Protection
-WTF_CSRF_ENABLED=True
-WTF_CSRF_TIME_LIMIT=3600
-
-# Sessão
-SESSION_LIFETIME_HOURS=24
-SESSION_COOKIE_SECURE=False
-SESSION_COOKIE_HTTPONLY=True
-SESSION_COOKIE_SAMESITE=Lax
-
-# ============================================
-# CONFIGURAÇÕES DE UPLOAD
-# ============================================
-
-# Tamanho máximo de upload (em bytes)
-MAX_CONTENT_LENGTH=52428800
-UPLOAD_FOLDER=temp_files
-
-# ============================================
-# CONFIGURAÇÕES DE DIRETÓRIOS
-# ============================================
-
-TEMP_DIR=temp_files
-STATIC_DIR=static
-SIGNATURES_DIR=signatures
-CERTIFICATES_DIR=certificates
-KEYS_DIR=keys
-PDF_SIGNED_DIR=pdf_assinados
-LOGS_DIR=logs
-
-# ============================================
-# CONFIGURAÇÕES DE LIMPEZA AUTOMÁTICA
-# ============================================
-
-# Intervalo de limpeza (em segundos)
-CLEANUP_INTERVAL=3600
-
-# Retenção de arquivos (em segundos)
-FILE_RETENTION=86400
-
-# Horário da limpeza diária (HH:MM)
-CLEANUP_TIME=02:00
-
-# Timezone para limpeza
-CLEANUP_TZ=America/Sao_Paulo
-
-# Retenção de arquivos
-FILE_RETENTION_DAYS=7
-TEMP_FILE_RETENTION_HOURS=1
-
-# ============================================
-# CONFIGURAÇÕES DE LOGGING
-# ============================================
-
-LOG_LEVEL=INFO
-LOG_FILE=assinador.log
-LOG_MAX_BYTES=10240000
-LOG_BACKUP_COUNT=10
-
-# ============================================
-# CONFIGURAÇÕES DE CERTIFICADO
-# ============================================
-
-CERTIFICATE_VALIDITY_DAYS=1825
-KEY_SIZE=2048
-
-# ============================================
-# CONFIGURAÇÕES DE SERVIDOR
-# ============================================
-
-# Host e porta
-HOST=0.0.0.0
-PORT=5001
-
-# Workers para produção (apenas para Gunicorn)
-WORKERS=4
-
-# ============================================
-# CONFIGURAÇÕES DE CACHE
-# ============================================
-
-# Rate Limiting
-RATE_LIMIT_ENABLED=True
-RATE_LIMIT_STORAGE=memory://
-
-# ============================================
-# CONFIGURAÇÕES DO ACTIVE DIRECTORY / LDAP
-# ============================================
-
-# Habilitar/Desabilitar autenticação LDAP
+# LDAP
 LDAP_ENABLED=true
-
-# Servidor LDAP
 LDAP_SERVER=ldap://10.0.20.1
 LDAP_PORT=389
-
-# Base DN e credenciais de administração
 LDAP_BASE_DN=OU=USUARIOS,OU=PSC,DC=PSC,DC=LOCAL
 LDAP_USER_DN=admin.ldap
 LDAP_PASSWORD=21mLJu1@3x9Z
+LDAP_USER_SEARCH_FILTER=(&(objectCategory=person)(objectClass=user)(|(userAccountControl=512)(userAccountControl=544)(userAccountControl=66048)(userAccountControl=66050)(userAccountControl=66080))(memberOf=CN>LDAP_USERNAME_FIELD=sAMAccountName
+LDAP_GROUP_FILTER=(&(objectClass=group)(memberOf=CN=OPENFIRE,OU=OPENFIRE,OU=USUARIOS,OU=PSC,DC=PSC,DC=LOCAL))
 
-# Filtro de busca de usuários
-# Este filtro busca usuários que:
-# - São pessoas (objectCategory=person)
-# - São objetos de usuário (objectClass=user)
-# - Têm conta habilitada (userAccountControl: 512, 544, 66048, 66050, 66080)
-# - Pertencem ao grupo OPENFIRE
-# - Têm o sAMAccountName correspondente
-LDAP_USER_SEARCH_FILTER=(&(objectCategory=person)(objectClass=user)(|(userAccountControl=512)(userAccountControl=544)(userAccountControl=66048)(userAccountControl=66050)(userAccountControl=66080))(memberOf=CN=OPENFIRE,OU=OPENFIRE,OU=USUARIOS,OU=PSC,DC=PSC,DC=LOCAL)(sAMAccountName={username}))
+# Outras configs
+FLASK_ENV=production
+HOST=0.0.0.0
+WTF_CSRF_ENABLED=true
+WTF_CSRF_TIME_LIMIT=3600
+COLLECT_DEVICE_INFO=false
+LOGS_DIR=/app/logs
+PDF_SIGNED_DIR=/app/pdf_assinados
+TEMP_FILES_DIR=/app/temp_files
+KEYS_DIR=/app/keys
+CERTIFICATES_DIR=/app/certificates
 
-# Campo de nome de usuário
-LDAP_USERNAME_FIELD=sAMAccountName
 
-# Filtro de grupos (opcional)
-LDAP_GROUP_FILTER=(objectClass=group)
 
-CACHE_TYPE=simple
-CACHE_DEFAULT_TIMEOUT=300
 
-# ============================================
-# CONFIGURAÇÕES DE COMPRESSÃO
-# ============================================
 
-COMPRESS_LEVEL=6
-COMPRESS_MIN_SIZE=500
 
-# ============================================
-# CONFIGURAÇÕES DE PRODUÇÃO (OPCIONAL)
-# ============================================
 
-# Para produção, configure:
-# FLASK_ENV=production
-# FLASK_DEBUG=False
-# SECRET_KEY=<sua-chave-secreta-forte>
-# DATABASE_URL=<url-do-banco-de-dados>
-# SESSION_COOKIE_SECURE=True
-# HOST=0.0.0.0
-# PORT=80
+
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      # Lidos do .env
+      POSTGRES_USER: ${POSTGRES_USER:-assinador_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+      POSTGRES_DB: ${POSTGRES_DB:-assinador}
+    volumes:
+      - /home/assinador/data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    volumes:
+      - /home/assinador/data/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      args:
+        # IMPORTANTE: Troque 1001 pelo UID/GID do seu usuário 'suporte'
+        HOST_UID: 1001
+        HOST_GID: 1001
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      FLASK_ENV: ${FLASK_ENV:-production}
+      FLASK_DEBUG: "False"
+      SECRET_KEY: ${SECRET_KEY}
+
+      # CORREÇÃO: Deixamos o compose construir a URL a partir das
+      # variáveis do .env, para evitar redundância.
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://${POSTGRES_USER:-assinador_user}:${POSTGRES_PASSWORD:-change_me}@db:5432/${POSTGRES_DB:-assinador}}
+
+      RATE_LIMIT_STORAGE: ${RATE_LIMIT_STORAGE:-redis://redis:6379/0}
+
+      # CORREÇÃO: Linha descomentada para carregar do .env
+      SERVER_NAME: ${SERVER_NAME}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN}
+
+      # CORREÇÃO: Indentação corrigida (movido para dentro de 'environment')
+      LDAP_ENABLED: ${LDAP_ENABLED:-false}
+      LDAP_SERVER: ${LDAP_SERVER}
+      LDAP_PORT: ${LDAP_PORT:-389}
+      LDAP_BASE_DN: ${LDAP_BASE_DN}
+      LDAP_USER_DN: ${LDAP_USER_DN}
+      LDAP_PASSWORD: ${LDAP_PASSWORD}
+      LDAP_USER_SEARCH_FILTER: ${LDAP_USER_SEARCH_FILTER}
+      LDAP_USERNAME_FIELD: ${LDAP_USERNAME_FIELD:-sAMAccountName}
+      LDAP_GROUP_FILTER: ${LDAP_GROUP_FILTER}
+
+      WTF_CSRF_ENABLED: ${WTF_CSRF_ENABLED:-true}
+      WTF_CSRF_TIME_LIMIT: ${WTF_CSRF_TIME_LIMIT:-3600}
+      COLLECT_DEVICE_INFO: ${COLLECT_DEVICE_INFO:-false}
+
+      # Caminhos do Container (lidos do .env, com defaults)
+      LOGS_DIR: ${LOGS_DIR:-/app/logs}
+      PDF_SIGNED_DIR: ${PDF_SIGNED_DIR:-/app/pdf_assinados}
+      TEMP_FILES_DIR: ${TEMP_FILES_DIR:-/app/temp_files}
+      KEYS_DIR: ${KEYS_DIR:-/app/keys}
+      CERTIFICATES_DIR: ${CERTIFICATES_DIR:-/app/certificates}
+
+      HOST: ${HOST:-0.0.0.0}
+      PORT: ${PORT:-5001}
+    ports:
+      - "5001:5001"
+    volumes:
+      # Mapeamento: [HOST] : [CONTAINER]
+      - /home/assinador/logs:/app/logs
+      - /home/assinador/data/pdf_assinados:/app/pdf_assinados
+      - /home/assinador/data/temp_files:/app/temp_files
+      - /home/assinador/data/keys:/app/keys
+      - /home/assinador/data/certificates:/app/certificates
+    healthcheck:
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped

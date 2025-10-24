@@ -1,22 +1,74 @@
 /* Custom styles for Assinador de PDFs */
 
 :root {
-    --primary-color: #037334;      /* VERDE PRINCIPAL */
-    --secondary-color: #648C3B;   /* VERDE SECUNDÁRIO */
-    --success-color: #037334;     /* VERDE PRINCIPAL */
+    --primary-color: #4a7c59;      /* VERDE PRINCIPAL MAIS CLARO */
+    --secondary-color: #7ba05b;   /* VERDE SECUNDÁRIO MAIS CLARO */
+    --success-color: #4a7c59;     /* VERDE PRINCIPAL MAIS CLARO */
     --danger-color: #dc3545;      /* Mantém vermelho para erros */
     --warning-color: #F29727;     /* LARANJA */
     --info-color: #F2BB13;        /* AMARELO */
-    --light-color: #F2F2F2;       /* BRANCO */
+    --light-color: #f8f9fa;       /* BRANCO MAIS SUAVE */
     --accent-orange: #F29727;     /* LARANJA */
     --accent-yellow: #F2BB13;     /* AMARELO */
 }
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: var(--light-color);
+    background-color: white !important;
     min-height: 100vh;
-    padding-top: 76px !important; /* Espaço para navbar fixa - força aplicação */
+    padding-top: 80px !important; /* Espaço para navbar fixa - força aplicação */
+}
+
+/* Forçar background branco em todas as páginas exceto as específicas */
+body:not(.client-confirm-body):not(.client-select-body):not(.client-sign-body):not(.client-success-body):not(.internal-edit-signature-body):not(.internal-upload-body):not(.validate-body) {
+    background-color: white !important;
+}
+
+/* Garantir contraste adequado em cards brancos */
+.card {
+    color: #333 !important;
+}
+
+.card h1,
+.card h2,
+.card h3,
+.card h4,
+.card h5,
+.card h6,
+.card .card-title {
+    color: #333 !important;
+}
+
+.card p,
+.card .card-text,
+.card small,
+.card .text-muted {
+    color: #666 !important;
+}
+
+/* Exceções para cards com fundo colorido */
+.card-header {
+    color: white !important;
+}
+
+.completed-stats-card,
+.admin-sync-stats-card {
+    color: white !important;
+}
+
+.completed-stats-card h1,
+.completed-stats-card h2,
+.completed-stats-card h3,
+.completed-stats-card h4,
+.completed-stats-card h5,
+.completed-stats-card h6,
+.admin-sync-stats-card h1,
+.admin-sync-stats-card h2,
+.admin-sync-stats-card h3,
+.admin-sync-stats-card h4,
+.admin-sync-stats-card h5,
+.admin-sync-stats-card h6 {
+    color: white !important;
 }
 
 .navbar-brand {
@@ -324,17 +376,66 @@ body {
 
 /* Estilos do Dashboard Admin */
 .stats-card {
-    background: white;
+    background: white !important;
     border-radius: 15px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
     padding: 2rem;
     text-align: center;
     margin-bottom: 2rem;
     transition: transform 0.3s ease;
+    border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .stats-card:hover {
     transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Garantir que cards do dashboard tenham fundo branco sólido */
+.dashboard .card,
+.index .card,
+.completed .card,
+.pending .card {
+    background: white !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Cards de estatísticas específicos */
+.stats-card,
+.completed-stats-card,
+.admin-sync-stats-card {
+    background: white !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1) !important;
+    color: #333 !important;
+}
+
+.stats-card h3,
+.stats-card h4,
+.stats-card h5,
+.stats-card p,
+.stats-card .card-title,
+.stats-card .card-text {
+    color: #333 !important;
+}
+
+.completed-stats-card h3,
+.completed-stats-card h4,
+.completed-stats-card h5,
+.completed-stats-card p,
+.completed-stats-card .card-title,
+.completed-stats-card .card-text {
+    color: white !important;
+}
+
+.admin-sync-stats-card h3,
+.admin-sync-stats-card h4,
+.admin-sync-stats-card h5,
+.admin-sync-stats-card p,
+.admin-sync-stats-card .card-title,
+.admin-sync-stats-card .card-text {
+    color: white !important;
 }
 
 .stats-number {
@@ -612,7 +713,7 @@ body.base-page-body {
 
 /* Estilos específicos para completed.html */
 .completed-page-body {
-    background-color: #f8f9fa;
+    background-color: white;
 }
 
 .completed-header {
@@ -718,7 +819,7 @@ body.base-page-body {
 
 /* Estilos específicos do base.html */
 .base-page-body {
-    background-color: #f8f9fa;
+    background-color: white;
     /* padding-top já aplicado no body principal */
 }
 
@@ -805,7 +906,7 @@ body.base-page-body {
 
 /* Estilos específicos do admin/users.html */
 .admin-users-body {
-    background-color: #f8f9fa;
+    background-color: white;
 }
 
 .admin-users-header {
@@ -835,7 +936,7 @@ body.base-page-body {
 
 /* Estilos específicos do admin/reports.html */
 .admin-reports-body {
-    background-color: #f8f9fa;
+    background-color: white;
 }
 
 .admin-reports-header {
@@ -903,7 +1004,7 @@ body.base-page-body {
 
 /* Estilos específicos do internal/pending.html */
 .internal-pending-body {
-    background-color: #f8f9fa;
+    background-color: white;
 }
 
 .internal-pending-header {
@@ -983,11 +1084,100 @@ body.base-page-body {
 
 /* Estilos específicos do index.html */
 .index-hero-section {
-    background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
-    color: white;
+    background: white;
+    color: #333;
     padding: 3rem 0;
     margin-bottom: 2rem;
     border-radius: 15px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Card de boas-vindas com fundo verde */
+.index-welcome-card {
+    background: linear-gradient(135deg, #037334 0%, #648C3B 100%) !important;
+    color: white !important;
+    border: none !important;
+    box-shadow: 0 10px 30px rgba(3, 115, 52, 0.3) !important;
+}
+
+.index-welcome-card h1 {
+    color: white !important;
+}
+
+.index-welcome-card p {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Cards de ação com estilo moderno */
+.index-new-signature-card,
+.index-pending-signatures-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    transition: transform 0.3s ease;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    color: #333 !important;
+}
+
+.index-new-signature-card h4,
+.index-pending-signatures-card h4 {
+    color: #333 !important;
+}
+
+.index-new-signature-card p,
+.index-pending-signatures-card p {
+    color: #666 !important;
+}
+
+.index-new-signature-card:hover,
+.index-pending-signatures-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Card de lista de pendentes */
+.index-pending-list-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    color: #333 !important;
+}
+
+.index-pending-list-card h5 {
+    color: #333 !important;
+}
+
+.index-pending-list-card h6 {
+    color: #333 !important;
+}
+
+.index-pending-list-card small {
+    color: #666 !important;
+}
+
+/* Card de estado vazio */
+.index-empty-state-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    padding: 3rem 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    color: #333 !important;
+}
+
+.index-empty-state-card h5 {
+    color: #333 !important;
+}
+
+.index-empty-state-card p {
+    color: #666 !important;
 }
 
 .index-action-card {
@@ -1045,24 +1235,14 @@ body.base-page-body {
 
 /* Estilos específicos do validate.html */
 .validate-body {
-    background: linear-gradient(135deg, #037334 0%, #648C3B 100%) !important;
+    background: white;
     min-height: 100vh;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     padding-top: 2rem;
 }
 
-/* Força aplicação dos estilos do validador */
-.container.validate-body {
-    background: linear-gradient(135deg, #037334 0%, #648C3B 100%) !important;
-}
 
-/* Regras de alta especificidade para o validador */
-body .validate-body {
-    background: linear-gradient(135deg, #037334 0%, #648C3B 100%) !important;
-    min-height: 100vh !important;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
-    padding-top: 2rem !important;
-}
+
 
 body .validate-body .validation-container {
     background: rgba(255, 255, 255, 0.98) !important;
@@ -1369,7 +1549,7 @@ body .validate-body .validation-container::before {
     }
     
     .icon-large {
-        font-size: 3rem;
+    font-size: 3rem;
     }
     
     .btn-custom {
@@ -1439,7 +1619,7 @@ body .validate-body .validation-container::before {
 
 /* Estilos específicos do admin/cleanup.html */
 .admin-cleanup-body {
-    background-color: #f8f9fa;
+    background-color: white;
 }
 
 .admin-cleanup-header {
@@ -1554,7 +1734,7 @@ body .validate-body .validation-container::before {
 
 /* Estilos específicos do admin/sync.html */
 .admin-sync-body {
-    background-color: #f8f9fa;
+    background-color: white;
 }
 
 .admin-sync-card {
@@ -1612,7 +1792,7 @@ body .validate-body .validation-container::before {
 
 /* Estilos específicos do admin/edit_user.html */
 .admin-edit-user-body {
-    background-color: #f8f9fa;
+    background-color: white;
 }
 
 .admin-edit-user-header {
@@ -2599,7 +2779,7 @@ body .validate-body .validation-container::before {
 
 /* Internal Upload Styles */
 .internal-upload-body {
-    background-color: #f8f9fa;
+    background-color: white;
 }
 
 .internal-upload-header {
@@ -2770,15 +2950,16 @@ body .internal-upload-body,
 }
 
 /* Estilos específicos para upload.html - aplicados diretamente no body */
-body {
+body.internal-upload-body {
     background: linear-gradient(135deg, #037334 0%, #648C3B 100%) !important;
     min-height: 100vh !important;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
     padding-top: 2rem !important;
 }
 
-/* Cards com glassmorphism para upload */
-.card {
+/* Cards com glassmorphism para upload - apenas na página de upload */
+.internal-upload-body .card,
+.upload-page .card {
     background: rgba(255, 255, 255, 0.98) !important;
     border-radius: 25px !important;
     box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15) !important;
@@ -2790,7 +2971,8 @@ body {
     padding: 2rem !important;
 }
 
-.card::before {
+.internal-upload-body .card::before,
+.upload-page .card::before {
     content: '' !important;
     position: absolute !important;
     top: 0 !important;

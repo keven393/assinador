@@ -293,7 +293,12 @@ def create_app(config_name=None):
             from flask_wtf.csrf import generate_csrf
             return generate_csrf()
         
-        return dict(csrf_token=_csrf_token)
+        def _csp_nonce():
+            # Em desenvolvimento, retorna uma string vazia
+            # Em produção, o Talisman gerencia automaticamente
+            return ''
+        
+        return dict(csrf_token=_csrf_token, csp_nonce=_csp_nonce)
     
     # Inicializa extensões
     db.init_app(app)
@@ -335,7 +340,7 @@ def create_app(config_name=None):
     limiter = Limiter(
         app=app,
         key_func=get_remote_address,
-        default_limits=["200 per day", "50 per hour"],
+        default_limits=["2000 per day", "500 per hour"],
         storage_uri=os.environ.get('RATE_LIMIT_STORAGE', 'memory://')
     )
     
@@ -827,7 +832,7 @@ def register_routes(app):
         return render_template('index.html', **template_data)
 
     @app.route('/login', methods=['GET', 'POST'])
-    @app.limiter.limit("10 per hour; 3 per minute")
+    @app.limiter.limit("100 per hour; 20 per minute")
     def login():
         if current_user.is_authenticated:
             return redirect(url_for('index'))
@@ -1653,7 +1658,7 @@ def register_routes(app):
     
     @app.route('/signature/upload', methods=['GET', 'POST'])
     @login_required
-    @app.limiter.limit("10 per minute")
+    @app.limiter.limit("60 per minute")
     def signature_upload():
         """Etapa 1: Upload do PDF"""
         if request.method == 'POST':
@@ -2077,7 +2082,7 @@ def register_routes(app):
     
     @app.route('/internal/signature/upload', methods=['GET', 'POST'])
     @login_required
-    @app.limiter.limit("10 per minute")
+    @app.limiter.limit("60 per minute")
     def internal_signature_upload():
         """Tela interna: Upload de arquivos e dados do cliente"""
         from models import DocumentType
@@ -2606,35 +2611,75 @@ def register_routes(app):
     @app.route('/client/download/<int:signature_id>')
     def client_download_signed(signature_id):
         """Download do PDF assinado pelo cliente"""
-        signature = Signature.query.get_or_404(signature_id)
-        
-        if signature.status != 'completed':
-            flash('Documento ainda não foi assinado', 'error')
-            return redirect(url_for('client_select_document'))
-        
-        # Busca arquivo assinado com política de retenção
-        clean_final_filename = signature.original_filename.replace('.pdf', '_assinado.pdf')
-        stored_name_keep = f"{signature.file_id}_{clean_final_filename.replace('.pdf', '_KEEP.pdf')}"
-        stored_name_temp = f"{signature.file_id}_{clean_final_filename.replace('.pdf', '_TEMP.pdf')}"
-        candidate_keep = os.path.join(PDF_SIGNED_DIR, stored_name_keep)
-        candidate_temp = os.path.join(PDF_SIGNED_DIR, stored_name_temp)
-        
-        signed_path = candidate_keep if os.path.exists(candidate_keep) else (candidate_temp if os.path.exists(candidate_temp) else None)
-        
-        if not signed_path or not os.path.exists(signed_path):
-            flash('Arquivo assinado não encontrado', 'error')
-            return redirect(url_for('client_select_document'))
-        
-        response = send_file(signed_path, as_attachment=True, download_name=clean_final_filename)
-        
-        # Se for arquivo temporário, remove após enviar
         try:
-            if signed_path.endswith('_TEMP.pdf'):
-                os.remove(signed_path)
-        except Exception as rm_err:
-            print(f"Erro ao remover PDF temporário após download (cliente): {rm_err}")
-        
-        return response
+            signature = Signature.query.get_or_404(signature_id)
+            
+            if signature.status != 'completed':
+                flash('Documento ainda não foi assinado', 'error')
+                return redirect(url_for('client_select_document'))
+            
+            # Busca arquivo assinado com política de retenção
+            clean_final_filename = signature.original_filename.replace('.pdf', '_assinado.pdf')
+            stored_name_keep = f"{signature.file_id}_{clean_final_filename.replace('.pdf', '_KEEP.pdf')}"
+            stored_name_temp = f"{signature.file_id}_{clean_final_filename.replace('.pdf', '_TEMP.pdf')}"
+            candidate_keep = os.path.join(PDF_SIGNED_DIR, stored_name_keep)
+            candidate_temp = os.path.join(PDF_SIGNED_DIR, stored_name_temp)
+            
+            # Debug: Log dos caminhos para investigação
+            app.logger.info(f"Tentando download - Signature ID: {signature_id}")
+            app.logger.info(f"PDF_SIGNED_DIR: {PDF_SIGNED_DIR}")
+            app.logger.info(f"Candidate KEEP: {candidate_keep} - Exists: {os.path.exists(candidate_keep)}")
+            app.logger.info(f"Candidate TEMP: {candidate_temp} - Exists: {os.path.exists(candidate_temp)}")
+            
+            signed_path = candidate_keep if os.path.exists(candidate_keep) else (candidate_temp if os.path.exists(candidate_temp) else None)
+            
+            if not signed_path or not os.path.exists(signed_path):
+                app.logger.error(f"Arquivo assinado não encontrado para signature_id: {signature_id}")
+                app.logger.error(f"Procurando em: {PDF_SIGNED_DIR}")
+                app.logger.error(f"Arquivos disponíveis: {os.listdir(PDF_SIGNED_DIR) if os.path.exists(PDF_SIGNED_DIR) else 'Diretório não existe'}")
+                flash('Arquivo assinado não encontrado', 'error')
+                return redirect(url_for('client_select_document'))
+            
+            response = send_file(signed_path, as_attachment=True, download_name=clean_final_filename)
+            
+            # Se for arquivo temporário, remove após enviar
+            try:
+                if signed_path.endswith('_TEMP.pdf'):
+                    os.remove(signed_path)
+            except Exception as rm_err:
+                app.logger.error(f"Erro ao remover PDF temporário após download (cliente): {rm_err}")
+            
+            return response
+            
+        except Exception as e:
+            app.logger.error(f"Erro no download do PDF assinado (cliente): {str(e)}")
+            flash('Erro interno do servidor', 'error')
+            return redirect(url_for('client_select_document'))
+
+    @app.route('/debug/files')
+    @admin_required
+    def debug_files():
+        """Debug: Lista arquivos no diretório de PDFs assinados"""
+        try:
+            files_info = []
+            if os.path.exists(PDF_SIGNED_DIR):
+                for filename in os.listdir(PDF_SIGNED_DIR):
+                    file_path = os.path.join(PDF_SIGNED_DIR, filename)
+                    if os.path.isfile(file_path):
+                        stat = os.stat(file_path)
+                        files_info.append({
+                            'name': filename,
+                            'size': stat.st_size,
+                            'modified': datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d %H:%M:%S')
+                        })
+            
+            return {
+                'pdf_signed_dir': PDF_SIGNED_DIR,
+                'dir_exists': os.path.exists(PDF_SIGNED_DIR),
+                'files': files_info
+            }
+        except Exception as e:
+            return {'error': str(e)}
 
     @app.route('/client/sign_all')
     def client_sign_all():
@@ -2655,7 +2700,7 @@ def register_routes(app):
         return redirect(url_for('client_confirm_document', signature_id=first_id))
 
     @app.route('/validate', methods=['GET', 'POST'])
-    @app.limiter.limit("20 per minute")
+    @app.limiter.limit("100 per minute")
     def validate_pdf():
         """Página para validação de PDFs assinados"""
         if request.method == 'POST':

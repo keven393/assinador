@@ -245,7 +245,16 @@
     <div class="modal fade" id="detailsModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-info-circle text-info me-2"></i>
+                        Detalhes da Assinatura
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="detailsContent">
+                    <!-- Conteúdo será inserido via JavaScript -->
+                </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
                 </div>
@@ -257,7 +266,21 @@
     <div class="modal fade" id="confirmDownloadModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-                
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                        Confirmação de Download
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="confirmDownloadText">Ao baixar, o arquivo será excluído do servidor. Confirme que você irá salvar no 1doc.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-warning" id="confirmDownloadBtn">Confirmar Download</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -420,6 +443,34 @@
     document.getElementById('searchInput').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             applyFilters();
+        }
+    });
+    
+    // Event listeners para botões de ação
+    document.addEventListener('click', function(e) {
+        const target = e.target.closest('[data-action]');
+        if (!target) return;
+        
+        const action = target.getAttribute('data-action');
+        
+        switch(action) {
+            case 'apply-filters':
+                e.preventDefault();
+                applyFilters();
+                break;
+                
+            case 'export-csv':
+                e.preventDefault();
+                exportToCSV();
+                break;
+                
+            case 'details':
+                e.preventDefault();
+                const signatureId = target.getAttribute('data-signature-id');
+                if (signatureId) {
+                    showSignatureDetails(signatureId);
+                }
+                break;
         }
     });
 </script>
