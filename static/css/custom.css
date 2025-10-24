@@ -16,6 +16,7 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: var(--light-color);
     min-height: 100vh;
+    padding-top: 76px !important; /* Espaço para navbar fixa - força aplicação */
 }
 
 .navbar-brand {
@@ -230,6 +231,7 @@ body {
     text-overflow: ellipsis;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
 }
 
@@ -531,8 +533,2364 @@ body {
     font-size: 0.7rem;
 }
 
-/* Ajustar body para navbar fixa */
-body {
-    padding-top: 76px;
+/* Ajustar body para navbar fixa - já aplicado no body principal */
+
+/* Garantir que o padding seja aplicado mesmo com outras regras CSS */
+body.base-page-body {
+    padding-top: 76px !important;
+}
+
+/* Garantir que o conteúdo principal tenha o espaçamento correto */
+.container, .container-fluid {
+    margin-top: 0; /* Remove qualquer margin-top que possa interferir */
+}
+
+/* Classes para substituir estilos inline */
+.textarea-80px {
+    height: 80px;
+}
+
+.textarea-100px {
+    height: 100px;
+}
+
+.icon-1-5rem {
+    font-size: 1.5rem;
+}
+
+.icon-2-5rem {
+    font-size: 2.5rem;
+}
+
+.icon-3rem {
+    font-size: 3rem;
+}
+
+.info-label {
+    min-width: 120px;
+}
+
+.hidden-element {
+    display: none;
+}
+
+.inline-form {
+    display: inline;
+}
+
+.terms-content {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+}
+
+.col-actions {
+    width: 220px;
+}
+
+.badge-small {
+    font-size: 0.7rem;
+}
+
+.stats-card-gradient-1 {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.stats-card-gradient-2 {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+}
+
+.stats-card-gradient-3 {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+}
+
+/* Estilos específicos para completed.html */
+.completed-page-body {
+    background-color: #f8f9fa;
+}
+
+.completed-header {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    padding: 3rem 0;
+    margin-bottom: 2rem;
+}
+
+.completed-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.signature-item {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    border-left: 4px solid #28a745;
+    transition: all 0.3s ease;
+}
+
+.signature-item:hover {
+    transform: translateX(5px);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+}
+
+.btn-custom {
+    border-radius: 10px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+}
+
+.status-badge {
+    font-size: 0.9rem;
+}
+
+.client-info {
+    background: #e3f2fd;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.signature-details {
+    background: #d4edda;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-left: 4px solid #28a745;
+}
+
+.download-section {
+    background: #fff3cd;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-left: 4px solid #ffc107;
+}
+
+.stats-label {
+    opacity: 0.9;
+    font-size: 0.9rem;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #6c757d;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.filter-section {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.completed-stats-card {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.completed-stats-number {
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+/* Estilos específicos do base.html */
+.base-page-body {
+    background-color: #f8f9fa;
+    /* padding-top já aplicado no body principal */
+}
+
+.base-navbar {
+    background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1030;
+}
+
+.base-navbar-brand {
+    font-weight: 600;
+    font-size: 1.3rem;
+}
+
+.base-navbar-nav .nav-link {
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    transition: all 0.3s ease;
+    position: relative; /* permite posicionar o badge dentro do link */
+}
+
+.base-navbar-nav .nav-link:hover {
+    color: white !important;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+}
+
+.base-navbar-nav .nav-link.active {
+    color: white !important;
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 5px;
+}
+
+.base-navbar-toggler {
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.base-navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.9%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+.base-user-dropdown {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    margin-left: 1rem;
+}
+
+.base-dropdown-menu {
+    border: none;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+}
+
+.base-dropdown-item {
+    padding: 0.5rem 1rem;
+    transition: all 0.3s ease;
+}
+
+.base-dropdown-item:hover {
+    background-color: #667eea;
+    color: white;
+}
+
+.base-badge-notification {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background-color: #dc3545;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 0.7rem;
+}
+
+.base-main-content {
+    min-height: calc(100vh - 76px);
+}
+
+/* Estilos específicos do admin/users.html */
+.admin-users-body {
+    background-color: #f8f9fa;
+}
+
+.admin-users-header {
+    background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
+    color: white;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+}
+
+.admin-users-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.admin-users-btn-action {
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+}
+
+.admin-users-role-badge {
+    font-size: 0.875rem;
+}
+
+/* Estilos específicos do admin/reports.html */
+.admin-reports-body {
+    background-color: #f8f9fa;
+}
+
+.admin-reports-header {
+    background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
+    color: white;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+}
+
+.admin-reports-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.admin-reports-filters-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.admin-reports-form-control {
+    border-radius: 10px;
+    border: 2px solid #e9ecef;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+}
+
+.admin-reports-form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.admin-reports-btn-filter {
+    background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
+    border: none;
+    border-radius: 10px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.admin-reports-btn-filter:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+}
+
+.admin-reports-stats-summary {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.admin-reports-export-section {
+    background: #e3f2fd;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Estilos específicos do internal/pending.html */
+.internal-pending-body {
+    background-color: #f8f9fa;
+}
+
+.internal-pending-header {
+    background: linear-gradient(135deg, #ffc107, #fd7e14);
+    color: white;
+    padding: 3rem 0;
+    margin-bottom: 2rem;
+}
+
+.internal-pending-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.internal-pending-client-header {
+    background: #e3f2fd;
+    padding: 1.5rem;
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid #2196f3;
+}
+
+.internal-pending-document-item {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    border-left: 4px solid #ffc107;
+    transition: all 0.3s ease;
+}
+
+.internal-pending-document-item:hover {
+    transform: translateX(5px);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+}
+
+.internal-pending-btn-custom {
+    border-radius: 10px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+}
+
+.internal-pending-status-badge {
+    font-size: 0.9rem;
+}
+
+.internal-pending-client-info {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.internal-pending-qr-code-section {
+    background: #fff3cd;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid #ffc107;
+    text-align: center;
+}
+
+.internal-pending-empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #6c757d;
+}
+
+.internal-pending-empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+/* Estilos específicos do index.html */
+.index-hero-section {
+    background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
+    color: white;
+    padding: 3rem 0;
+    margin-bottom: 2rem;
+    border-radius: 15px;
+}
+
+.index-action-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    transition: transform 0.3s ease;
+    height: 100%;
+}
+
+.index-action-card:hover {
+    transform: translateY(-5px);
+}
+
+.index-action-icon {
+    font-size: 3rem;
+    color: #667eea;
+    margin-bottom: 1rem;
+}
+
+.index-pending-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.index-client-header {
+    background: #e3f2fd;
+    padding: 1rem;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+}
+
+.index-document-item {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    border-left: 4px solid #667eea;
+}
+
+.index-btn-custom {
+    border-radius: 10px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+}
+
+.index-status-badge {
+    font-size: 0.8rem;
+}
+
+/* Estilos específicos do validate.html */
+.validate-body {
+    background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding-top: 2rem;
+}
+
+.validate-container {
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 25px;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    overflow: hidden;
+    position: relative;
+}
+
+.validate-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #037334, #648C3B, #F29727, #F2BB13);
+}
+
+/* Upload Area Styles */
+.upload-area {
+    border: 3px dashed #037334;
+    border-radius: 20px;
+    padding: 60px 40px;
+    text-align: center;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    background: linear-gradient(135deg, #f8fffe 0%, #f0f8ff 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.upload-area::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(3, 115, 52, 0.1) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.upload-area:hover {
+    border-color: #025a2a;
+    background: linear-gradient(135deg, #e8f5e8 0%, #e3f2fd 100%);
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(3, 115, 52, 0.2);
+}
+
+.upload-area:hover::before {
+    opacity: 1;
+}
+
+.upload-area.dragover {
+    border-color: #28a745;
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    transform: scale(1.02);
+    box-shadow: 0 20px 40px rgba(40, 167, 69, 0.3);
+}
+
+.upload-content {
+    position: relative;
+    z-index: 2;
+}
+
+.icon-large {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+    display: block;
+    transition: all 0.3s ease;
+}
+
+.upload-area:hover .icon-large {
+    transform: scale(1.1);
+    color: #025a2a;
+}
+
+/* Button Styles */
+.btn-custom {
+    border-radius: 30px;
+    padding: 15px 35px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-custom::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s ease;
+}
+
+.btn-custom:hover::before {
+    left: 100%;
+}
+
+.btn-custom:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+/* Result Card Styles */
+.result-card {
+    border-radius: 20px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
+    border: none;
+    overflow: hidden;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+}
+
+.result-card .card-body {
+    padding: 2rem;
+}
+
+/* Status Badges */
+.badge {
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.bg-success {
+    background: linear-gradient(135deg, #28a745, #20c997) !important;
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+}
+
+.bg-danger {
+    background: linear-gradient(135deg, #dc3545, #fd7e14) !important;
+    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+}
+
+/* List Group Items */
+.list-group-item {
+    border: none;
+    border-bottom: 1px solid #e9ecef;
+    padding: 1rem 0;
+    transition: all 0.3s ease;
+}
+
+.list-group-item:hover {
+    background-color: #f8f9fa;
+    transform: translateX(5px);
+}
+
+.list-group-item:last-child {
+    border-bottom: none;
+}
+
+/* Metadata Items */
+.metadata-item {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-left: 4px solid #037334;
+    transition: all 0.3s ease;
+}
+
+.metadata-item:hover {
+    transform: translateX(5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Loading Animation */
+.loading {
+    display: none;
+    text-align: center;
+    padding: 3rem 0;
+}
+
+.spinner-border-custom {
+    width: 4rem;
+    height: 4rem;
+    border-width: 0.4em;
+    border-color: #037334;
+    border-right-color: transparent;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Alert Styles */
+.alert {
+    border-radius: 15px;
+    border: none;
+    padding: 1.5rem;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+    color: #721c24;
+    border-left: 4px solid #dc3545;
+}
+
+/* Navigation Buttons */
+.btn-outline-primary {
+    border: 2px solid #037334;
+    color: #037334;
+    background: transparent;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-primary:hover {
+    background: #037334;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(3, 115, 52, 0.3);
+}
+
+.btn-outline-secondary {
+    border: 2px solid #6c757d;
+    color: #6c757d;
+    background: transparent;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-secondary:hover {
+    background: #6c757d;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(108, 117, 125, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .upload-area {
+        padding: 40px 20px;
+    }
+    
+    .icon-large {
+        font-size: 3rem;
+    }
+    
+    .btn-custom {
+        padding: 12px 25px;
+        font-size: 0.9rem;
+    }
+    
+    .result-card .card-body {
+        padding: 1.5rem;
+    }
+}
+
+/* Estilos específicos do profile.html */
+.profile-header {
+    background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
+    color: white;
+    padding: 3rem 0;
+    margin-bottom: 2rem;
+    border-radius: 15px;
+}
+
+.profile-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    margin: 0 auto 1rem;
+}
+
+.profile-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.profile-stats-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.profile-stats-number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #667eea;
+}
+
+.profile-stats-label {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.profile-btn-custom {
+    border-radius: 10px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+}
+
+/* Estilos específicos do admin/cleanup.html */
+.admin-cleanup-body {
+    background-color: #f8f9fa;
+}
+
+.admin-cleanup-header {
+    background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
+    color: white;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+}
+
+.admin-cleanup-stats-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.admin-cleanup-stats-number {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #667eea;
+}
+
+.admin-cleanup-stats-label {
+    color: #6c757d;
+    font-size: 1rem;
+    margin-top: 0.5rem;
+}
+
+.admin-cleanup-action-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.admin-cleanup-btn-cleanup {
+    border-radius: 10px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    margin: 0.25rem;
+}
+
+.admin-cleanup-info-card {
+    background: #e3f2fd;
+    border-left: 4px solid #2196f3;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Estilos específicos do admin/settings.html */
+.admin-settings-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.admin-settings-setting-item {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    border-left: 4px solid #667eea;
+}
+
+.admin-settings-form-control {
+    border-radius: 10px;
+    border: 2px solid #e9ecef;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+}
+
+.admin-settings-form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.admin-settings-btn-save {
+    background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
+    border: none;
+    border-radius: 10px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.admin-settings-btn-save:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+}
+
+.admin-settings-info-card {
+    background: #e3f2fd;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-left: 4px solid #2196f3;
+}
+
+.admin-settings-warning-card {
+    background: #fff3cd;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-left: 4px solid #ffc107;
+}
+
+/* Estilos específicos do admin/sync.html */
+.admin-sync-body {
+    background-color: #f8f9fa;
+}
+
+.admin-sync-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.admin-sync-stats-card {
+    background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.admin-sync-stats-number {
+    font-size: 2.5rem;
+    font-weight: bold;
+}
+
+.admin-sync-stats-label {
+    font-size: 1rem;
+    margin-top: 0.5rem;
+    opacity: 0.9;
+}
+
+.admin-sync-btn-sync {
+    border-radius: 10px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    margin: 0.25rem;
+}
+
+.admin-sync-info-badge {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.admin-sync-badge-enabled {
+    background: #d4edda;
+    color: #155724;
+}
+
+.admin-sync-badge-disabled {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* Estilos específicos do admin/edit_user.html */
+.admin-edit-user-body {
+    background-color: #f8f9fa;
+}
+
+.admin-edit-user-header {
+    background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
+    color: white;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+}
+
+.admin-edit-user-form-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.admin-edit-user-form-control {
+    border-radius: 10px;
+    border: 2px solid #e9ecef;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+}
+
+.admin-edit-user-form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.admin-edit-user-btn-submit {
+    background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
+    border: none;
+    border-radius: 10px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.admin-edit-user-btn-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+}
+
+.admin-edit-user-user-info {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Estilos específicos do client/confirm.html */
+.client-confirm-body {
+    background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.client-confirm-container {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    margin: 2rem auto;
+    max-width: 600px;
+    overflow: hidden;
+}
+
+.client-confirm-header {
+    background: linear-gradient(135deg, #ffc107, #fd7e14);
+    color: white;
+    padding: 2rem;
+    text-align: center;
+}
+
+.client-confirm-body-section {
+    padding: 2rem;
+}
+
+.client-confirm-info-card {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid #28a745;
+}
+
+.client-confirm-document-list {
+    background: #e3f2fd;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid #2196f3;
+}
+
+.client-confirm-terms-section {
+    background: #fff3cd;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid #ffc107;
+}
+
+.client-confirm-form-check-input:checked {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+.client-confirm-btn-client {
+    border-radius: 10px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+}
+
+.client-confirm-btn-client:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.client-confirm-btn-client:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.client-confirm-logo-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.client-confirm-client-name {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.client-confirm-client-cpf {
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
+
+.client-confirm-client-info-item {
+    background: white;
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.5rem;
+    border-left: 3px solid #28a745;
+    font-size: 0.95rem;
+}
+
+.client-confirm-client-info-item:last-child {
+    margin-bottom: 0;
+}
+
+.client-confirm-document-item {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    border-left: 3px solid #2196f3;
+}
+
+.client-confirm-terms-text {
+    max-height: 200px;
+    overflow-y: auto;
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1rem 0;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+/* Estilos específicos do client/list.html */
+.client-list-body {
+    background: #f8fafc;
+}
+
+.client-list-card {
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+}
+
+.client-list-header {
+    background: linear-gradient(135deg,#28a745,#20c997);
+    color:#fff;
+    border-radius:14px;
+    padding:1.25rem 1.5rem;
+}
+
+.client-list-doc-item {
+    border-left: 4px solid #0d6efd;
+}
+
+.client-list-badge-pending {
+    background:#ffc1071a;
+    color:#a07400;
+    border:1px solid #ffc107;
+}
+
+.client-list-badge-done {
+    background:#20c9971a;
+    color:#0f6f5f;
+    border:1px solid #20c997;
+}
+
+/* Estilos específicos do client/select.html */
+.client-select-body {
+    background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.client-select-container {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    margin: 2rem auto;
+    max-width: 500px;
+    overflow: hidden;
+}
+
+.client-select-header {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    padding: 2rem;
+    text-align: center;
+}
+
+.client-select-body-section {
+    padding: 2rem;
+}
+
+.client-select-form-control {
+    border-radius: 10px;
+    border: 2px solid #e9ecef;
+    padding: 0.75rem 1rem;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+}
+
+.client-select-form-control:focus {
+    border-color: #28a745;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+.client-select-btn-client {
+    border-radius: 10px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+}
+
+.client-select-btn-client:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.client-select-cpf-info {
+    background: #e3f2fd;
+    border-radius: 10px;
+    padding: 1rem;
+    margin: 1rem 0;
+    border-left: 4px solid #2196f3;
+}
+
+.client-select-mobile-optimized {
+    max-width: 100%;
+    margin: 1rem auto;
+}
+
+.client-select-logo-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.client-select-security-badge {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    margin-top: 1rem;
+}
+
+/* Client Sign Styles */
+.client-sign-body {
+    background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    position: relative;
+    overflow-x: hidden;
+}
+
+.client-sign-container {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    margin: 2rem auto;
+    max-width: 700px;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.client-sign-container .container {
+    position: relative;
+}
+
+.client-sign-header {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    padding: 2rem;
+    text-align: center;
+}
+
+.client-sign-body-section {
+    padding: 2rem;
+}
+
+.client-sign-document-info {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid #28a745;
+}
+
+.client-sign-signature-area {
+    background: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border: 2px dashed #dee2e6;
+}
+
+.client-sign-canvas-container {
+    position: relative;
+    margin: 1rem 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.client-sign-signature-canvas {
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    cursor: crosshair;
+    background: white;
+    touch-action: none;
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+    z-index: 1;
+}
+
+.client-sign-canvas-controls {
+    margin-top: 1rem;
+    text-align: center;
+}
+
+.client-sign-btn-client {
+    border-radius: 10px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+}
+
+.client-sign-btn-client:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.client-sign-btn-client:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.client-sign-logo-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.client-sign-signature-instructions {
+    background: #e3f2fd;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-left: 4px solid #2196f3;
+}
+
+.client-sign-progress-indicator {
+    background: #fff3cd;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-left: 4px solid #ffc107;
+}
+
+.client-sign-btn-group-signature {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.client-sign-btn-group-signature .btn {
+    flex: 1;
+    min-width: 120px;
+}
+
+/* Signature Dialog Styles */
+.client-sign-signature-dialog {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 999999 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    opacity: 0;
+    transform: scale(0.8) translateY(30px);
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    visibility: hidden;
+}
+
+.client-sign-signature-dialog::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.client-sign-signature-dialog.active::before {
+    opacity: 1;
+}
+
+.client-sign-signature-dialog.active {
+    opacity: 1 !important;
+    transform: scale(1) translateY(0) !important;
+    visibility: visible !important;
+}
+
+.client-sign-body.dialog-open {
+    overflow: hidden !important;
+}
+
+.client-sign-dialog-content {
+    background: white !important;
+    border-radius: 16px !important;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3) !important;
+    width: 100% !important;
+    max-width: 90vw !important;
+    max-height: 90vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    transform: translateY(40px) scale(0.9) !important;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+    position: relative !important;
+    z-index: 1000000 !important;
+    margin: 0;
+    opacity: 0;
+}
+
+.client-sign-signature-dialog.active .client-sign-dialog-content {
+    transform: translateY(0) scale(1) !important;
+    opacity: 1 !important;
+}
+
+.client-sign-dialog-header {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    padding: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-radius: 16px 16px 0 0;
+    transform: translateY(-20px);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s;
+}
+
+.client-sign-dialog-canvas-container {
+    flex: 0 0 auto;
+    padding: 1.5rem;
+    display: block;
+    overflow: visible;
+    min-height: 0;
+    transform: translateY(20px);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s;
+}
+
+.client-sign-dialog-controls {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-top: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    border-radius: 0 0 16px 16px;
+    transform: translateY(20px);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s;
+}
+
+.client-sign-signature-dialog.active .client-sign-dialog-header,
+.client-sign-signature-dialog.active .client-sign-dialog-canvas-container,
+.client-sign-signature-dialog.active .client-sign-dialog-controls {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.client-sign-dialog-title {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.client-sign-dialog-close {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1.2rem;
+}
+
+.client-sign-dialog-close:hover {
+    background: rgba(255,255,255,0.3);
+    transform: scale(1.1);
+}
+
+.client-sign-dialog-canvas {
+    width: 100%;
+    height: 100%;
+    min-height: 250px;
+    border: 2px solid #dee2e6;
+    border-radius: 12px;
+    background: white;
+    touch-action: none;
+    cursor: crosshair;
+}
+
+.client-sign-color-picker-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.client-sign-color-picker {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.client-sign-color-picker:hover {
+    transform: scale(1.1);
+}
+
+.client-sign-color-picker.active {
+    border-color: #007bff;
+    transform: scale(1.2);
+    box-shadow: 0 4px 12px rgba(0,123,255,0.3);
+}
+
+.client-sign-dialog-buttons {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.client-sign-dialog-btn {
+    padding: 0.75rem 1.25rem;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    min-width: 100px;
+}
+
+.client-sign-dialog-btn-clear {
+    background: #dc3545;
+    color: white;
+}
+
+.client-sign-dialog-btn-clear:hover {
+    background: #c82333;
+}
+
+.client-sign-dialog-btn-undo {
+    background: #6c757d;
+    color: white;
+}
+
+.client-sign-dialog-btn-undo:hover {
+    background: #5a6268;
+}
+
+.client-sign-dialog-btn-done {
+    background: #28a745;
+    color: white;
+}
+
+.client-sign-dialog-btn-done:hover {
+    background: #218838;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(40,167,69,0.3);
+}
+
+.client-sign-expand-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+    font-size: 1rem;
+    backdrop-filter: blur(10px);
+}
+
+.client-sign-expand-btn:hover {
+    background: linear-gradient(135deg, #0056b3, #004085);
+    transform: scale(1.15);
+    box-shadow: 0 6px 16px rgba(0, 123, 255, 0.4);
+}
+
+.client-sign-expand-btn:active {
+    transform: scale(1.05);
+}
+
+/* Responsive styles for client sign */
+@media (max-width: 768px) {
+    .client-sign-signature-canvas {
+        width: 100% !important;
+        max-width: 100%;
+        height: 200px;
+    }
+    .client-sign-container {
+        margin: 1rem;
+        max-width: 100%;
+    }
+    .client-sign-btn-client {
+        font-size: 1rem;
+        padding: 0.6rem 1.5rem;
+    }
+    .client-sign-btn-group-signature {
+        flex-direction: column;
+        align-items: center;
+    }
+    .client-sign-btn-group-signature .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    .client-sign-expand-btn {
+        display: none;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    .client-sign-signature-canvas {
+        width: 100% !important;
+        max-width: 100%;
+        height: 250px;
+    }
+    .client-sign-btn-group-signature {
+        flex-direction: row;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    .client-sign-btn-group-signature .btn {
+        flex: 1;
+        min-width: 150px;
+        margin: 0.25rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .client-sign-dialog-content {
+        max-width: 95vw !important;
+        max-height: 95vh !important;
+        margin: 0 !important;
+    }
+    .client-sign-dialog-header {
+        padding: 1rem;
+    }
+    .client-sign-dialog-title {
+        font-size: 1.1rem;
+    }
+    .client-sign-dialog-canvas-container {
+        padding: 1rem;
+        min-height: 250px;
+    }
+    .client-sign-dialog-canvas {
+        min-height: 200px;
+    }
+    .client-sign-dialog-controls {
+        padding: 1rem;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    .client-sign-color-picker-group {
+        justify-content: center;
+    }
+    .client-sign-dialog-buttons {
+        justify-content: center;
+        width: 100%;
+    }
+    .client-sign-dialog-btn {
+        flex: 1;
+        min-width: 80px;
+        padding: 0.6rem 1rem;
+    }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+    .client-sign-dialog-content {
+        max-width: 85vw !important;
+        max-height: 85vh !important;
+    }
+    .client-sign-dialog-canvas-container {
+        min-height: 350px;
+    }
+    .client-sign-dialog-canvas {
+        min-height: 300px;
+    }
+}
+
+@media (min-width: 769px) {
+    .client-sign-dialog-content {
+        max-width: 70vw !important;
+        max-height: 80vh !important;
+    }
+    .client-sign-dialog-canvas-container {
+        min-height: 400px;
+    }
+    .client-sign-dialog-canvas {
+        min-height: 350px;
+    }
+}
+
+/* Client Success Styles */
+.client-success-body {
+    background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.client-success-container {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    margin: 2rem auto;
+    max-width: 600px;
+    overflow: hidden;
+}
+
+.client-success-header {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    padding: 2rem;
+    text-align: center;
+}
+
+.client-success-body-section {
+    padding: 2rem;
+}
+
+.client-success-success-icon {
+    font-size: 4rem;
+    color: #28a745;
+    margin-bottom: 1rem;
+}
+
+.client-success-success-message {
+    background: #d4edda;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid #28a745;
+}
+
+.client-success-info-card {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid #17a2b8;
+}
+
+.client-success-btn-client {
+    border-radius: 10px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+}
+
+.client-success-btn-client:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.client-success-logo-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.client-success-next-steps {
+    background: #e3f2fd;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid #2196f3;
+}
+
+.client-success-step-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.client-success-step-number {
+    background: #2196f3;
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: bold;
+    margin-right: 1rem;
+}
+
+.client-success-security-badge {
+    background: rgba(40, 167, 69, 0.1);
+    border: 1px solid #28a745;
+    border-radius: 20px;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    color: #28a745;
+    text-align: center;
+    margin: 1rem 0;
+}
+
+/* Internal Edit Signature Styles */
+.internal-edit-signature-body {
+    background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.internal-edit-signature-edit-card {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    margin: 2rem auto;
+    max-width: 800px;
+}
+
+.internal-edit-signature-card-header {
+    background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
+    color: white;
+    border-radius: 20px 20px 0 0 !important;
+    padding: 1.5rem;
+}
+
+.internal-edit-signature-form-control,
+.internal-edit-signature-form-select {
+    border-radius: 10px;
+    border: 2px solid #e9ecef;
+    padding: 0.75rem;
+    transition: all 0.3s ease;
+}
+
+.internal-edit-signature-form-control:focus,
+.internal-edit-signature-form-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.internal-edit-signature-btn-custom {
+    border-radius: 10px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.internal-edit-signature-btn-primary {
+    background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
+    border: none;
+}
+
+.internal-edit-signature-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.internal-edit-signature-btn-secondary {
+    background: #6c757d;
+    border: none;
+}
+
+.internal-edit-signature-btn-secondary:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+}
+
+.internal-edit-signature-required {
+    color: #dc3545;
+}
+
+.internal-edit-signature-document-info {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.internal-edit-signature-document-info h6 {
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+.internal-edit-signature-document-info p {
+    margin-bottom: 0.25rem;
+    color: #6c757d;
+}
+
+/* Internal Upload Styles */
+.internal-upload-body {
+    background-color: #f8f9fa;
+}
+
+.internal-upload-header {
+    background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
+    color: white;
+    padding: 3rem 0;
+    margin-bottom: 2rem;
+}
+
+.internal-upload-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.internal-upload-file-upload-area {
+    border: 2px dashed #dee2e6;
+    border-radius: 10px;
+    padding: 3rem;
+    text-align: center;
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.internal-upload-file-upload-area:hover {
+    border-color: #667eea;
+    background: #e3f2fd;
+}
+
+.internal-upload-file-upload-area.dragover {
+    border-color: #667eea;
+    background: #e3f2fd;
+}
+
+.internal-upload-file-item {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    border-left: 4px solid #667eea;
+    transition: all 0.2s ease;
+}
+
+.internal-upload-file-item:hover {
+    background: #e9ecef;
+    transform: translateX(2px);
+}
+
+.internal-upload-file-item .btn-outline-danger {
+    opacity: 0.7;
+    transition: all 0.2s ease;
+}
+
+.internal-upload-file-item:hover .btn-outline-danger {
+    opacity: 1;
+}
+
+.internal-upload-btn-custom {
+    border-radius: 10px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+}
+
+.internal-upload-form-label {
+    font-weight: 600;
+    color: #495057;
+}
+
+.internal-upload-required {
+    color: #dc3545;
+}
+
+/* Signature Templates Styles */
+.signature-step-indicator {
+    margin-bottom: 2rem;
+}
+
+.signature-step {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #e9ecef;
+    color: #6c757d;
+    line-height: 40px;
+    text-align: center;
+    margin: 0 10px;
+    font-weight: bold;
+}
+
+.signature-step.active {
+    background: #007bff;
+    color: white;
+}
+
+.signature-step.completed {
+    background: #28a745;
+    color: white;
+}
+
+.signature-form-floating {
+    margin-bottom: 1rem;
+}
+
+.signature-required-field::after {
+    content: " *";
+    color: #dc3545;
+}
+
+.signature-success-icon {
+    font-size: 4rem;
+    color: #28a745;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.signature-file-card {
+    background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 2rem;
+    margin: 2rem 0;
+}
+
+.signature-download-btn {
+    background: #28a745;
+    border: none;
+    padding: 1rem 2rem;
+    font-size: 1.2rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.signature-download-btn:hover {
+    background: #218838;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+}
+
+.signature-feature-card {
+    border: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.signature-feature-card:hover {
+    transform: translateY(-5px);
+}
+
+.signature-upload-area {
+    border: 2px dashed #ddd;
+    border-radius: 10px;
+    padding: 60px 20px;
+    text-align: center;
+    background: #fafafa;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.signature-upload-area.dragover {
+    border-color: #007bff;
+    background: #f0f7ff;
+}
+
+.signature-upload-area:hover {
+    border-color: #007bff;
+    background: #f8f9fa;
+}
+
+.signature-upload-icon {
+    font-size: 3rem;
+    color: #6c757d;
+    margin-bottom: 1rem;
+}
+
+.signature-file-info {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+    display: none;
+}
+
+.signature-signature-canvas {
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    background: white;
+    cursor: crosshair;
+    touch-action: none;
+    max-width: 100%;
+    height: auto;
+}
+
+.signature-signature-canvas.signing {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.signature-canvas-container {
+    position: relative;
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.signature-toolbar {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid #dee2e6;
+}
+
+.signature-color-picker {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    cursor: pointer;
+    margin: 0 5px;
+}
+
+.signature-color-picker.active {
+    border-color: #007bff;
+}
+
+.signature-brush-size {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #333;
+    margin: 0 5px;
+    cursor: pointer;
+    border: 2px solid transparent;
+}
+
+.signature-brush-size.active {
+    border-color: #007bff;
+}
+
+.signature-preview {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.signature-info-card {
+    border-left: 4px solid #007bff;
+    background: #f8f9fa;
+}
+
+.signature-info-label {
+    font-weight: 600;
+    color: #495057;
+}
+
+.signature-info-value {
+    color: #212529;
+}
+
+.signature-file-preview {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.signature-warning-box {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.signature-fullscreen-mode {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: white;
+    z-index: 9999;
+    display: none;
+}
+
+.signature-fullscreen-mode.active {
+    display: block;
+}
+
+.signature-fullscreen-canvas {
+    width: 100%;
+    height: calc(100vh - 120px);
+    border: none;
+    border-radius: 0;
+}
+
+.signature-fullscreen-controls {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    padding: 1rem;
+    border-top: 1px solid #dee2e6;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+}
+
+.signature-expand-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+}
+
+.signature-expand-btn:hover {
+    background: rgba(0,0,0,0.9);
+}
+
+/* Mobile optimizations for signature templates */
+@media (max-width: 768px) {
+    .signature-signature-canvas {
+        width: 100% !important;
+        max-width: 100%;
+        height: 200px;
+    }
+    .signature-toolbar {
+        padding: 0.5rem;
+    }
+    .signature-color-picker {
+        width: 35px;
+        height: 35px;
+        margin: 0 3px;
+    }
+    .signature-brush-size {
+        width: 25px !important;
+        height: 25px !important;
+        margin: 0 3px;
+    }
+    .btn {
+        font-size: 0.9rem;
+        padding: 0.5rem 0.75rem;
+    }
 }
 

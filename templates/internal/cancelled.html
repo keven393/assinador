@@ -58,11 +58,11 @@
                     <div class="col-md-3 text-end">
                         <div class="btn-group" role="group">
                             <button type="button" class="btn btn-outline-info btn-sm" 
-                                    onclick="copyClientInfo('{{ signature.client_name }}', '{{ signature.client_cpf }}')">
+                                    data-action="copy" data-client-name="{{ signature.client_name }}" data-client-cpf="{{ signature.client_cpf }}">
                                 <i class="fas fa-copy me-1"></i>Copiar Dados
                             </button>
                             <button type="button" class="btn btn-outline-secondary btn-sm" 
-                                    onclick="showDocumentDetails('{{ signature.original_filename }}', '{{ signature.client_name }}', '{{ signature.timestamp.strftime('%d/%m/%Y %H:%M') }}')">
+                                    data-action="document-details" data-filename="{{ signature.original_filename }}" data-client-name="{{ signature.client_name }}" data-timestamp="{{ signature.timestamp.strftime('%d/%m/%Y %H:%M') }}">
                                 <i class="fas fa-info-circle me-1"></i>Detalhes
                             </button>
                         </div>
@@ -167,77 +167,6 @@
     </div>
 
     
-    <script>
-        // Função para copiar dados do cliente
-        function copyClientInfo(clientName, clientCpf) {
-            const text = `Cliente: ${clientName}\nCPF: ${clientCpf}`;
-            
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(text).then(() => {
-                    alert('Dados copiados para a área de transferência!');
-                }).catch(() => {
-                    fallbackCopyTextToClipboard(text);
-                });
-            } else {
-                fallbackCopyTextToClipboard(text);
-            }
-        }
-        
-        // Fallback para navegadores antigos
-        function fallbackCopyTextToClipboard(text) {
-            const textArea = document.createElement('textarea');
-            textArea.value = text;
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-            
-            try {
-                document.execCommand('copy');
-                alert('Dados copiados para a área de transferência!');
-            } catch (err) {
-                alert('Erro ao copiar dados. Selecione e copie manualmente:\n\n' + text);
-            }
-            
-            document.body.removeChild(textArea);
-        }
-        
-        // Função para mostrar detalhes do documento
-        function showDocumentDetails(filename, clientName, createdDate) {
-            const content = `
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6>Informações do Documento:</h6>
-                        <ul class="list-unstyled">
-                            <li><strong>Nome:</strong> ${filename}</li>
-                            <li><strong>Cliente:</strong> ${clientName}</li>
-                            <li><strong>Criado em:</strong> ${createdDate}</li>
-                            <li><strong>Status:</strong> <span class="badge bg-danger">Cancelada</span></li>
-                        </ul>
-                    </div>
-                    <div class="col-md-6">
-                        <h6>Motivos Comuns de Cancelamento:</h6>
-                        <ul>
-                            <li>Cliente desistiu da assinatura</li>
-                            <li>Documento com informações incorretas</li>
-                            <li>Problemas técnicos durante o processo</li>
-                            <li>Mudança de requisitos</li>
-                            <li>Documento substituído por versão atualizada</li>
-                        </ul>
-                    </div>
-                </div>
-                
-                <div class="alert alert-warning mt-3">
-                    <h6><i class="fas fa-exclamation-triangle me-2"></i>Importante:</h6>
-                    <p class="mb-0">
-                        Documentos cancelados não podem ser reativados. Para processar novamente, 
-                        crie uma nova assinatura com o mesmo documento.
-                    </p>
-                </div>
-            `;
-            
-            document.getElementById('documentDetailsContent').innerHTML = content;
-            new bootstrap.Modal(document.getElementById('documentDetailsModal')).show();
-        }
-    </script>
+    <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/common.js') }}"></script>
 {% endblock %}
 

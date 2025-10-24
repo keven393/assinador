@@ -150,7 +150,7 @@
     </div>
 
     
-    <script>
+    <script nonce="{{ csp_nonce() }}">
         // Validação de força da senha
         document.getElementById('password').addEventListener('input', function() {
             const password = this.value;

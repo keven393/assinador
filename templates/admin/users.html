@@ -3,42 +3,12 @@
 {% block title %}Gerenciar Usuários - Assinador de PDFs{% endblock %}
 
 {% block extra_css %}
-<style>
-body {
-            background-color: #f8f9fa;
-        }
-        .admin-header {
-            background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
-            color: white;
-            padding: 2rem 0;
-            margin-bottom: 2rem;
-        }
-        .users-card {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            padding: 2rem;
-            margin-bottom: 2rem;
-        }
-        .btn-action {
-            border-radius: 8px;
-            padding: 0.5rem 1rem;
-            font-size: 0.875rem;
-            margin: 0.25rem;
-        }
-        .status-badge {
-            font-size: 0.875rem;
-        }
-        .role-badge {
-            font-size: 0.875rem;
-        }
-</style>
 {% endblock %}
 
 {% block content %}
 <!-- Header -->
 
-    <div class="container">
+    <div class="container admin-users-body">
         <!-- Mensagens Flash -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -52,7 +22,7 @@ body {
         {% endwith %}
 
         <!-- Sincronização com Active Directory -->
-        <div class="users-card">
+        <div class="users-card admin-users-card">
             <h5 class="mb-4">
                 <i class="fas fa-sync me-2 text-success"></i>
                 Sincronização com Active Directory
@@ -106,7 +76,7 @@ body {
         </div>
 
         <!-- Cabeçalho da Lista -->
-        <div class="users-card">
+        <div class="users-card admin-users-card">
             <div class="row align-items-center mb-3">
                 <div class="col-md-8">
                     <h4 class="mb-0">
@@ -181,7 +151,7 @@ body {
         </div>
 
         <!-- Lista de Usuários -->
-        <div class="users-card">
+        <div class="users-card admin-users-card">
             {% if users %}
             <div class="table-responsive">
                 <table class="table table-hover">
@@ -263,16 +233,16 @@ body {
                             <td>
                                 <div class="btn-group" role="group">
                                     <a href="{{ url_for('admin_edit_user', user_id=user.id) }}" 
-                                       class="btn btn-outline-primary btn-action" 
+                                       class="btn btn-outline-primary btn-action admin-users-btn-action" 
                                        title="Editar">
                                         <i class="fas fa-edit"></i>
                                     </a>
                                     
                                     {% if user.id != current_user.id %}
                                         <button type="button" 
-                                                class="btn btn-outline-danger btn-action" 
+                                                class="btn btn-outline-danger btn-action admin-users-btn-action" 
                                                 title="Deletar"
-                                                onclick="confirmDelete({{ user.id }}, '{{ user.username }}')">
+                                                data-action="delete" data-user-id="{{ user.id }}" data-username="{{ user.username }}">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     {% endif %}
@@ -385,14 +355,5 @@ body {
         </div>
     </div>
 
-    
-    <script>
-        function confirmDelete(userId, username) {
-            document.getElementById('deleteUsername').textContent = username;
-            document.getElementById('deleteForm').action = '/admin/users/' + userId + '/delete';
-            
-            const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
-            deleteModal.show();
-        }
-    </script>
+    <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/common.js') }}"></script>
 {% endblock %}

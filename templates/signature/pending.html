@@ -6,54 +6,6 @@
     <title>Revisão de Informações - Assinador Digital</title>
     <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/font-awesome.min.css') }}" rel="stylesheet">
-    <style>
-        .step-indicator {
-            margin-bottom: 2rem;
-        }
-        .step {
-            display: inline-block;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: #e9ecef;
-            color: #6c757d;
-            line-height: 40px;
-            text-align: center;
-            margin: 0 10px;
-            font-weight: bold;
-        }
-        .step.active {
-            background: #007bff;
-            color: white;
-        }
-        .step.completed {
-            background: #28a745;
-            color: white;
-        }
-        .info-card {
-            border-left: 4px solid #007bff;
-            background: #f8f9fa;
-        }
-        .info-label {
-            font-weight: 600;
-            color: #495057;
-        }
-        .info-value {
-            color: #212529;
-        }
-        .file-preview {
-            background: #fff;
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
-            padding: 1rem;
-        }
-        .warning-box {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 8px;
-            padding: 1rem;
-        }
-    </style>
 </head>
 <body class="bg-light">
     <!-- User Navigation -->
@@ -89,12 +41,12 @@
 
     <div class="container mt-4">
         <!-- Progress Steps -->
-        <div class="step-indicator text-center">
-            <div class="step completed">1</div>
-            <div class="step completed">2</div>
-            <div class="step active">3</div>
-            <div class="step">4</div>
-            <div class="step">5</div>
+        <div class="signature-step-indicator text-center">
+            <div class="signature-step completed">1</div>
+            <div class="signature-step completed">2</div>
+            <div class="signature-step active">3</div>
+            <div class="signature-step">4</div>
+            <div class="signature-step">5</div>
         </div>
         
         <div class="row justify-content-center">
@@ -110,7 +62,7 @@
                     <div class="card-body p-4">
                         
                         <!-- Aviso Importante -->
-                        <div class="warning-box mb-4">
+                        <div class="signature-warning-box mb-4">
                             <div class="d-flex align-items-center">
                                 <i class="fas fa-exclamation-triangle text-warning me-3 icon-1-5rem"></i>
                                 <div>
@@ -125,13 +77,13 @@
                         <div class="row">
                             <!-- Informações do Documento -->
                             <div class="col-lg-6 mb-4">
-                                <div class="card info-card">
+                                <div class="card signature-info-card">
                                     <div class="card-body">
                                         <h6 class="card-title">
                                             <i class="fas fa-file-pdf me-2 text-danger"></i>
                                             Documento
                                         </h6>
-                                        <div class="file-preview">
+                                        <div class="signature-file-preview">
                                             <div class="d-flex align-items-center">
                                                 <i class="fas fa-file-pdf text-danger me-3 icon-2-5rem"></i>
                                                 <div>
@@ -149,7 +101,7 @@
 
                             <!-- Informações do Atendente -->
                             <div class="col-lg-6 mb-4">
-                                <div class="card info-card">
+                                <div class="card signature-info-card">
                                     <div class="card-body">
                                         <h6 class="card-title">
                                             <i class="fas fa-user-tie me-2 text-primary"></i>
@@ -157,16 +109,16 @@
                                         </h6>
                                         <div class="row g-2">
                                             <div class="col-6">
-                                                <span class="info-label">Nome:</span>
+                                                <span class="signature-info-label">Nome:</span>
                                             </div>
                                             <div class="col-6">
-                                                <span class="info-value">{{ current_user.full_name }}</span>
+                                                <span class="signature-info-value">{{ current_user.full_name }}</span>
                                             </div>
                                             <div class="col-6">
-                                                <span class="info-label">Email:</span>
+                                                <span class="signature-info-label">Email:</span>
                                             </div>
                                             <div class="col-6">
-                                                <span class="info-value">{{ current_user.email }}</span>
+                                                <span class="signature-info-value">{{ current_user.email }}</span>
                                             </div>
                                             <div class="col-12 mt-2">
                                                 <small class="text-muted">
@@ -181,7 +133,7 @@
                         </div>
 
                         <!-- Dados do Assinante -->
-                        <div class="card info-card mb-4">
+                        <div class="card signature-info-card mb-4">
                             <div class="card-body">
                                 <h6 class="card-title">
                                     <i class="fas fa-user me-2 text-info"></i>
@@ -191,8 +143,8 @@
                                     {% if client_info.nome %}
                                     <div class="col-md-6">
                                         <div class="d-flex">
-                                            <span class="info-label me-3">Nome Completo:</span>
-                                            <span class="info-value">{{ client_info.nome }}</span>
+                                            <span class="signature-info-label me-3">Nome Completo:</span>
+                                            <span class="signature-info-value">{{ client_info.nome }}</span>
                                         </div>
                                     </div>
                                     {% endif %}
@@ -200,8 +152,8 @@
                                     {% if client_info.cpf %}
                                     <div class="col-md-6">
                                         <div class="d-flex">
-                                            <span class="info-label me-3">CPF:</span>
-                                            <span class="info-value">{{ client_info.cpf }}</span>
+                                            <span class="signature-info-label me-3">CPF:</span>
+                                            <span class="signature-info-value">{{ client_info.cpf }}</span>
                                         </div>
                                     </div>
                                     {% endif %}
@@ -209,8 +161,8 @@
                                     {% if client_info.email %}
                                     <div class="col-md-6">
                                         <div class="d-flex">
-                                            <span class="info-label me-3">Email:</span>
-                                            <span class="info-value">{{ client_info.email }}</span>
+                                            <span class="signature-info-label me-3">Email:</span>
+                                            <span class="signature-info-value">{{ client_info.email }}</span>
                                         </div>
                                     </div>
                                     {% endif %}
@@ -218,8 +170,8 @@
                                     {% if client_info.telefone %}
                                     <div class="col-md-6">
                                         <div class="d-flex">
-                                            <span class="info-label me-3">Telefone:</span>
-                                            <span class="info-value">{{ client_info.telefone }}</span>
+                                            <span class="signature-info-label me-3">Telefone:</span>
+                                            <span class="signature-info-value">{{ client_info.telefone }}</span>
                                         </div>
                                     </div>
                                     {% endif %}
@@ -227,8 +179,8 @@
                                     {% if client_info.data_nascimento %}
                                     <div class="col-md-6">
                                         <div class="d-flex">
-                                            <span class="info-label me-3">Data de Nascimento:</span>
-                                            <span class="info-value">{{ client_info.data_nascimento }}</span>
+                                            <span class="signature-info-label me-3">Data de Nascimento:</span>
+                                            <span class="signature-info-value">{{ client_info.data_nascimento }}</span>
                                         </div>
                                     </div>
                                     {% endif %}
@@ -236,8 +188,8 @@
                                     {% if client_info.endereco %}
                                     <div class="col-12">
                                         <div class="d-flex">
-                                            <span class="info-label me-3">Endereço:</span>
-                                            <span class="info-value">{{ client_info.endereco }}</span>
+                                            <span class="signature-info-label me-3">Endereço:</span>
+                                            <span class="signature-info-value">{{ client_info.endereco }}</span>
                                         </div>
                                     </div>
                                     {% endif %}
@@ -245,8 +197,8 @@
                                     {% if client_info.observacoes %}
                                     <div class="col-12">
                                         <div class="d-flex">
-                                            <span class="info-label me-3">Observações:</span>
-                                            <span class="info-value">{{ client_info.observacoes }}</span>
+                                            <span class="signature-info-label me-3">Observações:</span>
+                                            <span class="signature-info-value">{{ client_info.observacoes }}</span>
                                         </div>
                                     </div>
                                     {% endif %}
@@ -255,7 +207,7 @@
                         </div>
 
                         <!-- Informações da Assinatura -->
-                        <div class="card info-card mb-4">
+                        <div class="card signature-info-card mb-4">
                             <div class="card-body">
                                 <h6 class="card-title">
                                     <i class="fas fa-certificate me-2 text-success"></i>
@@ -264,14 +216,14 @@
                                 <div class="row g-3">
                                     <div class="col-md-6">
                                         <div class="d-flex">
-                                            <span class="info-label me-3">Algoritmo:</span>
-                                            <span class="info-value">RSA-SHA256</span>
+                                            <span class="signature-info-label me-3">Algoritmo:</span>
+                                            <span class="signature-info-value">RSA-SHA256</span>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="d-flex">
-                                            <span class="info-label me-3">Timestamp:</span>
-                                            <span class="info-value" id="currentTimestamp">-</span>
+                                            <span class="signature-info-label me-3">Timestamp:</span>
+                                            <span class="signature-info-value" id="currentTimestamp">-</span>
                                         </div>
                                     </div>
                                     <div class="col-12">
@@ -433,8 +385,8 @@
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
-    <script>
+    <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
+    <script nonce="{{ csp_nonce() }}">
         // Elementos
         const confirmationStep = document.getElementById('confirmationStep');
         const termsStep = document.getElementById('termsStep');

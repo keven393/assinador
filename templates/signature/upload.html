@@ -6,60 +6,6 @@
     <title>Upload de PDF - Assinador Digital</title>
     <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/font-awesome.min.css') }}" rel="stylesheet">
-    <style>
-        .upload-area {
-            border: 2px dashed #ddd;
-            border-radius: 10px;
-            padding: 60px 20px;
-            text-align: center;
-            background: #fafafa;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-        .upload-area.dragover {
-            border-color: #007bff;
-            background: #f0f7ff;
-        }
-        .upload-area:hover {
-            border-color: #007bff;
-            background: #f8f9fa;
-        }
-        .upload-icon {
-            font-size: 3rem;
-            color: #6c757d;
-            margin-bottom: 1rem;
-        }
-        .step-indicator {
-            margin-bottom: 2rem;
-        }
-        .step {
-            display: inline-block;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: #e9ecef;
-            color: #6c757d;
-            line-height: 40px;
-            text-align: center;
-            margin: 0 10px;
-            font-weight: bold;
-        }
-        .step.active {
-            background: #007bff;
-            color: white;
-        }
-        .step.completed {
-            background: #28a745;
-            color: white;
-        }
-        .file-info {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 1rem;
-            margin-top: 1rem;
-            display: none;
-        }
-    </style>
 </head>
 <body class="bg-light">
     <!-- User Navigation -->
@@ -95,12 +41,12 @@
 
     <div class="container mt-4">
         <!-- Progress Steps -->
-        <div class="step-indicator text-center">
-            <div class="step active">1</div>
-            <div class="step">2</div>
-            <div class="step">3</div>
-            <div class="step">4</div>
-            <div class="step">5</div>
+        <div class="signature-step-indicator text-center">
+            <div class="signature-step active">1</div>
+            <div class="signature-step">2</div>
+            <div class="signature-step">3</div>
+            <div class="signature-step">4</div>
+            <div class="signature-step">5</div>
         </div>
         
         <div class="row justify-content-center">
@@ -126,8 +72,8 @@
                         {% endwith %}
 
                         <form id="uploadForm" method="POST" enctype="multipart/form-data">
-                            <div class="upload-area" id="uploadArea">
-                                <div class="upload-icon">
+                            <div class="signature-upload-area" id="uploadArea">
+                                <div class="signature-upload-icon">
                                     <i class="fas fa-file-pdf"></i>
                                 </div>
                                 <h5>Arraste o PDF aqui ou clique para selecionar</h5>
@@ -135,19 +81,19 @@
                                     Formatos aceitos: PDF (máximo 10MB)
                                 </p>
                                 <input type="file" name="pdf_file" id="pdfFile" accept=".pdf" class="hidden-input" required>
-                                <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('pdfFile').click()">
+                                <button type="button" class="btn btn-outline-primary" data-action="select-file">
                                     <i class="fas fa-folder-open me-2"></i>Selecionar Arquivo
                                 </button>
                             </div>
 
-                            <div class="file-info" id="fileInfo">
+                            <div class="signature-file-info" id="fileInfo">
                                 <div class="d-flex align-items-center">
                                     <i class="fas fa-file-pdf text-danger me-3 large-icon"></i>
                                     <div class="flex-grow-1">
                                         <h6 class="mb-1" id="fileName">arquivo.pdf</h6>
                                         <small class="text-muted" id="fileSize">Tamanho: 0 KB</small>
                                     </div>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearFile()">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-action="clear-file">
                                         <i class="fas fa-times"></i>
                                     </button>
                                 </div>
@@ -194,8 +140,8 @@
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
-    <script>
+    <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
+    <script nonce="{{ csp_nonce() }}">
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('pdfFile');
         const fileInfo = document.getElementById('fileInfo');

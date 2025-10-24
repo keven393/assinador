@@ -79,7 +79,7 @@
                                         <button class="btn btn-sm btn-success" type="submit"><i class="fas fa-save"></i></button>
                                     </div>
                             </form>
-                                    <form method="POST" onsubmit="return confirm('Remover este tipo?');" class="d-inline">
+                                    <form method="POST" class="d-inline" data-confirm="Remover este tipo?">
                                         <input type="hidden" name="action" value="delete">
                                         <input type="hidden" name="id" value="{{ it.id }}">
                                         <button class="btn btn-sm btn-outline-danger" type="submit"><i class="fas fa-trash"></i></button>

@@ -6,69 +6,6 @@
     <title>Download Concluído - Assinador Digital</title>
     <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/font-awesome.min.css') }}" rel="stylesheet">
-    <style>
-        .step-indicator {
-            margin-bottom: 2rem;
-        }
-        .step {
-            display: inline-block;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: #e9ecef;
-            color: #6c757d;
-            line-height: 40px;
-            text-align: center;
-            margin: 0 10px;
-            font-weight: bold;
-        }
-        .step.active {
-            background: #007bff;
-            color: white;
-        }
-        .step.completed {
-            background: #28a745;
-            color: white;
-        }
-        .success-icon {
-            font-size: 4rem;
-            color: #28a745;
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-        }
-        .file-card {
-            background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
-            color: white;
-            border-radius: 15px;
-            padding: 2rem;
-            margin: 2rem 0;
-        }
-        .download-btn {
-            background: #28a745;
-            border: none;
-            padding: 1rem 2rem;
-            font-size: 1.2rem;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-        }
-        .download-btn:hover {
-            background: #218838;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
-        }
-        .feature-card {
-            border: none;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
-        }
-        .feature-card:hover {
-            transform: translateY(-5px);
-        }
-    </style>
 </head>
 <body class="bg-light">
     <!-- User Navigation -->
@@ -104,12 +41,12 @@
 
     <div class="container mt-4">
         <!-- Progress Steps -->
-        <div class="step-indicator text-center">
-            <div class="step completed">1</div>
-            <div class="step completed">2</div>
-            <div class="step completed">3</div>
-            <div class="step completed">4</div>
-            <div class="step completed">5</div>
+        <div class="signature-step-indicator text-center">
+            <div class="signature-step completed">1</div>
+            <div class="signature-step completed">2</div>
+            <div class="signature-step completed">3</div>
+            <div class="signature-step completed">4</div>
+            <div class="signature-step completed">5</div>
         </div>
         
         <div class="row justify-content-center">
@@ -117,7 +54,7 @@
                 <!-- Success Message -->
                 <div class="card shadow border-0">
                     <div class="card-body text-center p-5">
-                        <div class="success-icon mb-4">
+                        <div class="signature-success-icon mb-4">
                             <i class="fas fa-check-circle"></i>
                         </div>
                         <h2 class="text-success mb-3">Assinatura Concluída com Sucesso!</h2>
@@ -126,7 +63,7 @@
                         </p>
 
                         <!-- File Download Card -->
-                        <div class="file-card text-center">
+                        <div class="signature-file-card text-center">
                             <div class="row align-items-center">
                                 <div class="col-md-3">
                                     <i class="fas fa-file-pdf icon-3rem"></i>
@@ -139,7 +76,7 @@
                                     </p>
                                 </div>
                                 <div class="col-md-3">
-                                    <a href="{{ url_for('download_pdf') }}" class="btn btn-light btn-lg download-btn">
+                                    <a href="{{ url_for('download_pdf') }}" class="btn btn-light btn-lg signature-download-btn">
                                         <i class="fas fa-download me-2"></i>
                                         Baixar PDF
                                     </a>
@@ -164,7 +101,7 @@
                 <!-- Features -->
                 <div class="row mt-5">
                     <div class="col-md-4 mb-4">
-                        <div class="card feature-card text-center h-100">
+                        <div class="card signature-feature-card text-center h-100">
                             <div class="card-body">
                                 <div class="text-success mb-3">
                                     <i class="fas fa-certificate icon-2-5rem"></i>
@@ -177,7 +114,7 @@
                         </div>
                     </div>
                     <div class="col-md-4 mb-4">
-                        <div class="card feature-card text-center h-100">
+                        <div class="card signature-feature-card text-center h-100">
                             <div class="card-body">
                                 <div class="text-info mb-3">
                                     <i class="fas fa-shield-alt icon-2-5rem"></i>
@@ -190,7 +127,7 @@
                         </div>
                     </div>
                     <div class="col-md-4 mb-4">
-                        <div class="card feature-card text-center h-100">
+                        <div class="card signature-feature-card text-center h-100">
                             <div class="card-body">
                                 <div class="text-warning mb-3">
                                     <i class="fas fa-clock icon-2-5rem"></i>
@@ -272,8 +209,8 @@
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
-    <script>
+    <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
+    <script nonce="{{ csp_nonce() }}">
         // Set current timestamp
         document.addEventListener('DOMContentLoaded', function() {
             const now = new Date();

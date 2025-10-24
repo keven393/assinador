@@ -3,79 +3,10 @@
 {% block title %}Assinaturas Pendentes - Assinador Digital{% endblock %}
 
 {% block extra_css %}
-<style>
-body {
-            background-color: #f8f9fa;
-        }
-        .pending-header {
-            background: linear-gradient(135deg, #ffc107, #fd7e14);
-            color: white;
-            padding: 3rem 0;
-            margin-bottom: 2rem;
-        }
-        .pending-card {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            padding: 2rem;
-            margin-bottom: 2rem;
-        }
-        .client-header {
-            background: #e3f2fd;
-            padding: 1.5rem;
-            border-radius: 10px;
-            margin-bottom: 1.5rem;
-            border-left: 4px solid #2196f3;
-        }
-        .document-item {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-            border-left: 4px solid #ffc107;
-            transition: all 0.3s ease;
-        }
-        .document-item:hover {
-            transform: translateX(5px);
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-        }
-        .btn-custom {
-            border-radius: 10px;
-            padding: 0.75rem 1.5rem;
-            font-weight: 600;
-        }
-        .status-badge {
-            font-size: 0.9rem;
-        }
-        .client-info {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 1rem;
-        }
-        .qr-code-section {
-            background: #fff3cd;
-            border-radius: 10px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            border-left: 4px solid #ffc107;
-            text-align: center;
-        }
-        .empty-state {
-            text-align: center;
-            padding: 3rem;
-            color: #6c757d;
-        }
-        .empty-icon {
-            font-size: 4rem;
-            margin-bottom: 1rem;
-            opacity: 0.5;
-        }
-</style>
 {% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="container internal-pending-body">
     <!-- Mensagens Flash -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -91,7 +22,7 @@ body {
     {% if clients %}
         <!-- Lista de Clientes com Documentos Pendentes -->
         {% for client_key, client_data in clients.items() %}
-        <div class="pending-card">
+        <div class="pending-card internal-pending-card">
             <!-- Cabeçalho do Cliente -->
             <div class="client-header">
                 <div class="row align-items-center">
@@ -188,15 +119,15 @@ body {
                                     <i class="fas fa-edit me-1"></i>Editar
                                 </a>
                                 <button type="button" class="btn btn-outline-info btn-sm" 
-                                        onclick="copyClientInfo('{{ client_data.client_name }}', '{{ client_data.client_cpf }}')">
+                                        data-action="copy" data-client-name="{{ client_data.client_name }}" data-client-cpf="{{ client_data.client_cpf }}">
                                     <i class="fas fa-copy me-1"></i>Copiar Dados
                                 </button>
                                 <button type="button" class="btn btn-outline-secondary btn-sm" 
-                                        onclick="showInstructions('{{ signature.original_filename }}', '{{ client_data.client_name }}')">
+                                        data-action="instructions" data-filename="{{ signature.original_filename }}" data-client-name="{{ client_data.client_name }}">
                                     <i class="fas fa-question-circle me-1"></i>Ajuda
                                 </button>
                                 <button type="button" class="btn btn-outline-danger btn-sm" 
-                                        onclick="confirmCancelSignature('{{ signature.id }}', '{{ signature.original_filename }}', '{{ client_data.client_name }}')">
+                                        data-action="cancel" data-signature-id="{{ signature.id }}" data-filename="{{ signature.original_filename }}" data-client-name="{{ client_data.client_name }}">
                                     <i class="fas fa-times me-1"></i>Cancelar
                                 </button>
                             </div>
@@ -218,7 +149,7 @@ body {
 
         {% else %}
         <!-- Estado Vazio -->
-        <div class="pending-card">
+        <div class="pending-card internal-pending-card">
             <div class="empty-state">
                 <div class="empty-icon">
                     <i class="fas fa-inbox"></i>
@@ -237,7 +168,7 @@ body {
         <!-- Links Rápidos -->
         <div class="row mt-4">
             <div class="col-12">
-                <div class="pending-card">
+                <div class="pending-card internal-pending-card">
                     <h5 class="mb-3">
                         <i class="fas fa-link me-2"></i>
                         Acesso Rápido
@@ -345,95 +276,6 @@ body {
     </div>
 </div>
 
-<script>
-        // Função para copiar dados do cliente
-        function copyClientInfo(clientName, clientCpf) {
-            const text = `Cliente: ${clientName}\nCPF: ${clientCpf}`;
-            
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(text).then(() => {
-                    alert('Dados copiados para a área de transferência!');
-                }).catch(() => {
-                    fallbackCopyTextToClipboard(text);
-                });
-            } else {
-                fallbackCopyTextToClipboard(text);
-            }
-        }
-        
-        // Fallback para navegadores antigos
-        function fallbackCopyTextToClipboard(text) {
-            const textArea = document.createElement('textarea');
-            textArea.value = text;
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-            
-            try {
-                document.execCommand('copy');
-                alert('Dados copiados para a área de transferência!');
-            } catch (err) {
-                alert('Erro ao copiar dados. Selecione e copie manualmente:\n\n' + text);
-            }
-            
-            document.body.removeChild(textArea);
-        }
-        
-        // Função para mostrar instruções
-        function showInstructions(filename, clientName) {
-            const content = `
-                <h6>Como orientar o cliente para assinar o documento:</h6>
-                <ol>
-                    <li><strong>${filename}</strong></li>
-                    <li>Cliente: <strong>${clientName}</strong></li>
-                </ol>
-                
-                <div class="alert alert-info">
-                    <h6><i class="fas fa-mobile-alt me-2"></i>Passos para o Cliente:</h6>
-                    <ol>
-                        <li>Acesse a <strong>Tela de Assinatura</strong> (botão laranja acima)</li>
-                        <li>Digite o CPF: <strong>${clientCpf}</strong></li>
-                        <li>Confirme os dados e aceite os termos</li>
-                        <li>Desenhe a assinatura no campo indicado</li>
-                        <li>Clique em "Finalizar Assinatura"</li>
-                    </ol>
-                </div>
-                
-                <div class="alert alert-warning">
-                    <h6><i class="fas fa-exclamation-triangle me-2"></i>Importante:</h6>
-                    <ul>
-                        <li>O cliente deve usar um dispositivo com tela touch (tablet/celular)</li>
-                        <li>A assinatura deve ser clara e legível</li>
-                        <li>Após a assinatura, o documento ficará disponível para download</li>
-                    </ul>
-                </div>
-            `;
-            
-            document.getElementById('instructionsContent').innerHTML = content;
-            new bootstrap.Modal(document.getElementById('instructionsModal')).show();
-        }
-        
-        // Função para confirmar cancelamento de assinatura
-        function confirmCancelSignature(signatureId, fileName, clientName) {
-            // Preenche os dados no modal
-            document.getElementById('cancelFileName').textContent = fileName;
-            document.getElementById('cancelClientName').textContent = clientName;
-            
-            // Atualiza o action do formulário
-            document.getElementById('cancelForm').action = `/internal/signature/cancel/${signatureId}`;
-            
-            // Mostra o modal
-            new bootstrap.Modal(document.getElementById('cancelModal')).show();
-        }
-        
-        // Auto-refresh a cada 30 segundos para verificar atualizações
-        setInterval(function() {
-            // Verifica se há mudanças na página
-            if (document.visibilityState === 'visible') {
-                // Pode implementar uma verificação AJAX aqui se necessário
-                console.log('Verificando atualizações...');
-            }
-        }, 30000);
-</script>
+    <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/common.js') }}"></script>
 
 {% endblock %}

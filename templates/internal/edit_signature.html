@@ -3,100 +3,16 @@
 {% block title %}Editar Assinatura - Sistema de Assinaturas{% endblock %}
 
 {% block extra_css %}
-<style>
-body {
-            background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
-            min-height: 100vh;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        .edit-card {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            margin: 2rem auto;
-            max-width: 800px;
-        }
-        
-        .card-header {
-            background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
-            color: white;
-            border-radius: 20px 20px 0 0 !important;
-            padding: 1.5rem;
-        }
-        
-        .form-control, .form-select {
-            border-radius: 10px;
-            border: 2px solid #e9ecef;
-            padding: 0.75rem;
-            transition: all 0.3s ease;
-        }
-        
-        .form-control:focus, .form-select:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-        }
-        
-        .btn-custom {
-            border-radius: 10px;
-            padding: 0.75rem 1.5rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
-            border: none;
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-        
-        .btn-secondary {
-            background: #6c757d;
-            border: none;
-        }
-        
-        .btn-secondary:hover {
-            background: #5a6268;
-            transform: translateY(-2px);
-        }
-        
-        .required {
-            color: #dc3545;
-        }
-        
-        .document-info {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 1rem;
-            margin-bottom: 1.5rem;
-        }
-        
-        .document-info h6 {
-            color: #495057;
-            margin-bottom: 0.5rem;
-        }
-        
-        .document-info p {
-            margin-bottom: 0.25rem;
-            color: #6c757d;
-        }
-</style>
 {% endblock %}
 
 {% block content %}
 
-    <div class="container">
+    <div class="container internal-edit-signature-body">
         <!-- Mensagens Flash -->
         
 
-        <div class="edit-card">
-            <div class="card-header text-center">
+        <div class="card internal-edit-signature-card">
+            <div class="card-header text-center internal-edit-signature-header">
                 <h3 class="mb-0">
                     <i class="fas fa-edit me-2"></i>
                     Editar Assinatura Pendente
@@ -106,7 +22,7 @@ body {
             
             <div class="card-body p-4">
                 <!-- Informações do Documento -->
-                <div class="document-info">
+                <div class="internal-edit-signature-document-info">
                     <h6><i class="fas fa-file-pdf me-2 text-danger"></i>Documento</h6>
                     <p><strong>Arquivo:</strong> {{ signature.original_filename }}</p>
                     <p><strong>Data de Criação:</strong> {{ signature.timestamp.strftime('%d/%m/%Y %H:%M') }}</p>
@@ -116,8 +32,8 @@ body {
                 <form method="POST" id="editForm">
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="document_type_id" class="form-label">Tipo de Documento <span class="required">*</span></label>
-                            <select class="form-select" id="document_type_id" name="document_type_id" required>
+                            <label for="document_type_id" class="form-label">Tipo de Documento <span class="internal-edit-signature-required">*</span></label>
+                            <select class="form-select internal-edit-signature-form-control" id="document_type_id" name="document_type_id" required>
                                 {% for dt in document_types %}
                                     <option value="{{ dt.id }}" {% if signature.document_type_id == dt.id %}selected{% endif %}>{{ dt.name }}</option>
                                 {% endfor %}
@@ -125,16 +41,16 @@ body {
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="client_name" class="form-label">
-                                Nome Completo <span class="required">*</span>
+                                Nome Completo <span class="internal-edit-signature-required">*</span>
                             </label>
-                            <input type="text" class="form-control" id="client_name" name="client_name" 
+                            <input type="text" class="form-control internal-edit-signature-form-control" id="client_name" name="client_name" 
                                    value="{{ signature.client_name or '' }}" required>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="client_cpf" class="form-label">
-                                CPF <span class="required">*</span>
+                                CPF <span class="internal-edit-signature-required">*</span>
                             </label>
-                            <input type="text" class="form-control" id="client_cpf" name="client_cpf" 
+                            <input type="text" class="form-control internal-edit-signature-form-control" id="client_cpf" name="client_cpf" 
                                    value="{{ signature.client_cpf or '' }}" 
                                    placeholder="000.000.000-00" required>
                             <div class="invalid-feedback" id="cpfError"></div>
@@ -144,12 +60,12 @@ body {
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="client_email" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="client_email" name="client_email" 
+                            <input type="email" class="form-control internal-edit-signature-form-control" id="client_email" name="client_email" 
                                    value="{{ signature.client_email or '' }}">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="client_phone" class="form-label">Telefone</label>
-                            <input type="tel" class="form-control" id="client_phone" name="client_phone" 
+                            <input type="tel" class="form-control internal-edit-signature-form-control" id="client_phone" name="client_phone" 
                                    value="{{ signature.client_phone or '' }}">
                         </div>
                     </div>
@@ -157,22 +73,22 @@ body {
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="client_birth_date" class="form-label">Data de Nascimento</label>
-                            <input type="date" class="form-control" id="client_birth_date" name="client_birth_date" 
+                            <input type="date" class="form-control internal-edit-signature-form-control" id="client_birth_date" name="client_birth_date" 
                                    value="{{ signature.client_birth_date.strftime('%Y-%m-%d') if signature.client_birth_date else '' }}">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="client_address" class="form-label">Endereço</label>
-                            <input type="text" class="form-control" id="client_address" name="client_address" 
+                            <input type="text" class="form-control internal-edit-signature-form-control" id="client_address" name="client_address" 
                                    value="{{ signature.client_address or '' }}">
                         </div>
                     </div>
                     
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                        <a href="{{ url_for('internal_pending_signatures') }}" class="btn btn-secondary btn-custom me-md-2">
+                        <a href="{{ url_for('internal_pending_signatures') }}" class="btn btn-secondary internal-edit-signature-btn-custom me-md-2">
                             <i class="fas fa-arrow-left me-2"></i>
                             Voltar
                         </a>
-                        <button type="submit" class="btn btn-primary btn-custom">
+                        <button type="submit" class="btn btn-primary internal-edit-signature-btn-custom">
                             <i class="fas fa-save me-2"></i>
                             Salvar Alterações
                         </button>
@@ -183,7 +99,7 @@ body {
     </div>
 
     
-    <script>
+    <script nonce="{{ csp_nonce() }}">
         // Validação de CPF
         function validateCPF(cpf) {
             cpf = cpf.replace(/[^\d]/g, '');

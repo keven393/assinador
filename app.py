@@ -283,20 +283,17 @@ def create_app(config_name=None):
             strict_transport_security=True,
             strict_transport_security_max_age=31536000,
             strict_transport_security_include_subdomains=True,
-            content_security_policy=csp
+            content_security_policy=csp,
+            content_security_policy_nonce_in=['script-src']
         )
 
-    # Fallback: disponibiliza csp_nonce() mesmo quando Talisman não está ativo
     @app.context_processor
-    def inject_csp_nonce():
-        def _csp_nonce():
-            try:
-                # Quando Talisman está ativo, ele injeta a função automaticamente
-                # e/ou popula um nonce por request; este fallback retorna vazio.
-                return ''
-            except Exception:
-                return ''
-        return dict(csp_nonce=_csp_nonce)
+    def inject_csrf_token():
+        def _csrf_token():
+            from flask_wtf.csrf import generate_csrf
+            return generate_csrf()
+        
+        return dict(csrf_token=_csrf_token)
     
     # Inicializa extensões
     db.init_app(app)

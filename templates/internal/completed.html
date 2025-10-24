@@ -3,90 +3,6 @@
 {% block title %}Assinaturas Concluídas - Assinador Digital{% endblock %}
 
 {% block extra_css %}
-<style>
-body {
-            background-color: #f8f9fa;
-        }
-        .completed-header {
-            background: linear-gradient(135deg, #28a745, #20c997);
-            color: white;
-            padding: 3rem 0;
-            margin-bottom: 2rem;
-        }
-        .completed-card {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            padding: 2rem;
-            margin-bottom: 2rem;
-        }
-        .signature-item {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-            border-left: 4px solid #28a745;
-            transition: all 0.3s ease;
-        }
-        .signature-item:hover {
-            transform: translateX(5px);
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-        }
-        .btn-custom {
-            border-radius: 10px;
-            padding: 0.75rem 1.5rem;
-            font-weight: 600;
-        }
-        .status-badge {
-            font-size: 0.9rem;
-        }
-        .client-info {
-            background: #e3f2fd;
-            border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 1rem;
-        }
-        .signature-details {
-            background: #d4edda;
-            border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            border-left: 4px solid #28a745;
-        }
-        .empty-state {
-            text-align: center;
-            padding: 3rem;
-            color: #6c757d;
-        }
-        .empty-icon {
-            font-size: 4rem;
-            margin-bottom: 1rem;
-            opacity: 0.5;
-        }
-        .filter-section {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        .stats-card {
-            background: linear-gradient(135deg, #28a745, #20c997);
-            color: white;
-            border-radius: 10px;
-            padding: 1.5rem;
-            text-align: center;
-            margin-bottom: 1rem;
-        }
-        .stats-number {
-            font-size: 2rem;
-            font-weight: bold;
-        }
-        .stats-label {
-            opacity: 0.9;
-            font-size: 0.9rem;
-        }
-</style>
 {% endblock %}
 
 {% block content %}
@@ -112,26 +28,26 @@ body {
         <!-- Estatísticas -->
         <div class="row mb-4">
             <div class="col-md-3">
-                <div class="stats-card">
-                    <div class="stats-number">{{ signatures|count }}</div>
+                <div class="completed-stats-card">
+                    <div class="completed-stats-number">{{ signatures|count }}</div>
                     <div class="stats-label">Total Concluídas</div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="stats-card">
-                    <div class="stats-number">{{ today_count }}</div>
+                <div class="completed-stats-card">
+                    <div class="completed-stats-number">{{ today_count }}</div>
                     <div class="stats-label">Hoje</div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="stats-card">
-                    <div class="stats-number">{{ week_count }}</div>
+                <div class="completed-stats-card">
+                    <div class="completed-stats-number">{{ week_count }}</div>
                     <div class="stats-label">Última Semana</div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="stats-card">
-                    <div class="stats-number">{{ month_count }}</div>
+                <div class="completed-stats-card">
+                    <div class="completed-stats-number">{{ month_count }}</div>
                     <div class="stats-label">Último Mês</div>
                 </div>
             </div>
@@ -163,7 +79,7 @@ body {
                     </select>
                 </div>
                 <div class="col-md-2 mb-2">
-                    <button class="btn btn-primary w-100" onclick="applyFilters()">
+                    <button class="btn btn-primary w-100" data-action="apply-filters">
                         <i class="fas fa-search me-1"></i>Filtrar
                     </button>
                 </div>
@@ -182,7 +98,7 @@ body {
                     <a href="{{ url_for('admin_settings') }}" class="btn btn-outline-secondary btn-sm me-2">
                         <i class="fas fa-cog me-1"></i>Configurações
                     </a>
-                    <button class="btn btn-outline-success btn-sm" onclick="exportToCSV()">
+                    <button class="btn btn-outline-success btn-sm" data-action="export-csv">
                         <i class="fas fa-download me-1"></i>Exportar CSV
                     </button>
                 </div>
@@ -262,7 +178,7 @@ body {
                             </a>
                             
                             <button type="button" class="btn btn-outline-info btn-sm"
-                                onclick="showSignatureDetails('{{ signature.id }}')">
+                                data-action="details" data-signature-id="{{ signature.id }}">
                                 <i class="fas fa-info-circle me-1"></i>Detalhes
                             </button>
                         </div>
@@ -345,164 +261,166 @@ body {
         </div>
     </div>
 
-    
-    <script>
-        // Confirmação antes do download quando não armazenamos PDFs (HUD modal)
-        (function() {
-            let pendingHref = null;
-            const modalEl = document.getElementById('confirmDownloadModal');
-            const confirmTextEl = document.getElementById('confirmDownloadText');
-            const confirmBtn = document.getElementById('confirmDownloadBtn');
-            const bsModal = new bootstrap.Modal(modalEl);
-
-            document.addEventListener('click', function(e) {
-                const link = e.target.closest('a.download-btn');
-                if (!link) return;
-                const store = link.getAttribute('data-store') === '1';
-                const filename = link.getAttribute('data-filename') || 'documento_assinado.pdf';
-                if (!store) {
-                    e.preventDefault();
-                    pendingHref = link.getAttribute('href');
-                    confirmTextEl.textContent = `Ao baixar, o arquivo '${filename}' será excluído do servidor. Confirme que você irá salvar no 1doc.`;
-                    bsModal.show();
-                }
-            });
-
-            confirmBtn.addEventListener('click', function() {
-                if (pendingHref) {
-                    const go = pendingHref;
-                    pendingHref = null;
-                    bsModal.hide();
-                    window.location.href = go;
-                }
-            });
-        })();
-        // Função para aplicar filtros
-        function applyFilters() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const statusFilter = document.getElementById('statusFilter').value;
-            const dateFilter = document.getElementById('dateFilter').value;
-            
-            const items = document.querySelectorAll('.signature-item');
-            
-            items.forEach(item => {
-                let show = true;
-                
-                // Filtro de busca
-                if (searchTerm) {
-                    const client = item.dataset.client;
-                    const filename = item.dataset.filename;
-                    if (!client.includes(searchTerm) && !filename.includes(searchTerm)) {
-                        show = false;
-                    }
-                }
-                
-                // Filtro de status
-                if (statusFilter && item.dataset.status !== statusFilter) {
-                    show = false;
-                }
-                
-                // Filtro de data
-                if (dateFilter) {
-                    const itemDate = item.dataset.date;
-                    const today = new Date().toISOString().split('T')[0];
-                    
-                    if (dateFilter === 'today' && itemDate !== today) {
-                        show = false;
-                    } else if (dateFilter === 'week') {
-                        const weekAgo = new Date();
-                        weekAgo.setDate(weekAgo.getDate() - 7);
-                        const weekAgoStr = weekAgo.toISOString().split('T')[0];
-                        if (itemDate < weekAgoStr) {
-                            show = false;
-                        }
-                    } else if (dateFilter === 'month') {
-                        const monthAgo = new Date();
-                        monthAgo.setDate(monthAgo.getDate() - 30);
-                        const monthAgoStr = monthAgo.toISOString().split('T')[0];
-                        if (itemDate < monthAgoStr) {
-                            show = false;
-                        }
-                    }
-                }
-                
-                item.style.display = show ? 'block' : 'none';
-            });
-        }
-        
-        // Busca em tempo real
-        document.getElementById('searchInput').addEventListener('input', applyFilters);
-        document.getElementById('statusFilter').addEventListener('change', applyFilters);
-        document.getElementById('dateFilter').addEventListener('change', applyFilters);
-        
-        // Função para mostrar detalhes da assinatura
-        function showSignatureDetails(signatureId) {
-            // Aqui você pode implementar uma chamada AJAX para buscar detalhes
-            // Por enquanto, mostra um placeholder
-            const content = `
-                <div class="text-center">
-                    <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
-                    <p>Carregando detalhes da assinatura...</p>
-                </div>
-            `;
-            
-            document.getElementById('detailsContent').innerHTML = content;
-            new bootstrap.Modal(document.getElementById('detailsModal')).show();
-            
-            // Simula carregamento de dados
-            setTimeout(() => {
-                const content = `
-                    <div class="alert alert-info">
-                        <h6>Detalhes da Assinatura #${signatureId}</h6>
-                        <p>Esta funcionalidade pode ser expandida para mostrar informações detalhadas sobre a assinatura, incluindo:</p>
-                        <ul>
-                            <li>Hash da assinatura</li>
-                            <li>Algoritmo utilizado</li>
-                            <li>Informações do dispositivo</li>
-                            <li>Timestamp da assinatura</li>
-                            <li>Dados de auditoria</li>
-                        </ul>
-                    </div>
-                `;
-                document.getElementById('detailsContent').innerHTML = content;
-            }, 1000);
-        }
-        
-        // Função para exportar CSV
-        function exportToCSV() {
-            const items = document.querySelectorAll('.signature-item:not([style*="display: none"])');
-            let csv = 'Cliente,CPF,Arquivo,Data Envio,Data Assinatura,Status,Tamanho\n';
-            
-            items.forEach(item => {
-                const client = item.querySelector('.client-info h6').textContent.trim();
-                const cpf = item.querySelector('.client-info small').textContent.split(':')[1].trim();
-                const filename = item.querySelector('.signature-details h6').textContent.trim();
-                const sentDate = item.querySelector('.signature-details small').textContent.split(':')[1].trim();
-                const signedDate = item.querySelectorAll('.signature-details small')[1].textContent.split(':')[1].trim();
-                const status = item.querySelector('.status-badge').textContent.trim();
-                const size = item.querySelector('.text-muted').textContent.trim();
-                
-                csv += `"${client}","${cpf}","${filename}","${sentDate}","${signedDate}","${status}","${size}"\n`;
-            });
-            
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', `assinaturas_concluidas_${new Date().toISOString().split('T')[0]}.csv`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-        
-        // Suporte a tecla Enter na busca
-        document.getElementById('searchInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                applyFilters();
-            }
-        });
-</script>
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
+<script nonce="{{ csp_nonce() }}">
+    // Confirmação antes do download quando não armazenamos PDFs (HUD modal)
+    (function() {
+        let pendingHref = null;
+        const modalEl = document.getElementById('confirmDownloadModal');
+        const confirmTextEl = document.getElementById('confirmDownloadText');
+        const confirmBtn = document.getElementById('confirmDownloadBtn');
+        const bsModal = new bootstrap.Modal(modalEl);
+
+        document.addEventListener('click', function(e) {
+            const link = e.target.closest('a.download-btn');
+            if (!link) return;
+            const store = link.getAttribute('data-store') === '1';
+            const filename = link.getAttribute('data-filename') || 'documento_assinado.pdf';
+            if (!store) {
+                e.preventDefault();
+                pendingHref = link.getAttribute('href');
+                confirmTextEl.textContent = `Ao baixar, o arquivo '${filename}' será excluído do servidor. Confirme que você irá salvar no 1doc.`;
+                bsModal.show();
+            }
+        });
+
+        confirmBtn.addEventListener('click', function() {
+            if (pendingHref) {
+                const go = pendingHref;
+                pendingHref = null;
+                bsModal.hide();
+                window.location.href = go;
+            }
+        });
+    })();
+    // Função para aplicar filtros
+    function applyFilters() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const statusFilter = document.getElementById('statusFilter').value;
+        const dateFilter = document.getElementById('dateFilter').value;
+        
+        const items = document.querySelectorAll('.signature-item');
+        
+        items.forEach(item => {
+            let show = true;
+            
+            // Filtro de busca
+            if (searchTerm) {
+                const client = item.dataset.client;
+                const filename = item.dataset.filename;
+                if (!client.includes(searchTerm) && !filename.includes(searchTerm)) {
+                    show = false;
+                }
+            }
+            
+            // Filtro de status
+            if (statusFilter && item.dataset.status !== statusFilter) {
+                show = false;
+            }
+            
+            // Filtro de data
+            if (dateFilter) {
+                const itemDate = item.dataset.date;
+                const today = new Date().toISOString().split('T')[0];
+                
+                if (dateFilter === 'today' && itemDate !== today) {
+                    show = false;
+                } else if (dateFilter === 'week') {
+                    const weekAgo = new Date();
+                    weekAgo.setDate(weekAgo.getDate() - 7);
+                    const weekAgoStr = weekAgo.toISOString().split('T')[0];
+                    if (itemDate < weekAgoStr) {
+                        show = false;
+                    }
+                } else if (dateFilter === 'month') {
+                    const monthAgo = new Date();
+                    monthAgo.setDate(monthAgo.getDate() - 30);
+                    const monthAgoStr = monthAgo.toISOString().split('T')[0];
+                    if (itemDate < monthAgoStr) {
+                        show = false;
+                    }
+                }
+            }
+            
+            item.style.display = show ? 'block' : 'none';
+        });
+    }
+    
+    // Busca em tempo real
+    document.getElementById('searchInput').addEventListener('input', applyFilters);
+    document.getElementById('statusFilter').addEventListener('change', applyFilters);
+    document.getElementById('dateFilter').addEventListener('change', applyFilters);
+    
+    // Função para mostrar detalhes da assinatura
+    function showSignatureDetails(signatureId) {
+        // Aqui você pode implementar uma chamada AJAX para buscar detalhes
+        // Por enquanto, mostra um placeholder
+        const content = `
+            <div class="text-center">
+                <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
+                <p>Carregando detalhes da assinatura...</p>
+            </div>
+        `;
+        
+        document.getElementById('detailsContent').innerHTML = content;
+        new bootstrap.Modal(document.getElementById('detailsModal')).show();
+        
+        // Simula carregamento de dados
+        setTimeout(() => {
+            const content = `
+                <div class="alert alert-info">
+                    <h6>Detalhes da Assinatura #${signatureId}</h6>
+                    <p>Esta funcionalidade pode ser expandida para mostrar informações detalhadas sobre a assinatura, incluindo:</p>
+                    <ul>
+                        <li>Hash da assinatura</li>
+                        <li>Algoritmo utilizado</li>
+                        <li>Informações do dispositivo</li>
+                        <li>Timestamp da assinatura</li>
+                        <li>Dados de auditoria</li>
+                    </ul>
+                </div>
+            `;
+            document.getElementById('detailsContent').innerHTML = content;
+        }, 1000);
+    }
+    
+    // Função para exportar CSV
+    function exportToCSV() {
+        const items = document.querySelectorAll('.signature-item:not([style*="display: none"])');
+        let csv = 'Cliente,CPF,Arquivo,Data Envio,Data Assinatura,Status,Tamanho\n';
+        
+        items.forEach(item => {
+            const client = item.querySelector('.client-info h6').textContent.trim();
+            const cpf = item.querySelector('.client-info small').textContent.split(':')[1].trim();
+            const filename = item.querySelector('.signature-details h6').textContent.trim();
+            const sentDate = item.querySelector('.signature-details small').textContent.split(':')[1].trim();
+            const signedDate = item.querySelectorAll('.signature-details small')[1].textContent.split(':')[1].trim();
+            const status = item.querySelector('.status-badge').textContent.trim();
+            const size = item.querySelector('.text-muted').textContent.trim();
+            
+            csv += `"${client}","${cpf}","${filename}","${sentDate}","${signedDate}","${status}","${size}"\n`;
+        });
+        
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `assinaturas_concluidas_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+    
+    // Suporte a tecla Enter na busca
+    document.getElementById('searchInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            applyFilters();
+        }
+    });
+</script>
 {% endblock %}

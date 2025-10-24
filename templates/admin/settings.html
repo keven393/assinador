@@ -3,58 +3,6 @@
 {% block title %}Configurações do Sistema - Assinador Digital{% endblock %}
 
 {% block extra_css %}
-<style>
-    .settings-card {
-        background: white;
-        border-radius: 15px;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        padding: 2rem;
-        margin-bottom: 2rem;
-    }
-    .setting-item {
-        background: #f8f9fa;
-        border-radius: 10px;
-        padding: 1.5rem;
-        margin-bottom: 1rem;
-        border-left: 4px solid #667eea;
-    }
-    .form-control, .form-select {
-        border-radius: 10px;
-        border: 2px solid #e9ecef;
-        padding: 0.75rem 1rem;
-        transition: all 0.3s ease;
-    }
-    .form-control:focus, .form-select:focus {
-        border-color: #667eea;
-        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-    }
-    .btn-save {
-        background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
-        border: none;
-        border-radius: 10px;
-        padding: 0.75rem 2rem;
-        font-weight: 600;
-        transition: all 0.3s ease;
-    }
-    .btn-save:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
-    }
-    .info-card {
-        background: #e3f2fd;
-        border-radius: 10px;
-        padding: 1rem;
-        margin-bottom: 1rem;
-        border-left: 4px solid #2196f3;
-    }
-    .warning-card {
-        background: #fff3cd;
-        border-radius: 10px;
-        padding: 1rem;
-        margin-bottom: 1rem;
-        border-left: 4px solid #ffc107;
-    }
-</style>
 {% endblock %}
 
 {% block content %}
@@ -72,7 +20,7 @@
     {% endwith %}
 
     <!-- Header -->
-    <div class="settings-card">
+    <div class="settings-card admin-settings-card">
         <h3 class="mb-3">
             <i class="fas fa-cog me-2"></i>
             Configurações do Sistema
@@ -81,13 +29,13 @@
     </div>
 
     <!-- Configurações de Armazenamento -->
-    <div class="settings-card">
+    <div class="settings-card admin-settings-card">
         <h5 class="mb-4">
             <i class="fas fa-database me-2 text-primary"></i>
             Armazenamento de PDFs
         </h5>
         
-        <div class="info-card">
+        <div class="info-card admin-settings-info-card">
             <h6 class="mb-2">
                 <i class="fas fa-info-circle me-2"></i>
                 Armazenamento Atual
@@ -105,7 +53,7 @@
             </p>
         </div>
 
-        <div class="warning-card">
+        <div class="warning-card admin-settings-warning-card">
             <h6 class="mb-2">
                 <i class="fas fa-exclamation-triangle me-2"></i>
                 Aviso Importante
@@ -116,7 +64,7 @@
             </p>
         </div>
 
-        <div class="setting-item">
+        <div class="setting-item admin-settings-setting-item">
             <h6 class="mb-3">Política de Retenção</h6>
             <div class="row">
                 <div class="col-md-6">
@@ -136,7 +84,7 @@
             </div>
         </div>
 
-        <div class="setting-item">
+        <div class="setting-item admin-settings-setting-item">
             <h6 class="mb-3">Limpeza Automática</h6>
             <div class="row">
                 <div class="col-md-6">
@@ -156,13 +104,13 @@
     </div>
 
     <!-- Configurações de Segurança -->
-    <div class="settings-card">
+    <div class="settings-card admin-settings-card">
         <h5 class="mb-4">
             <i class="fas fa-shield-alt me-2 text-success"></i>
             Segurança
         </h5>
 
-        <div class="setting-item">
+        <div class="setting-item admin-settings-setting-item">
             <h6 class="mb-3">Chaves de Criptografia</h6>
             <div class="row">
                 <div class="col-md-6">
@@ -180,7 +128,7 @@
             </div>
         </div>
 
-        <div class="setting-item">
+        <div class="setting-item admin-settings-setting-item">
             <h6 class="mb-3">Rate Limiting</h6>
             <div class="row">
                 <div class="col-md-6">
@@ -201,13 +149,13 @@
     </div>
 
     <!-- Configurações de Performance -->
-    <div class="settings-card">
+    <div class="settings-card admin-settings-card">
         <h5 class="mb-4">
             <i class="fas fa-tachometer-alt me-2 text-info"></i>
             Performance
         </h5>
 
-        <div class="setting-item">
+        <div class="setting-item admin-settings-setting-item">
             <h6 class="mb-3">Cache</h6>
             <div class="row">
                 <div class="col-md-6">
@@ -225,7 +173,7 @@
             </div>
         </div>
 
-        <div class="setting-item">
+        <div class="setting-item admin-settings-setting-item">
             <h6 class="mb-3">Banco de Dados</h6>
             <div class="row">
                 <div class="col-md-6">
@@ -243,7 +191,7 @@
             </div>
         </div>
 
-        <div class="setting-item">
+        <div class="setting-item admin-settings-setting-item">
             <h6 class="mb-3">Índices de Performance</h6>
             <div class="row">
                 <div class="col-md-4">
@@ -269,13 +217,13 @@
     </div>
 
     <!-- Configurações de Logs -->
-    <div class="settings-card">
+    <div class="settings-card admin-settings-card">
         <h5 class="mb-4">
             <i class="fas fa-file-alt me-2 text-warning"></i>
             Logs e Auditoria
         </h5>
 
-        <div class="setting-item">
+        <div class="setting-item admin-settings-setting-item">
             <h6 class="mb-3">Logs de Auditoria</h6>
             <div class="row">
                 <div class="col-md-6">
@@ -293,7 +241,7 @@
             </div>
         </div>
 
-        <div class="setting-item">
+        <div class="setting-item admin-settings-setting-item">
             <h6 class="mb-3">Diretórios</h6>
             <div class="row">
                 <div class="col-md-4">
@@ -319,7 +267,7 @@
     </div>
 
     <!-- Limpeza de Arquivos -->
-    <div class="settings-card">
+    <div class="settings-card admin-settings-card">
         <h5 class="mb-4">
             <i class="fas fa-broom me-2 text-warning"></i>
             Limpeza de Arquivos
@@ -328,7 +276,7 @@
         <!-- Estatísticas dos Diretórios -->
         <div class="row mb-4">
             <div class="col-md-6">
-                <div class="setting-item">
+                <div class="setting-item admin-settings-setting-item">
                     <div class="text-center">
                         <i class="fas fa-folder-open fa-2x text-warning mb-3"></i>
                         <div class="stats-number">{{ temp_files_count }}</div>
@@ -338,7 +286,7 @@
                 </div>
             </div>
             <div class="col-md-6">
-                <div class="setting-item">
+                <div class="setting-item admin-settings-setting-item">
                     <div class="text-center">
                         <i class="fas fa-file-pdf fa-2x text-info mb-3"></i>
                         <div class="stats-number">{{ signed_files_count }}</div>
@@ -350,7 +298,7 @@
         </div>
 
         <!-- Ações de Limpeza Manual -->
-        <div class="setting-item">
+        <div class="setting-item admin-settings-setting-item">
             <h6 class="mb-3">Ações de Limpeza Manual</h6>
             <form method="POST" action="{{ url_for('admin_cleanup') }}">
                 <div class="row">
@@ -366,7 +314,7 @@
     </div>
 
     <!-- Ações Rápidas -->
-    <div class="settings-card">
+    <div class="settings-card admin-settings-card">
         <h5 class="mb-4">
             <i class="fas fa-bolt me-2 text-danger"></i>
             Ações Rápidas
@@ -392,13 +340,13 @@
     </div>
 
     <!-- Informações do Sistema -->
-    <div class="settings-card">
+    <div class="settings-card admin-settings-card">
         <h5 class="mb-4">
             <i class="fas fa-server me-2 text-primary"></i>
             Informações do Servidor
         </h5>
 
-        <div class="setting-item">
+        <div class="setting-item admin-settings-setting-item">
             <h6 class="mb-3">Ambiente</h6>
             <div class="row">
                 <div class="col-md-4">
@@ -422,7 +370,7 @@
             </div>
         </div>
 
-        <div class="setting-item">
+        <div class="setting-item admin-settings-setting-item">
             <h6 class="mb-3">Plataforma</h6>
             <div class="row">
                 <div class="col-md-6">
@@ -440,7 +388,7 @@
             </div>
         </div>
 
-        <div class="setting-item">
+        <div class="setting-item admin-settings-setting-item">
             <h6 class="mb-3">Hardware</h6>
             <div class="row">
                 <div class="col-md-4">
@@ -464,7 +412,7 @@
             </div>
         </div>
 
-        <div class="setting-item">
+        <div class="setting-item admin-settings-setting-item">
             <h6 class="mb-3">Versões</h6>
             <div class="row">
                 <div class="col-md-4">
@@ -488,7 +436,7 @@
             </div>
         </div>
 
-        <div class="setting-item">
+        <div class="setting-item admin-settings-setting-item">
             <h6 class="mb-3">Banco de Dados</h6>
             <div class="row">
                 <div class="col-md-4">
@@ -512,7 +460,7 @@
             </div>
         </div>
 
-        <div class="setting-item">
+        <div class="setting-item admin-settings-setting-item">
             <h6 class="mb-3">Recursos</h6>
             <div class="row">
                 <div class="col-md-4">

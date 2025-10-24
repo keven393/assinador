@@ -6,38 +6,6 @@
     <title>Dados do Assinante - Assinador Digital</title>
     <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/font-awesome.min.css') }}" rel="stylesheet">
-    <style>
-        .step-indicator {
-            margin-bottom: 2rem;
-        }
-        .step {
-            display: inline-block;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: #e9ecef;
-            color: #6c757d;
-            line-height: 40px;
-            text-align: center;
-            margin: 0 10px;
-            font-weight: bold;
-        }
-        .step.active {
-            background: #007bff;
-            color: white;
-        }
-        .step.completed {
-            background: #28a745;
-            color: white;
-        }
-        .form-floating {
-            margin-bottom: 1rem;
-        }
-        .required-field::after {
-            content: " *";
-            color: #dc3545;
-        }
-    </style>
 </head>
 <body class="bg-light">
     <!-- User Navigation -->
@@ -73,12 +41,12 @@
 
     <div class="container mt-4">
         <!-- Progress Steps -->
-        <div class="step-indicator text-center">
-            <div class="step completed">1</div>
-            <div class="step active">2</div>
-            <div class="step">3</div>
-            <div class="step">4</div>
-            <div class="step">5</div>
+        <div class="signature-step-indicator text-center">
+            <div class="signature-step completed">1</div>
+            <div class="signature-step active">2</div>
+            <div class="signature-step">3</div>
+            <div class="signature-step">4</div>
+            <div class="signature-step">5</div>
         </div>
         
         <div class="row justify-content-center">
@@ -111,13 +79,13 @@
                                         <i class="fas fa-user me-2"></i>Dados Pessoais
                                     </h6>
                                     
-                                    <div class="form-floating">
+                                    <div class="signature-form-floating">
                                         <input type="text" class="form-control" id="nome" name="nome" 
                                                placeholder="Nome completo" value="{{ client_info.nome if client_info else '' }}" required>
-                                        <label for="nome" class="required-field">Nome Completo</label>
+                                        <label for="nome" class="signature-required-field">Nome Completo</label>
                                     </div>
 
-                                    <div class="form-floating">
+                                    <div class="signature-form-floating">
                                         <input type="text" class="form-control" id="cpf" name="cpf" 
                                                placeholder="000.000.000-00" value="{{ client_info.cpf if client_info else '' }}"
                                                pattern="\d{3}\.\d{3}\.\d{3}-\d{2}" maxlength="14">
@@ -125,7 +93,7 @@
                                         <div class="form-text">Formato: 000.000.000-00</div>
                                     </div>
 
-                                    <div class="form-floating">
+                                    <div class="signature-form-floating">
                                         <input type="date" class="form-control" id="data_nascimento" name="data_nascimento" 
                                                value="{{ client_info.data_nascimento if client_info else '' }}">
                                         <label for="data_nascimento">Data de Nascimento</label>
@@ -138,13 +106,13 @@
                                         <i class="fas fa-address-book me-2"></i>Contato
                                     </h6>
 
-                                    <div class="form-floating">
+                                    <div class="signature-form-floating">
                                         <input type="email" class="form-control" id="email" name="email" 
                                                placeholder="email@exemplo.com" value="{{ client_info.email if client_info else '' }}">
                                         <label for="email">Email</label>
                                     </div>
 
-                                    <div class="form-floating">
+                                    <div class="signature-form-floating">
                                         <input type="tel" class="form-control" id="telefone" name="telefone" 
                                                placeholder="(00) 00000-0000" value="{{ client_info.telefone if client_info else '' }}"
                                                pattern="\(\d{2}\) \d{4,5}-\d{4}" maxlength="15">
@@ -152,7 +120,7 @@
                                         <div class="form-text">Formato: (00) 00000-0000</div>
                                     </div>
 
-                                    <div class="form-floating">
+                                    <div class="signature-form-floating">
                                         <textarea class="form-control textarea-80px" id="endereco" name="endereco" 
                                                   placeholder="Endereço completo">{{ client_info.endereco if client_info else '' }}</textarea>
                                         <label for="endereco">Endereço</label>
@@ -167,7 +135,7 @@
                                         <i class="fas fa-comment me-2"></i>Informações Adicionais
                                     </h6>
                                     
-                                    <div class="form-floating">
+                                    <div class="signature-form-floating">
                                         <textarea class="form-control textarea-100px" id="observacoes" name="observacoes" 
                                                   placeholder="Observações adicionais...">{{ client_info.observacoes if client_info else '' }}</textarea>
                                         <label for="observacoes">Observações</label>
@@ -219,8 +187,8 @@
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
-    <script>
+    <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
+    <script nonce="{{ csp_nonce() }}">
         // Validador de CPF
         function validarCPF(cpf) {
             // Remove caracteres não numéricos

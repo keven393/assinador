@@ -3,61 +3,12 @@
 {% block title %}Limpeza de Arquivos - Assinador de PDFs{% endblock %}
 
 {% block extra_css %}
-<style>
-body {
-            background-color: #f8f9fa;
-        }
-        .admin-header {
-            background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
-            color: white;
-            padding: 2rem 0;
-            margin-bottom: 2rem;
-        }
-        .stats-card {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            text-align: center;
-        }
-        .stats-number {
-            font-size: 2.5rem;
-            font-weight: bold;
-            color: #667eea;
-        }
-        .stats-label {
-            color: #6c757d;
-            font-size: 1rem;
-            margin-top: 0.5rem;
-        }
-        .action-card {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-        .btn-cleanup {
-            border-radius: 10px;
-            padding: 0.75rem 1.5rem;
-            font-weight: 600;
-            margin: 0.25rem;
-        }
-        .info-card {
-            background: #e3f2fd;
-            border-left: 4px solid #2196f3;
-            border-radius: 10px;
-            padding: 1rem;
-            margin-bottom: 1.5rem;
-        }
-</style>
 {% endblock %}
 
 {% block content %}
 <!-- Header -->
 
-    <div class="container">
+    <div class="container admin-cleanup-body">
         <!-- Mensagens Flash -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -90,7 +41,7 @@ body {
         <!-- Estatísticas dos Diretórios -->
         <div class="row justify-content-center">
             <div class="col-md-6">
-                <div class="stats-card">
+                <div class="stats-card admin-cleanup-stats-card">
                     <i class="fas fa-folder-open fa-2x text-warning mb-3"></i>
                     <div class="stats-number">{{ temp_files_count }}</div>
                     <div class="stats-label">Arquivos Temporários</div>
@@ -102,7 +53,7 @@ body {
         <!-- Ações de Limpeza -->
         <div class="row">
             <div class="col-lg-8">
-                <div class="action-card">
+                <div class="action-card admin-cleanup-action-card">
                     <h5 class="mb-3">
                         <i class="fas fa-tools me-2"></i>
                         Ações de Limpeza Manual
@@ -126,7 +77,7 @@ body {
             </div>
             
             <div class="col-lg-4">
-                <div class="action-card">
+                <div class="action-card admin-cleanup-action-card">
                     <h5 class="mb-3">
                         <i class="fas fa-cog me-2"></i>
                         Configurações

@@ -6,120 +6,13 @@
     <title>Confirmação - Assinatura Digital</title>
     <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/font-awesome.min.css') }}" rel="stylesheet">
-    <style>
-        body {
-            background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
-            min-height: 100vh;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        .client-container {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(10px);
-            margin: 2rem auto;
-            max-width: 600px;
-            overflow: hidden;
-        }
-        .client-header {
-            background: linear-gradient(135deg, #ffc107, #fd7e14);
-            color: white;
-            padding: 2rem;
-            text-align: center;
-        }
-        .client-body {
-            padding: 2rem;
-        }
-        .info-card {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            border-left: 4px solid #28a745;
-        }
-        .document-list {
-            background: #e3f2fd;
-            border-radius: 10px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            border-left: 4px solid #2196f3;
-        }
-        .terms-section {
-            background: #fff3cd;
-            border-radius: 10px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            border-left: 4px solid #ffc107;
-        }
-        .form-check-input:checked {
-            background-color: #28a745;
-            border-color: #28a745;
-        }
-        .btn-client {
-            border-radius: 10px;
-            padding: 0.75rem 2rem;
-            font-weight: 600;
-            font-size: 1.1rem;
-            transition: all 0.3s ease;
-        }
-        .btn-client:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-        .btn-client:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-        .logo-icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-        }
-        .client-name {
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin-bottom: 0.5rem;
-        }
-        .client-cpf {
-            font-size: 1.1rem;
-            opacity: 0.9;
-        }
-        
-        .client-info-item {
-            background: white;
-            border-radius: 6px;
-            padding: 0.5rem 0.75rem;
-            margin-bottom: 0.5rem;
-            border-left: 3px solid #28a745;
-            font-size: 0.95rem;
-        }
-        
-        .client-info-item:last-child {
-            margin-bottom: 0;
-        }
-        .document-item {
-            background: white;
-            border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 0.5rem;
-            border-left: 3px solid #2196f3;
-        }
-        .terms-text {
-            max-height: 200px;
-            overflow-y: auto;
-            background: white;
-            border-radius: 8px;
-            padding: 1rem;
-            margin: 1rem 0;
-            font-size: 0.9rem;
-            line-height: 1.5;
-        }
-    </style>
+    <link href="{{ url_for('static', filename='css/custom.css') }}" rel="stylesheet">
 </head>
-<body>
+<body class="client-confirm-body">
     <div class="container">
-        <div class="client-container">
+        <div class="client-container client-confirm-container">
             <!-- Header -->
-            <div class="client-header">
+            <div class="client-header client-confirm-header">
                 <div class="logo-icon">
                     <i class="fas fa-clipboard-check"></i>
                 </div>
@@ -128,7 +21,7 @@
             </div>
 
             <!-- Body -->
-            <div class="client-body">
+            <div class="client-body client-confirm-body-section">
                 <!-- Mensagens Flash -->
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
@@ -142,7 +35,7 @@
                 {% endwith %}
 
                 <!-- Informações do Cliente -->
-                <div class="info-card">
+                <div class="info-card client-confirm-info-card">
                     <h5 class="mb-3">
                         <i class="fas fa-user me-2 text-success"></i>
                         Seus Dados
@@ -182,7 +75,7 @@
                 </div>
 
                 <!-- Lista de Documentos -->
-                <div class="document-list">
+                <div class="document-list client-confirm-document-list">
                     <h5 class="mb-3">
                         <i class="fas fa-file-pdf me-2 text-primary"></i>
                         Documentos Pendentes ({{ documents|length }})
@@ -206,13 +99,13 @@
                 </div>
 
                 <!-- Termos de Aceite -->
-                <div class="terms-section">
+                <div class="terms-section client-confirm-terms-section">
                     <h5 class="mb-3">
                         <i class="fas fa-gavel me-2 text-warning"></i>
                         Termo de Aceite para Assinatura Digital
                     </h5>
                     
-                    <div class="terms-text">
+                    <div class="terms-text client-confirm-terms-text">
                         <strong>TERMO DE ACEITE PARA ASSINATURA ELETRÔNICA</strong><br><br>
                         
                         <strong>O que é Assinatura Eletrônica?</strong><br>
@@ -285,12 +178,12 @@
 
                 <!-- Botões de Ação -->
                 <div class="d-grid gap-2">
-                    <a href="{{ url_for('client_select_document') }}" class="btn btn-outline-secondary btn-client">
+                    <a href="{{ url_for('client_select_document') }}" class="btn btn-outline-secondary btn-client client-confirm-btn-client">
                         <i class="fas fa-arrow-left me-2"></i>
                         Voltar
                     </a>
                     
-                    <button type="submit" form="confirmForm" class="btn btn-success btn-client" id="proceedBtn" disabled>
+                    <button type="submit" form="confirmForm" class="btn btn-success btn-client client-confirm-btn-client" id="proceedBtn" disabled>
                         <i class="fas fa-check me-2"></i>
                         Prosseguir para Assinatura
                     </button>
@@ -299,8 +192,8 @@
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
-    <script>
+    <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
+    <script nonce="{{ csp_nonce() }}">
         // Elementos do DOM
         const acceptTerms = document.getElementById('accept_terms');
         const confirmAuthorization = document.getElementById('confirm_authorization');

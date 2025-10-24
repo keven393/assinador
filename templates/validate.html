@@ -3,117 +3,13 @@
 {% block title %}Validador de PDF - Sistema de Assinaturas{% endblock %}
 
 {% block extra_css %}
-<style>
-body {
-            background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
-            min-height: 100vh;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        .validation-container {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        .upload-area {
-            border: 3px dashed #007bff;
-            border-radius: 15px;
-            padding: 40px;
-            text-align: center;
-            background: #f8f9ff;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-        
-        .upload-area:hover {
-            border-color: #0056b3;
-            background: #e3f2fd;
-            transform: translateY(-2px);
-        }
-        
-        .upload-area.dragover {
-            border-color: #28a745;
-            background: #d4edda;
-        }
-        
-        .result-card {
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            border: none;
-            overflow: hidden;
-        }
-        
-        .status-valid {
-            background: linear-gradient(135deg, #28a745, #20c997);
-            color: white;
-        }
-        
-        .status-invalid {
-            background: linear-gradient(135deg, #dc3545, #fd7e14);
-            color: white;
-        }
-        
-        .status-warning {
-            background: linear-gradient(135deg, #ffc107, #fd7e14);
-            color: #212529;
-        }
-        
-        .hash-display {
-            font-family: 'Courier New', monospace;
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 10px;
-            word-break: break-all;
-            font-size: 0.9em;
-        }
-        
-        .metadata-item {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 10px;
-            margin: 5px 0;
-            border-left: 4px solid #007bff;
-        }
-        
-        .btn-custom {
-            border-radius: 25px;
-            padding: 12px 30px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-custom:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-        
-        .icon-large {
-            font-size: 3rem;
-            margin-bottom: 20px;
-        }
-        
-        .loading {
-            display: none;
-        }
-        
-        .spinner-border-custom {
-            width: 3rem;
-            height: 3rem;
-            border-width: 0.3em;
-        }
-</style>
 {% endblock %}
 
 {% block content %}
-<div class="container py-5">
+<div class="container py-5 validate-body">
         <div class="row justify-content-center">
             <div class="col-lg-8">
-                <div class="validation-container p-4">
+                <div class="validation-container validate-container p-4">
                     <!-- Header -->
                     <div class="text-center mb-5">
                         <h1 class="display-4 fw-bold text-primary mb-3">
@@ -240,7 +136,7 @@ body {
                             <i class="fas fa-home me-2"></i>
                             Voltar ao Início
                         </a>
-                        <button type="button" class="btn btn-outline-secondary btn-custom" onclick="location.reload()">
+                        <button type="button" class="btn btn-outline-secondary btn-custom" data-action="reload">
                             <i class="fas fa-redo me-2"></i>
                             Validar Outro
                         </button>
@@ -251,7 +147,7 @@ body {
     </div>
 
     
-    <script>
+    <script nonce="{{ csp_nonce() }}">
         // Elementos do DOM
         let uploadArea = document.getElementById('uploadArea');
         let fileInput = document.getElementById('pdfFile');
@@ -326,7 +222,7 @@ body {
                         <i class="fas fa-file-pdf icon-large text-success"></i>
                         <h4 class="mb-2">${file.name}</h4>
                         <p class="text-muted">${(file.size / 1024 / 1024).toFixed(2)} MB</p>
-                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="resetUpload()">
+                        <button type="button" class="btn btn-outline-primary btn-sm" data-action="reset-upload">
                             <i class="fas fa-times me-1"></i>
                             Remover
                         </button>
