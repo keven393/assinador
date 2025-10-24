@@ -72,6 +72,7 @@
                         {% endwith %}
 
                         <form id="uploadForm" method="POST" enctype="multipart/form-data">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <div class="signature-upload-area" id="uploadArea">
                                 <div class="signature-upload-icon">
                                     <i class="fas fa-file-pdf"></i>

@@ -96,6 +96,7 @@ LDAP_USER_SEARCH_FILTER=(&amp;(objectClass=user)(sAMAccountName={username}))</co
             você precisará ativar e definir permissões manualmente em <a href="{{ url_for('admin_users') }}">Gerenciar Usuários</a>.
         </p>
         <form method="POST" action="{{ url_for('admin_sync') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="action" value="sync_all">
             <button type="submit" class="btn btn-primary btn-sync admin-sync-btn-sync" data-confirm="Deseja sincronizar todos os usuários do Active Directory?">
                 <i class="fas fa-sync me-2"></i>
@@ -114,6 +115,7 @@ LDAP_USER_SEARCH_FILTER=(&amp;(objectClass=user)(sAMAccountName={username}))</co
             Sincroniza um usuário específico do Active Directory.
         </p>
         <form method="POST" action="{{ url_for('admin_sync') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="action" value="sync_single">
             <div class="row">
                 <div class="col-md-8">

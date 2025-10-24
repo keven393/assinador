@@ -1045,12 +1045,46 @@ body.base-page-body {
 
 /* Estilos específicos do validate.html */
 .validate-body {
-    background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
+    background: linear-gradient(135deg, #037334 0%, #648C3B 100%) !important;
     min-height: 100vh;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     padding-top: 2rem;
 }
 
+/* Força aplicação dos estilos do validador */
+.container.validate-body {
+    background: linear-gradient(135deg, #037334 0%, #648C3B 100%) !important;
+}
+
+/* Regras de alta especificidade para o validador */
+body .validate-body {
+    background: linear-gradient(135deg, #037334 0%, #648C3B 100%) !important;
+    min-height: 100vh !important;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+    padding-top: 2rem !important;
+}
+
+body .validate-body .validation-container {
+    background: rgba(255, 255, 255, 0.98) !important;
+    border-radius: 25px !important;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15) !important;
+    backdrop-filter: blur(15px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    overflow: hidden !important;
+    position: relative !important;
+}
+
+body .validate-body .validation-container::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 4px !important;
+    background: linear-gradient(90deg, #037334, #648C3B, #F29727, #F2BB13) !important;
+}
+
+.validation-container,
 .validate-container {
     background: rgba(255, 255, 255, 0.98);
     border-radius: 25px;
@@ -1061,6 +1095,7 @@ body.base-page-body {
     position: relative;
 }
 
+.validation-container::before,
 .validate-container::before {
     content: '';
     position: absolute;
@@ -1290,6 +1325,41 @@ body.base-page-body {
     color: white;
     transform: translateY(-2px);
     box-shadow: 0 8px 20px rgba(108, 117, 125, 0.3);
+}
+
+/* Regras específicas para garantir aplicação dos estilos */
+.validate-body .validation-container,
+.validate-body .validate-container {
+    background: rgba(255, 255, 255, 0.98) !important;
+    border-radius: 25px !important;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15) !important;
+    backdrop-filter: blur(15px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    overflow: hidden !important;
+    position: relative !important;
+}
+
+.validate-body .upload-area {
+    border: 3px dashed #037334 !important;
+    border-radius: 20px !important;
+    padding: 60px 40px !important;
+    text-align: center !important;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    cursor: pointer !important;
+    background: linear-gradient(135deg, #f8fffe 0%, #f0f8ff 100%) !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.validate-body .btn-custom {
+    border-radius: 30px !important;
+    padding: 15px 35px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.8px !important;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    position: relative !important;
+    overflow: hidden !important;
 }
 
 /* Responsive Design */
@@ -2547,30 +2617,495 @@ body.base-page-body {
     margin-bottom: 2rem;
 }
 
+/* Estilos para área de upload de documentos internos */
+.file-upload-area,
 .internal-upload-file-upload-area {
-    border: 2px dashed #dee2e6;
-    border-radius: 10px;
-    padding: 3rem;
+    border: 3px dashed #037334;
+    border-radius: 20px;
+    padding: 60px 40px;
     text-align: center;
-    background: #f8f9fa;
-    transition: all 0.3s ease;
+    background: linear-gradient(135deg, #f8fffe 0%, #f0f8ff 100%);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    margin: 2rem 0;
 }
 
+.file-upload-area::before,
+.internal-upload-file-upload-area::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(3, 115, 52, 0.1) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.file-upload-area:hover,
 .internal-upload-file-upload-area:hover {
-    border-color: #667eea;
-    background: #e3f2fd;
+    border-color: #025a2a;
+    background: linear-gradient(135deg, #e8f5e8 0%, #e3f2fd 100%);
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(3, 115, 52, 0.2);
 }
 
+.file-upload-area:hover::before,
+.internal-upload-file-upload-area:hover::before {
+    opacity: 1;
+}
+
+.file-upload-area.dragover,
 .internal-upload-file-upload-area.dragover {
-    border-color: #667eea;
-    background: #e3f2fd;
+    border-color: #28a745;
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    transform: scale(1.02);
+    box-shadow: 0 20px 40px rgba(40, 167, 69, 0.3);
+}
+
+/* Ícone da área de upload */
+.file-upload-area .fa-cloud-upload-alt,
+.internal-upload-file-upload-area .fa-cloud-upload-alt {
+    font-size: 4rem;
+    color: #037334;
+    margin-bottom: 1.5rem;
+    display: block;
+    transition: all 0.3s ease;
+}
+
+.file-upload-area:hover .fa-cloud-upload-alt,
+.internal-upload-file-upload-area:hover .fa-cloud-upload-alt {
+    transform: scale(1.1);
+    color: #025a2a;
+}
+
+/* Texto da área de upload */
+.file-upload-area h5,
+.internal-upload-file-upload-area h5 {
+    color: #037334;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+}
+
+.file-upload-area p,
+.internal-upload-file-upload-area p {
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+}
+
+.file-upload-area .small,
+.internal-upload-file-upload-area .small {
+    color: #037334;
+    font-weight: 500;
+    background: rgba(3, 115, 52, 0.1);
+    padding: 0.5rem 1rem;
+    border-radius: 15px;
+    display: inline-block;
+    margin-top: 1rem;
+}
+
+/* Botão de seleção de PDFs */
+.file-upload-area .btn-custom,
+.internal-upload-file-upload-area .btn-custom {
+    border-radius: 30px;
+    padding: 15px 35px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    margin-top: 1.5rem;
+    background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
+    border: none;
+    color: white;
+    box-shadow: 0 8px 20px rgba(3, 115, 52, 0.3);
+}
+
+.file-upload-area .btn-custom::before,
+.internal-upload-file-upload-area .btn-custom::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s ease;
+}
+
+.file-upload-area .btn-custom:hover,
+.internal-upload-file-upload-area .btn-custom:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 35px rgba(3, 115, 52, 0.4);
+    background: linear-gradient(135deg, #025a2a 0%, #4a7c59 100%);
+}
+
+.file-upload-area .btn-custom:hover::before,
+.internal-upload-file-upload-area .btn-custom:hover::before {
+    left: 100%;
+}
+
+/* Área de upload responsiva */
+@media (max-width: 768px) {
+    .file-upload-area,
+    .internal-upload-file-upload-area {
+        padding: 40px 20px;
+        margin: 1rem 0;
+    }
+}
+
+/* Estilos específicos para a página de upload interno - igual ao validador */
+body.internal-upload-body,
+body .internal-upload-body,
+.internal-upload-body {
+    background: linear-gradient(135deg, #037334 0%, #648C3B 100%) !important;
+    min-height: 100vh !important;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+    padding-top: 2rem !important;
+}
+
+/* Estilos específicos para upload.html - aplicados diretamente no body */
+body {
+    background: linear-gradient(135deg, #037334 0%, #648C3B 100%) !important;
+    min-height: 100vh !important;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+    padding-top: 2rem !important;
+}
+
+/* Cards com glassmorphism para upload */
+.card {
+    background: rgba(255, 255, 255, 0.98) !important;
+    border-radius: 25px !important;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15) !important;
+    backdrop-filter: blur(15px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    overflow: hidden !important;
+    position: relative !important;
+    margin-bottom: 2rem !important;
+    padding: 2rem !important;
+}
+
+.card::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 4px !important;
+    background: linear-gradient(90deg, #037334, #648C3B, #F29727, #F2BB13) !important;
+}
+
+/* Área de upload moderna */
+.file-upload-area {
+    border: 3px dashed #037334 !important;
+    border-radius: 20px !important;
+    padding: 60px 40px !important;
+    text-align: center !important;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    cursor: pointer !important;
+    background: linear-gradient(135deg, #f8fffe 0%, #f0f8ff 100%) !important;
+    position: relative !important;
+    overflow: hidden !important;
+    margin: 2rem 0 !important;
+}
+
+.file-upload-area::before {
+    content: '' !important;
+    position: absolute !important;
+    top: -50% !important;
+    left: -50% !important;
+    width: 200% !important;
+    height: 200% !important;
+    background: linear-gradient(45deg, transparent, rgba(3, 115, 52, 0.1), transparent) !important;
+    transform: rotate(45deg) !important;
+    transition: all 0.6s ease !important;
+    opacity: 0 !important;
+}
+
+.file-upload-area:hover {
+    transform: translateY(-5px) !important;
+    box-shadow: 0 20px 40px rgba(3, 115, 52, 0.2) !important;
+    border-color: #648C3B !important;
+    background: linear-gradient(135deg, #f0fff4 0%, #e6f7ff 100%) !important;
+}
+
+.file-upload-area:hover::before {
+    opacity: 1 !important;
+    animation: shimmer 2s infinite !important;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+    100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+}
+
+.upload-icon {
+    font-size: 4rem !important;
+    color: #037334 !important;
+    margin-bottom: 1rem !important;
+    transition: all 0.3s ease !important;
+}
+
+.file-upload-area:hover .upload-icon {
+    color: #648C3B !important;
+    transform: scale(1.1) !important;
+}
+
+.btn-upload {
+    background: linear-gradient(135deg, #037334 0%, #648C3B 100%) !important;
+    border: none !important;
+    color: white !important;
+    padding: 15px 30px !important;
+    border-radius: 50px !important;
+    font-weight: 600 !important;
+    font-size: 1.1rem !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 8px 25px rgba(3, 115, 52, 0.3) !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.btn-upload::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: -100% !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent) !important;
+    transition: left 0.5s ease !important;
+}
+
+.btn-upload:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 12px 35px rgba(3, 115, 52, 0.4) !important;
+}
+
+.btn-upload:hover::before {
+    left: 100% !important;
+}
+
+body.internal-upload-body .upload-card,
+body .internal-upload-body .upload-card,
+.internal-upload-body .upload-card {
+    background: rgba(255, 255, 255, 0.98) !important;
+    border-radius: 25px !important;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15) !important;
+    backdrop-filter: blur(15px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    overflow: hidden !important;
+    position: relative !important;
+    margin-bottom: 2rem !important;
+    padding: 2rem !important;
+}
+
+.internal-upload-body .upload-card::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 4px !important;
+    background: linear-gradient(90deg, #037334, #648C3B, #F29727, #F2BB13) !important;
+}
+
+body.internal-upload-body .file-upload-area,
+body .internal-upload-body .file-upload-area,
+.internal-upload-body .file-upload-area {
+    border: 3px dashed #037334 !important;
+    border-radius: 20px !important;
+    padding: 60px 40px !important;
+    text-align: center !important;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    cursor: pointer !important;
+    background: linear-gradient(135deg, #f8fffe 0%, #f0f8ff 100%) !important;
+    position: relative !important;
+    overflow: hidden !important;
+    margin: 2rem 0 !important;
+}
+
+.internal-upload-body .file-upload-area::before {
+    content: '' !important;
+    position: absolute !important;
+    top: -50% !important;
+    left: -50% !important;
+    width: 200% !important;
+    height: 200% !important;
+    background: radial-gradient(circle, rgba(3, 115, 52, 0.1) 0%, transparent 70%) !important;
+    opacity: 0 !important;
+    transition: opacity 0.3s ease !important;
+}
+
+.internal-upload-body .file-upload-area:hover {
+    border-color: #025a2a !important;
+    background: linear-gradient(135deg, #e8f5e8 0%, #e3f2fd 100%) !important;
+    transform: translateY(-5px) !important;
+    box-shadow: 0 15px 35px rgba(3, 115, 52, 0.2) !important;
+}
+
+.internal-upload-body .file-upload-area:hover::before {
+    opacity: 1 !important;
+}
+
+.internal-upload-body .file-upload-area.dragover {
+    border-color: #28a745 !important;
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%) !important;
+    transform: scale(1.02) !important;
+    box-shadow: 0 20px 40px rgba(40, 167, 69, 0.3) !important;
+}
+
+.internal-upload-body .file-upload-area .fa-cloud-upload-alt {
+    font-size: 4rem !important;
+    color: #037334 !important;
+    margin-bottom: 1.5rem !important;
+    display: block !important;
+    transition: all 0.3s ease !important;
+}
+
+.internal-upload-body .file-upload-area:hover .fa-cloud-upload-alt {
+    transform: scale(1.1) !important;
+    color: #025a2a !important;
+}
+
+.internal-upload-body .file-upload-area h5 {
+    color: #037334 !important;
+    font-weight: 600 !important;
+    margin-bottom: 1rem !important;
+    font-size: 1.25rem !important;
+}
+
+.internal-upload-body .file-upload-area p {
+    color: #6c757d !important;
+    margin-bottom: 0.5rem !important;
+}
+
+.internal-upload-body .file-upload-area .small {
+    color: #037334 !important;
+    font-weight: 500 !important;
+    background: rgba(3, 115, 52, 0.1) !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: 15px !important;
+    display: inline-block !important;
+    margin-top: 1rem !important;
+}
+
+.internal-upload-body .file-upload-area .btn-custom {
+    border-radius: 30px !important;
+    padding: 15px 35px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.8px !important;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    position: relative !important;
+    overflow: hidden !important;
+    margin-top: 1.5rem !important;
+    background: linear-gradient(135deg, #037334 0%, #648C3B 100%) !important;
+    border: none !important;
+    color: white !important;
+    box-shadow: 0 8px 20px rgba(3, 115, 52, 0.3) !important;
+}
+
+.internal-upload-body .file-upload-area .btn-custom::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: -100% !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent) !important;
+    transition: left 0.5s ease !important;
+}
+
+.internal-upload-body .file-upload-area .btn-custom:hover {
+    transform: translateY(-3px) !important;
+    box-shadow: 0 15px 35px rgba(3, 115, 52, 0.4) !important;
+    background: linear-gradient(135deg, #025a2a 0%, #4a7c59 100%) !important;
+}
+
+.internal-upload-body .file-upload-area .btn-custom:hover::before {
+    left: 100% !important;
+}
+
+/* Responsive para upload interno */
+@media (max-width: 768px) {
+    .internal-upload-body .file-upload-area {
+        padding: 40px 20px !important;
+        margin: 1rem 0 !important;
+    }
+    
+    .internal-upload-body .file-upload-area .fa-cloud-upload-alt {
+        font-size: 3rem !important;
+    }
+    
+    .internal-upload-body .file-upload-area .btn-custom {
+        padding: 12px 25px !important;
+        font-size: 0.9rem !important;
+    }
+}
+    
+    .file-upload-area .fa-cloud-upload-alt,
+    .internal-upload-file-upload-area .fa-cloud-upload-alt {
+        font-size: 3rem;
+    }
+    
+    .file-upload-area h5,
+    .internal-upload-file-upload-area h5 {
+        font-size: 1.1rem;
+    }
+    
+    .file-upload-area .btn-custom,
+    .internal-upload-file-upload-area .btn-custom {
+        padding: 12px 25px;
+        font-size: 0.9rem;
+    }
+
+/* Lista de arquivos selecionados */
+.internal-upload-file-item,
+.file-upload-item {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    border-left: 4px solid #037334;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.internal-upload-file-item:hover,
+.file-upload-item:hover {
+    transform: translateX(5px);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+    background: linear-gradient(135deg, #e8f5e8 0%, #d4edda 100%);
+}
+
+/* Elementos ocultos */
+.hidden-element {
+    display: none;
+}
+
+/* Botões de ação na lista de arquivos */
+.file-upload-actions .btn {
+    border-radius: 20px;
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.file-upload-actions .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
 .internal-upload-file-item {
-    background: #f8f9fa;
-    border-radius: 8px;
-    padding: 1rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 12px;
+    padding: 1.5rem;
     margin-bottom: 0.5rem;
     border-left: 4px solid #667eea;
     transition: all 0.2s ease;

@@ -27,6 +27,7 @@
     <div class="card mb-4">
         <div class="card-body">
             <form method="POST" class="row g-3">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="action" value="create">
                 <div class="col-md-4">
                     <label class="form-label">Nome</label>
@@ -60,6 +61,7 @@
                         {% for it in items %}
                         <tr>
                             <form method="POST" class="row g-2">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="action" value="update">
                                 <input type="hidden" name="id" value="{{ it.id }}">
                                 <td class="col-md-3">
@@ -80,6 +82,7 @@
                                     </div>
                             </form>
                                     <form method="POST" class="d-inline" data-confirm="Remover este tipo?">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <input type="hidden" name="action" value="delete">
                                         <input type="hidden" name="id" value="{{ it.id }}">
                                         <button class="btn btn-sm btn-outline-danger" type="submit"><i class="fas fa-trash"></i></button>

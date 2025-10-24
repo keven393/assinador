@@ -23,6 +23,7 @@
 
                     <!-- Upload Form -->
                     <form method="POST" enctype="multipart/form-data" id="validationForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="upload-area" id="uploadArea">
                             <div class="upload-content">
                                 <i class="fas fa-cloud-upload-alt icon-large text-primary"></i>

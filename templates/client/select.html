@@ -40,6 +40,7 @@
 
                 <!-- Formulário de Seleção -->
                 <form method="POST" id="selectForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="mb-4">
                         <label for="client_cpf" class="form-label fw-bold">
                             <i class="fas fa-id-card me-2"></i>
