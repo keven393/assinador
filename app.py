@@ -294,8 +294,14 @@ def create_app(config_name=None):
             return generate_csrf()
         
         def _csp_nonce():
-            # Em desenvolvimento, retorna uma string vazia
-            # Em produção, o Talisman gerencia automaticamente
+            # Em produção com Talisman, obtém o nonce do request
+            env_name = app.config.get('FLASK_ENV') or os.environ.get('FLASK_ENV', 'development')
+            if env_name == 'production' and Talisman is not None:
+                # O Talisman adiciona o nonce ao request automaticamente
+                nonce = getattr(request, 'csp_nonce', None)
+                if nonce:
+                    return nonce
+            # Em desenvolvimento ou se não houver nonce, retorna string vazia
             return ''
         
         return dict(csrf_token=_csrf_token, csp_nonce=_csp_nonce)
@@ -1265,7 +1271,7 @@ def register_routes(app):
                              inactive_users=inactive_users,
                              ldap_enabled=ldap_enabled)
 
-    @app.route('/admin/reports')
+    @app.route('/admin/reports', methods=['GET', 'POST'])
     @admin_required
     def admin_reports():
         form = ReportFilterForm()
@@ -1285,9 +1291,10 @@ def register_routes(app):
         type_choices = [(0, 'Todos os tipos')] + [(t.id, t.name) for t in DocumentType.query.order_by(DocumentType.name.asc()).all()]
         form.document_type_id.choices = type_choices
         
-        # Filtros padrão com paginação
-        signatures = Signature.query.order_by(Signature.timestamp.desc()).limit(100)
+        # Inicia a query base (sem limit ainda)
+        signatures = Signature.query
         
+        # Aplica filtros se o formulário foi submetido
         if form.validate_on_submit():
             if form.user_id.data and form.user_id.data != 0:
                 signatures = signatures.filter(Signature.user_id == form.user_id.data)
@@ -1305,8 +1312,12 @@ def register_routes(app):
                     signatures = signatures.filter(Signature.timestamp < date_to)
                 except ValueError:
                     pass
+            
             if form.document_type_id.data and form.document_type_id.data != 0:
                 signatures = signatures.filter(Signature.document_type_id == form.document_type_id.data)
+        
+        # Aplica order_by e limit por último (depois de todos os filtros)
+        signatures = signatures.order_by(Signature.timestamp.desc()).limit(100)
         
         # Executa a query para obter os resultados
         signatures_list = signatures.all()

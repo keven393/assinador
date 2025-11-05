@@ -563,6 +563,10 @@
             console.log('Formulário enviado com sucesso!');
         });
 </script>
-</div>
+    </div>
 
+{% endblock %}
+
+{% block extra_js %}
+<script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/common.js') }}"></script>
 {% endblock %}
