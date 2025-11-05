@@ -68,37 +68,43 @@
         </div>
 
         <!-- Resumo Estatístico -->
-        <div class="stats-summary">
-            <div class="row text-center">
-                <div class="col-md-3">
-                    <h4 class="text-primary mb-1">{{ signatures|count }}</h4>
-                    <small class="text-muted">Total de Registros</small>
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="admin-reports-stats-card">
+                    <div class="stats-number">{{ signatures|count }}</div>
+                    <div class="stats-label">Total de Registros</div>
                 </div>
-                <div class="col-md-3">
-                    <h4 class="text-success mb-1">
+            </div>
+            <div class="col-md-3">
+                <div class="admin-reports-stats-card">
+                    <div class="stats-number">
                         {{ signatures|selectattr('signature_valid', 'equalto', true)|list|length }}
-                    </h4>
-                    <small class="text-muted">Assinaturas Válidas</small>
+                    </div>
+                    <div class="stats-label">Assinaturas Válidas</div>
                 </div>
-                <div class="col-md-3">
-                    <h4 class="text-info mb-1">
+            </div>
+            <div class="col-md-3">
+                <div class="admin-reports-stats-card">
+                    <div class="stats-number">
                         {% if signatures %}
                             {{ (signatures|map(attribute='file_size')|sum / 1024)|round(1) }}
                         {% else %}
                             0
                         {% endif %}
-                    </h4>
-                    <small class="text-muted">Total (MB)</small>
+                    </div>
+                    <div class="stats-label">Total (MB)</div>
                 </div>
-                <div class="col-md-3">
-                    <h4 class="text-warning mb-1">
+            </div>
+            <div class="col-md-3">
+                <div class="admin-reports-stats-card">
+                    <div class="stats-number">
                         {% if signatures %}
                             {{ signatures|map(attribute='user_id')|unique|list|length }}
                         {% else %}
                             0
                         {% endif %}
-                    </h4>
-                    <small class="text-muted">Usuários Únicos</small>
+                    </div>
+                    <div class="stats-label">Usuários Únicos</div>
                 </div>
             </div>
         </div>

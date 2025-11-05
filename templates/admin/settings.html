@@ -49,7 +49,7 @@
                 {% endif %}
             </p>
             <p class="mb-0">
-                <strong>Diretório:</strong> {{ pdf_signed_dir }}
+                <strong>Diretório:</strong> <span class="text-muted">[Oculto por segurança]</span>
             </p>
         </div>
 
@@ -72,14 +72,14 @@
                         <i class="fas fa-clock me-2"></i>Arquivos Temporários
                     </label>
                     <input type="text" class="form-control" value="1 hora" readonly>
-                    <small class="text-muted">Arquivos da pasta temp_files/</small>
+                    <small class="text-muted">Arquivos temporários</small>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">
                         <i class="fas fa-file-pdf me-2"></i>PDFs Assinados
                     </label>
                     <input type="text" class="form-control" value="7 dias" readonly>
-                    <small class="text-muted">Arquivos da pasta pdf_assinados/</small>
+                    <small class="text-muted">PDFs assinados</small>
                 </div>
             </div>
         </div>
@@ -117,7 +117,7 @@
                     <label class="form-label">
                         <i class="fas fa-key me-2"></i>Diretório de Chaves
                     </label>
-                    <input type="text" class="form-control" value="{{ keys_dir }}" readonly>
+                    <input type="text" class="form-control" value="[Oculto por segurança]" readonly>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">
@@ -230,7 +230,7 @@
                     <label class="form-label">
                         <i class="fas fa-file me-2"></i>Arquivo de Log
                     </label>
-                    <input type="text" class="form-control" value="{{ audit_log_path }}" readonly>
+                    <input type="text" class="form-control" value="[Oculto por segurança]" readonly>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">
@@ -281,7 +281,7 @@
                         <i class="fas fa-folder-open fa-2x text-warning mb-3"></i>
                         <div class="stats-number">{{ temp_files_count }}</div>
                         <div class="stats-label">Arquivos Temporários</div>
-                        <small class="text-muted">Pasta: temp_files/</small>
+                        <small class="text-muted">Arquivos temporários</small>
                     </div>
                 </div>
             </div>
@@ -291,7 +291,7 @@
                         <i class="fas fa-file-pdf fa-2x text-info mb-3"></i>
                         <div class="stats-number">{{ signed_files_count }}</div>
                         <div class="stats-label">PDFs Assinados</div>
-                        <small class="text-muted">Pasta: pdf_assinados/</small>
+                        <small class="text-muted">PDFs assinados</small>
                     </div>
                 </div>
             </div>
@@ -306,7 +306,7 @@
                         <button type="submit" name="action" value="cleanup_temp" class="btn btn-warning w-100">
                             <i class="fas fa-clock me-2"></i>Limpar Temporários
                         </button>
-                        <small class="text-muted">Remove arquivos da pasta temp_files/ (mais de 1 hora)</small>
+                        <small class="text-muted">Remove arquivos temporários (mais de 1 hora)</small>
                     </div>
                 </div>
             </form>
@@ -449,13 +449,13 @@
                     <label class="form-label">
                         <i class="fas fa-network-wired me-2"></i>Host
                     </label>
-                    <input type="text" class="form-control" value="{{ db_host }}" readonly>
+                    <input type="text" class="form-control" value="[Oculto por segurança]" readonly>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">
                         <i class="fas fa-plug me-2"></i>Porta
                     </label>
-                    <input type="text" class="form-control" value="{{ db_port }}" readonly>
+                    <input type="text" class="form-control" value="[Oculto por segurança]" readonly>
                 </div>
             </div>
         </div>

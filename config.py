@@ -5,6 +5,35 @@ from dotenv import load_dotenv
 # Carrega variáveis de ambiente do arquivo .env
 load_dotenv()
 
+def _convert_to_async_url(db_url):
+    """Converte URL do banco de dados para usar driver assíncrono"""
+    if not db_url or db_url.startswith('sqlite'):
+        return db_url
+    
+    # Se já está usando asyncpg, retorna como está
+    if '+asyncpg' in db_url:
+        return db_url
+    
+    # Converte diferentes formatos de URL PostgreSQL
+    if db_url.startswith('postgresql://'):
+        return db_url.replace('postgresql://', 'postgresql+asyncpg://', 1)
+    elif db_url.startswith('postgres://'):
+        return db_url.replace('postgres://', 'postgresql+asyncpg://', 1)
+    elif db_url.startswith('postgresql+psycopg2://'):
+        return db_url.replace('postgresql+psycopg2://', 'postgresql+asyncpg://', 1)
+    elif db_url.startswith('postgresql+psycopg2cffi://'):
+        return db_url.replace('postgresql+psycopg2cffi://', 'postgresql+asyncpg://', 1)
+    
+    # Se não reconhecer, tenta detectar PostgreSQL pela estrutura
+    if '://' in db_url:
+        parts = db_url.split('://', 1)
+        if len(parts) == 2:
+            scheme, rest = parts
+            if scheme in ['postgresql', 'postgres']:
+                return f'postgresql+asyncpg://{rest}'
+    
+    return db_url
+
 class Config:
     """Configurações da aplicação - Todas as configurações vêm do arquivo .env"""
     
@@ -19,7 +48,7 @@ class Config:
     
     # Async database URI
     ASYNC_SQLALCHEMY_DATABASE_URI = os.environ.get('ASYNC_DATABASE_URL') or \
-        os.environ.get('DATABASE_URL', 'sqlite:///assinador.db').replace('postgresql://', 'postgresql+asyncpg://')
+        _convert_to_async_url(os.environ.get('DATABASE_URL', 'sqlite:///assinador.db'))
     
     # Configurações de segurança
     WTF_CSRF_ENABLED = os.environ.get('WTF_CSRF_ENABLED', 'True').lower() == 'true'

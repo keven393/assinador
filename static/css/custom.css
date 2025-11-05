@@ -20,7 +20,7 @@ body {
 }
 
 /* Forçar background branco em todas as páginas exceto as específicas */
-body:not(.client-confirm-body):not(.client-select-body):not(.client-sign-body):not(.client-success-body):not(.internal-edit-signature-body):not(.internal-upload-body):not(.validate-body) {
+body:not(.client-confirm-body):not(.client-select-body):not(.client-list-body):not(.client-sign-body):not(.client-success-body):not(.internal-edit-signature-body):not(.internal-upload-body):not(.validate-body) {
     background-color: white !important;
 }
 
@@ -952,6 +952,36 @@ body.base-page-body {
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
     padding: 2rem;
     margin-bottom: 2rem;
+}
+
+.admin-reports-stats-card {
+    background: white !important;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    text-align: center;
+    margin-bottom: 2rem;
+    transition: transform 0.3s ease;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    color: #333 !important;
+}
+
+.admin-reports-stats-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.admin-reports-stats-card .stats-number {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.admin-reports-stats-card .stats-label {
+    color: #6c757d;
+    font-size: 0.9rem;
+    font-weight: 500;
 }
 
 .admin-reports-filters-card {
@@ -1967,8 +1997,12 @@ body .validate-body .validation-container::before {
 }
 
 /* Estilos específicos do client/list.html */
+body.client-list-body,
 .client-list-body {
-    background: #f8fafc;
+    background: linear-gradient(135deg, #037334 0%, #648C3B 100%) !important;
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding-top: 0 !important;
 }
 
 .client-list-card {
@@ -2000,10 +2034,17 @@ body .validate-body .validation-container::before {
 }
 
 /* Estilos específicos do client/select.html */
+body .client-select-body,
 .client-select-body {
-    background: linear-gradient(135deg, #037334 0%, #648C3B 100%);
+    background: linear-gradient(135deg, #037334 0%, #648C3B 100%) !important;
     min-height: 100vh;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Garantir background verde no body quando a classe está presente */
+body:has(.client-select-body) {
+    background: linear-gradient(135deg, #037334 0%, #648C3B 100%) !important;
+    padding-top: 0 !important;
 }
 
 .client-select-container {
