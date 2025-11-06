@@ -2,6 +2,7 @@ services:
   db:
     image: postgres:16-alpine
     environment:
+      # Lidos do .env
       POSTGRES_USER: ${POSTGRES_USER:-assinador_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
       POSTGRES_DB: ${POSTGRES_DB:-assinador}
@@ -22,6 +23,73 @@ services:
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      args:
+        # IMPORTANTE: Troque 1001 pelo UID/GID do seu usuário 'suporte'
+        HOST_UID: 1001 
+        HOST_GID: 1001
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      FLASK_ENV: ${FLASK_ENV:-production}
+      FLASK_DEBUG: "False"
+      SECRET_KEY: ${SECRET_KEY}
+      
+      # CORREÇÃO: Deixamos o compose construir a URL a partir das
+      # variáveis do .env, para evitar redundância.
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://${POSTGRES_USER:-assinador_user}:${POSTGRES_PASSWORD:-change_me}@db:5432/${POSTGRES_DB:-assinador}}
+      
+      RATE_LIMIT_STORAGE: ${RATE_LIMIT_STORAGE:-redis://redis:6379/0}
+      
+      # CORREÇÃO: Linha descomentada para carregar do .env
+      SERVER_NAME: ${SERVER_NAME}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN}
+
+      # CORREÇÃO: Indentação corrigida (movido para dentro de 'environment')
+      LDAP_ENABLED: ${LDAP_ENABLED:-false}
+      LDAP_SERVER: ${LDAP_SERVER}
+      LDAP_PORT: ${LDAP_PORT:-389}
+      LDAP_BASE_DN: ${LDAP_BASE_DN}
+      LDAP_USER_DN: ${LDAP_USER_DN}
+      LDAP_PASSWORD: ${LDAP_PASSWORD}
+      LDAP_USER_SEARCH_FILTER: ${LDAP_USER_SEARCH_FILTER}
+      LDAP_USERNAME_FIELD: ${LDAP_USERNAME_FIELD:-sAMAccountName}
+      LDAP_GROUP_FILTER: ${LDAP_GROUP_FILTER}
+      
+      WTF_CSRF_ENABLED: ${WTF_CSRF_ENABLED:-true}
+      WTF_CSRF_TIME_LIMIT: ${WTF_CSRF_TIME_LIMIT:-3600}
+      COLLECT_DEVICE_INFO: ${COLLECT_DEVICE_INFO:-false}
+      
+      # Caminhos do Container (lidos do .env, com defaults)
+      LOGS_DIR: ${LOGS_DIR:-/app/logs}
+      PDF_SIGNED_DIR: ${PDF_SIGNED_DIR:-/app/pdf_assinados}
+      TEMP_FILES_DIR: ${TEMP_FILES_DIR:-/app/temp_files}
+      KEYS_DIR: ${KEYS_DIR:-/app/keys}
+      CERTIFICATES_DIR: ${CERTIFICATES_DIR:-/app/certificates}
+      
+      HOST: ${HOST:-0.0.0.0}
+      PORT: ${PORT:-5001}
+    ports:
+      - "5001:5001"
+    volumes:
+      # Mapeamento: [HOST] : [CONTAINER]
+      - /home/assinador/logs:/app/logs
+      - /home/assinador/data/pdf_assinados:/app/pdf_assinados
+      - /home/assinador/data/temp_files:/app/temp_files
+      - /home/assinador/data/keys:/app/keys
+      - /home/assinador/data/certificates:/app/certificates
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/healthz"]
+      interval: 30s
       timeout: 5s
       retries: 5
     restart: unless-stopped

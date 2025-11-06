@@ -40,6 +40,40 @@
                         <i class="fas fa-user me-2 text-success"></i>
                         Seus Dados
                     </h5>
+                    {% if signer %}
+                    <div class="client-name">{{ signer.signer_name }}</div>
+                    <div class="client-cpf mb-2">
+                        CPF: {{ signer.signer_cpf|cpf }}
+                    </div>
+                    
+                    {% if signer.signer_email %}
+                    <div class="client-info-item">
+                        <i class="fas fa-envelope me-2 text-muted"></i>
+                        <strong>Email:</strong> {{ signer.signer_email }}
+                    </div>
+                    {% endif %}
+                    
+                    {% if signer.signer_phone %}
+                    <div class="client-info-item">
+                        <i class="fas fa-phone me-2 text-muted"></i>
+                        <strong>Telefone:</strong> {{ signer.signer_phone }}
+                    </div>
+                    {% endif %}
+                    
+                    {% if signer.signer_birth_date %}
+                    <div class="client-info-item">
+                        <i class="fas fa-calendar me-2 text-muted"></i>
+                        <strong>Data de Nascimento:</strong> {{ signer.signer_birth_date.strftime('%d/%m/%Y') }}
+                    </div>
+                    {% endif %}
+                    
+                    {% if signer.signer_address %}
+                    <div class="client-info-item">
+                        <i class="fas fa-map-marker-alt me-2"></i>
+                        <strong>Endereço:</strong> {{ signer.signer_address }}
+                    </div>
+                    {% endif %}
+                    {% else %}
                     <div class="client-name">{{ client_data.client_name }}</div>
                     <div class="client-cpf mb-2">
                         CPF: {{ client_cpf|cpf }}
@@ -70,6 +104,14 @@
                     <div class="client-info-item">
                         <i class="fas fa-map-marker-alt me-2"></i>
                         <strong>Endereço:</strong> {{ client_data.client_address }}
+                    </div>
+                    {% endif %}
+                    {% endif %}
+                    
+                    {% if signature.is_multi_signer %}
+                    <div class="alert alert-info mt-3">
+                        <i class="fas fa-users me-2"></i>
+                        <strong>Progresso:</strong> {{ signature.signed_signers_count }} de {{ signature.total_signers }} assinante(s) já assinaram
                     </div>
                     {% endif %}
                 </div>

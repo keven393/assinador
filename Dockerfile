@@ -17,10 +17,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy app
 COPY . .
 
-# Download static files (Bootstrap)
-RUN chmod +x scripts/download_static.sh && \
-    FORCE=true bash scripts/download_static.sh
-
 # Create directories expected by app
 RUN mkdir -p logs temp_files pdf_assinados keys
 

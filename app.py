@@ -2119,17 +2119,6 @@ def register_routes(app):
             if not valid_files:
                 return render_template('internal/upload.html', document_types=document_types)
             
-            # Coleta dados do cliente
-            client_info = {
-                'nome': request.form.get('client_name', '').strip(),
-                'cpf': request.form.get('client_cpf', '').strip(),
-                'email': request.form.get('client_email', '').strip(),
-                'telefone': request.form.get('client_phone', '').strip(),
-                'data_nascimento': request.form.get('client_birth_date', '').strip(),
-                'endereco': request.form.get('client_address', '').strip(),
-                'observacoes': request.form.get('client_notes', '').strip()
-            }
-
             # Tipo de Documento (obrigatório)
             document_type_id_raw = request.form.get('document_type_id', '').strip()
             try:
@@ -2138,25 +2127,64 @@ def register_routes(app):
                 document_type_id = None
             if not document_type_id:
                 flash('Tipo de documento é obrigatório', 'error')
-                return render_template('internal/upload.html', client_info=client_info, document_types=document_types)
+                return render_template('internal/upload.html', document_types=document_types)
             
-            # Converte a data de nascimento para objeto date se fornecida
-            birth_date = None
-            if client_info['data_nascimento']:
-                try:
-                    birth_date = datetime.strptime(client_info['data_nascimento'], '%Y-%m-%d').date()
-                except ValueError:
-                    flash('Data de nascimento inválida. Use o formato AAAA-MM-DD', 'error')
-                    return render_template('internal/upload.html', client_info=client_info, document_types=document_types)
+            # Coleta dados dos assinantes (arrays)
+            signer_names = request.form.getlist('signer_name[]')
+            signer_cpfs = request.form.getlist('signer_cpf[]')
+            signer_emails = request.form.getlist('signer_email[]')
+            signer_phones = request.form.getlist('signer_phone[]')
+            signer_birth_dates = request.form.getlist('signer_birth_date[]')
+            signer_addresses = request.form.getlist('signer_address[]')
             
-            # Validação básica
-            if not client_info['nome']:
-                flash('Nome do cliente é obrigatório', 'error')
-                return render_template('internal/upload.html', client_info=client_info, document_types=document_types)
+            # Validação de assinantes
+            if not signer_names or len(signer_names) == 0:
+                flash('Adicione pelo menos um assinante', 'error')
+                return render_template('internal/upload.html', document_types=document_types)
             
-            if not client_info['cpf']:
-                flash('CPF do cliente é obrigatório', 'error')
-                return render_template('internal/upload.html', client_info=client_info)
+            # Validar CPFs únicos
+            import re
+            cpf_set = set()
+            for i, cpf in enumerate(signer_cpfs):
+                cpf_clean = re.sub(r'[^\d]', '', cpf) if cpf else ''
+                if not cpf_clean or len(cpf_clean) != 11:
+                    flash(f'Assinante {i + 1}: CPF inválido ou incompleto', 'error')
+                    return render_template('internal/upload.html', document_types=document_types)
+                if cpf_clean in cpf_set:
+                    flash(f'CPF duplicado encontrado: {cpf}', 'error')
+                    return render_template('internal/upload.html', document_types=document_types)
+                cpf_set.add(cpf_clean)
+            
+            # Processar assinantes
+            signers_data = []
+            for i in range(len(signer_names)):
+                if not signer_names[i] or not signer_names[i].strip():
+                    flash(f'Assinante {i + 1}: Nome é obrigatório', 'error')
+                    return render_template('internal/upload.html', document_types=document_types)
+                
+                # Converte data de nascimento se fornecida
+                birth_date = None
+                if i < len(signer_birth_dates) and signer_birth_dates[i]:
+                    try:
+                        birth_date = datetime.strptime(signer_birth_dates[i], '%Y-%m-%d').date()
+                    except ValueError:
+                        pass  # Ignora data inválida
+                
+                # Limpa CPF (remove caracteres não numéricos)
+                cpf_clean = re.sub(r'[^\d]', '', signer_cpfs[i]) if i < len(signer_cpfs) and signer_cpfs[i] else ''
+                
+                signers_data.append({
+                    'name': signer_names[i].strip(),
+                    'cpf': cpf_clean,
+                    'email': signer_emails[i].strip() if i < len(signer_emails) and signer_emails[i] else '',
+                    'phone': signer_phones[i].strip() if i < len(signer_phones) and signer_phones[i] else '',
+                    'birth_date': birth_date,
+                    'address': signer_addresses[i].strip() if i < len(signer_addresses) and signer_addresses[i] else ''
+                })
+            
+            # Determina se é múltiplos assinantes
+            is_multi_signer = len(signers_data) > 1
+            total_signers = len(signers_data)
             
             # Processa cada arquivo
             signature_ids = []
@@ -2192,30 +2220,54 @@ def register_routes(app):
                     continue
                 
                 # Cria registro de assinatura pendente
+                # Para compatibilidade, mantém dados do primeiro assinante no Signature principal
+                first_signer = signers_data[0]
                 signature_record = Signature(
                     user_id=current_user.id,
                     file_id=file_id,
                     original_filename=pdf_file.filename,
-                    signature_hash='',  # Será preenchido após assinatura
+                    signature_hash='',  # Será preenchido após todas as assinaturas
                     signature_algorithm='PENDING',
                     timestamp=datetime.now(),
                     file_size=os.path.getsize(temp_path),
                     signature_valid=False,
-                    status='pending',  # Novo campo para status
+                    status='pending',
                     pdf_file_path=temp_path,
                     document_type_id=document_type_id,
-                    client_name=client_info['nome'],
-                    client_cpf=client_info['cpf'],
-                    client_email=client_info['email'],
-                    client_phone=client_info['telefone'],
-                    client_birth_date=birth_date,  # Usa a data convertida
-                    client_address=client_info['endereco'],
-                    ip_address='',  # Será preenchido pelo cliente
+                    # Dados do primeiro assinante para compatibilidade
+                    client_name=first_signer['name'],
+                    client_cpf=first_signer['cpf'],
+                    client_email=first_signer['email'],
+                    client_phone=first_signer['phone'],
+                    client_birth_date=first_signer['birth_date'],
+                    client_address=first_signer['address'],
+                    ip_address='',
                     signature_method='pending',
-                    verification_status='pending'
+                    verification_status='pending',
+                    # Campos para múltiplos assinantes
+                    is_multi_signer=is_multi_signer,
+                    total_signers=total_signers,
+                    signed_signers_count=0
                 )
                 
                 db.session.add(signature_record)
+                db.session.flush()  # Para obter o ID do signature
+                
+                # Cria registros SignatureSigner para cada assinante
+                from models import SignatureSigner
+                for signer_data in signers_data:
+                    signer_record = SignatureSigner(
+                        signature_id=signature_record.id,
+                        signer_name=signer_data['name'],
+                        signer_cpf=signer_data['cpf'],
+                        signer_email=signer_data['email'],
+                        signer_phone=signer_data['phone'],
+                        signer_birth_date=signer_data['birth_date'],
+                        signer_address=signer_data['address'],
+                        status='pending'
+                    )
+                    db.session.add(signer_record)
+                
                 signature_ids.append(file_id)
             
             db.session.commit()
@@ -2233,11 +2285,21 @@ def register_routes(app):
     @login_required
     def internal_pending_signatures():
         """Tela interna: Lista de assinaturas pendentes"""
+        from models import SignatureSigner
         # Busca assinaturas pendentes do usuário logado
         pending_signatures = Signature.query.filter_by(
             user_id=current_user.id,
             status='pending'
         ).order_by(Signature.timestamp.desc()).all()
+        
+        # Busca assinantes para cada assinatura
+        for sig in pending_signatures:
+            if sig.is_multi_signer:
+                sig.signers_list = SignatureSigner.query.filter_by(
+                    signature_id=sig.id
+                ).order_by(SignatureSigner.created_at.asc()).all()
+            else:
+                sig.signers_list = []
         
         # Agrupa por cliente
         clients = {}
@@ -2309,6 +2371,7 @@ def register_routes(app):
     @login_required
     def internal_cancel_signature(signature_id):
         """Tela interna: Cancelamento de assinatura pendente"""
+        from models import SignatureSigner
         signature = Signature.query.get_or_404(signature_id)
         
         # Verifica se a assinatura pertence ao usuário logado
@@ -2321,25 +2384,72 @@ def register_routes(app):
             flash('Apenas assinaturas pendentes podem ser canceladas', 'error')
             return redirect(url_for('internal_pending_signatures'))
         
+        # Verifica se é cancelamento de assinante específico ou documento inteiro
+        signer_id = request.form.get('signer_id', type=int)
+        
         try:
-            # Atualiza o status para cancelado
-            signature.status = 'cancelled'
-            signature.updated_at = datetime.now()
-            
-            # Remove arquivos temporários se existirem
-            temp_file_path = os.path.join(TEMP_DIR, f"{signature.file_id}_{signature.original_filename}")
-            if os.path.exists(temp_file_path):
-                os.remove(temp_file_path)
+            if signature.is_multi_signer and signer_id:
+                # Cancelar apenas um assinante específico
+                signer = SignatureSigner.query.filter_by(
+                    id=signer_id,
+                    signature_id=signature_id,
+                    status='pending'
+                ).first()
+                
+                if not signer:
+                    flash('Assinante não encontrado ou já processado', 'error')
+                    return redirect(url_for('internal_pending_signatures'))
+                
+                # Cancela o assinante
+                signer.status = 'cancelled'
+                signer.updated_at = datetime.now()
+                
+                # Verifica se ainda há assinantes pendentes
+                pending_count = SignatureSigner.query.filter_by(
+                    signature_id=signature_id,
+                    status='pending'
+                ).count()
+                
+                if pending_count == 0:
+                    # Não há mais assinantes pendentes - cancela o documento
+                    signature.status = 'cancelled'
+                    signature.updated_at = datetime.now()
+                    
+                    # Remove arquivos temporários se existirem
+                    temp_file_path = os.path.join(TEMP_DIR, f"{signature.file_id}_{signature.original_filename}")
+                    if os.path.exists(temp_file_path):
+                        os.remove(temp_file_path)
+                    
+                    flash('Último assinante cancelado. Documento cancelado.', 'success')
+                else:
+                    flash(f'Assinante cancelado. Restam {pending_count} assinante(s) pendente(s).', 'success')
+            else:
+                # Cancelar documento inteiro (compatibilidade ou sem múltiplos assinantes)
+                signature.status = 'cancelled'
+                signature.updated_at = datetime.now()
+                
+                # Cancela todos os assinantes pendentes se houver
+                if signature.is_multi_signer:
+                    SignatureSigner.query.filter_by(
+                        signature_id=signature_id,
+                        status='pending'
+                    ).update({'status': 'cancelled', 'updated_at': datetime.now()})
+                
+                # Remove arquivos temporários se existirem
+                temp_file_path = os.path.join(TEMP_DIR, f"{signature.file_id}_{signature.original_filename}")
+                if os.path.exists(temp_file_path):
+                    os.remove(temp_file_path)
+                
+                flash('Assinatura cancelada com sucesso!', 'success')
             
             db.session.commit()
-            flash('Assinatura cancelada com sucesso!', 'success')
             
         except Exception as e:
             db.session.rollback()
             flash(f'Erro ao cancelar assinatura: {str(e)}', 'error')
         
         try:
-            log_event(action='internal_cancel', actor_user_id=current_user.id, status='success', ip_address=get_client_ip(request), details={"signature_id": signature_id})
+            log_event(action='internal_cancel', actor_user_id=current_user.id, status='success', ip_address=get_client_ip(request), details={"signature_id": signature_id, "signer_id": signer_id})
         except Exception:
             pass
         return redirect(url_for('internal_pending_signatures'))
@@ -2348,10 +2458,20 @@ def register_routes(app):
     @login_required
     def internal_completed_signatures():
         """Tela interna: Lista de assinaturas concluídas"""
+        from models import SignatureSigner
         completed_signatures = Signature.query.filter_by(
             user_id=current_user.id,
             status='completed'
         ).order_by(Signature.timestamp.desc()).all()
+        
+        # Busca assinantes para cada assinatura
+        for sig in completed_signatures:
+            if sig.is_multi_signer:
+                sig.signers_list = SignatureSigner.query.filter_by(
+                    signature_id=sig.id
+                ).order_by(SignatureSigner.signed_at.asc()).all()
+            else:
+                sig.signers_list = []
         
         # Calcula contagens (evita comparar date vs datetime no template)
         now_dt = datetime.now()
@@ -2407,13 +2527,52 @@ def register_routes(app):
             return redirect(url_for('client_select_document'))
         
         client_cpf = session['client_cpf']
-        pending_docs = Signature.query.filter_by(
-            client_cpf=client_cpf,
+        # Limpar CPF para busca (remover formatação)
+        import re
+        client_cpf_clean = re.sub(r'[^\d]', '', client_cpf)
+        
+        # Buscar documentos pendentes onde o cliente tem um SignatureSigner pendente
+        from models import SignatureSigner
+        pending_signers = SignatureSigner.query.filter_by(
+            signer_cpf=client_cpf_clean,
             status='pending'
+        ).all()
+        
+        # Obter IDs dos signatures correspondentes
+        pending_signature_ids = [s.signature_id for s in pending_signers]
+        
+        # Buscar documentos pendentes (tanto com múltiplos assinantes quanto sem)
+        pending_docs = Signature.query.filter(
+            db.or_(
+                # Documentos com múltiplos assinantes (via SignatureSigner)
+                Signature.id.in_(pending_signature_ids),
+                # Documentos sem múltiplos assinantes (compatibilidade)
+                db.and_(
+                    Signature.client_cpf == client_cpf_clean,
+                    Signature.is_multi_signer == False,
+                    Signature.status == 'pending'
+                )
+            )
         ).order_by(Signature.timestamp.asc()).all()
-        completed_docs = Signature.query.filter_by(
-            client_cpf=client_cpf,
-            status='completed'
+        
+        # Buscar documentos concluídos onde o cliente assinou
+        completed_signers = SignatureSigner.query.filter_by(
+            signer_cpf=client_cpf_clean,
+            status='signed'
+        ).all()
+        completed_signature_ids = [s.signature_id for s in completed_signers]
+        
+        completed_docs = Signature.query.filter(
+            db.or_(
+                # Documentos com múltiplos assinantes onde o cliente assinou
+                Signature.id.in_(completed_signature_ids),
+                # Documentos sem múltiplos assinantes (compatibilidade)
+                db.and_(
+                    Signature.client_cpf == client_cpf_clean,
+                    Signature.is_multi_signer == False,
+                    Signature.status == 'completed'
+                )
+            )
         ).order_by(Signature.updated_at.desc()).limit(20).all()
         
         # Guarda fila de pendentes na sessão
@@ -2432,11 +2591,26 @@ def register_routes(app):
             return redirect(url_for('client_select_document'))
         
         signature = Signature.query.get_or_404(signature_id)
+        client_cpf_clean = re.sub(r'[^\d]', '', session['client_cpf'])
         
-        # Verifica se o documento pertence ao cliente da sessão
-        if signature.client_cpf != session['client_cpf'] or signature.status != 'pending':
-            flash('Documento não encontrado ou já processado', 'error')
-            return redirect(url_for('client_select_document'))
+        # Buscar SignatureSigner específico se for documento com múltiplos assinantes
+        signer = None
+        if signature.is_multi_signer:
+            from models import SignatureSigner
+            signer = SignatureSigner.query.filter_by(
+                signature_id=signature_id,
+                signer_cpf=client_cpf_clean,
+                status='pending'
+            ).first()
+            
+            if not signer:
+                flash('Documento não encontrado ou já processado', 'error')
+                return redirect(url_for('client_select_document'))
+        else:
+            # Compatibilidade: verifica se o documento pertence ao cliente da sessão
+            if signature.client_cpf != client_cpf_clean or signature.status != 'pending':
+                flash('Documento não encontrado ou já processado', 'error')
+                return redirect(url_for('client_select_document'))
         
         if request.method == 'POST':
             # Verifica se aceitou todos os termos
@@ -2448,18 +2622,25 @@ def register_routes(app):
                 flash('Você deve aceitar todos os termos para continuar', 'error')
                 return render_template('client/confirm.html', 
                                     signature=signature,
+                                    signer=signer,
                                     client_cpf=session['client_cpf'],
-                                    client_data=signature,
+                                    client_data=signer if signer else signature,
                                     documents=[signature])
             
-            # Salva confirmação na sessão
+            # Salva confirmação na sessão (inclui signer_id se for múltiplos assinantes)
             session['signature_confirmed'] = signature_id
+            if signer:
+                session['signer_id'] = signer.id
             return redirect(url_for('client_sign_document', signature_id=signature_id))
+        
+        # Usar dados do SignatureSigner se for múltiplos assinantes, senão usar Signature
+        client_data = signer if signer else signature
         
         return render_template('client/confirm.html', 
                             signature=signature,
+                            signer=signer,
                             client_cpf=session['client_cpf'],
-                            client_data=signature,
+                            client_data=client_data,
                             documents=[signature])
     
     @app.route('/client/sign/<int:signature_id>', methods=['GET', 'POST'])
@@ -2475,6 +2656,17 @@ def register_routes(app):
             flash('Documento não encontrado', 'error')
             return redirect(url_for('client_select_document'))
         
+        # Identificar SignatureSigner específico se for múltiplos assinantes
+        signer = None
+        if signature.is_multi_signer:
+            from models import SignatureSigner
+            signer_id = session.get('signer_id')
+            if signer_id:
+                signer = SignatureSigner.query.filter_by(id=signer_id, signature_id=signature_id).first()
+                if not signer or signer.status != 'pending':
+                    flash('Assinante não encontrado ou já assinado', 'error')
+                    return redirect(url_for('client_select_document'))
+        
         if request.method == 'POST':
             signature_image = request.json.get('signature_image')
             if not signature_image:
@@ -2484,8 +2676,46 @@ def register_routes(app):
                 # Coleta informações do dispositivo
                 device_info = detect_device_info(request.headers.get('User-Agent', ''), request)
                 
-                # Gera o PDF assinado fisicamente para download
-                try:
+                # Salvar assinatura no SignatureSigner se for múltiplos assinantes
+                if signer:
+                    # Salva assinatura no SignatureSigner
+                    signer.signature_image = signature_image
+                    signer.signed_at = datetime.now()
+                    signer.status = 'signed'
+                    signer.ip_address = device_info['ip_address']
+                    signer.user_agent = device_info['user_agent']
+                    signer.browser_name = device_info['browser_name']
+                    signer.browser_version = device_info['browser_version']
+                    signer.operating_system = device_info['operating_system']
+                    signer.device_type = device_info['device_type']
+                    signer.screen_resolution = request.headers.get('X-Screen-Resolution', '')
+                    signer.timezone = request.headers.get('X-Timezone', '')
+                    signer.updated_at = datetime.now()
+                    
+                    # Incrementa contador de assinantes que assinaram
+                    signature.signed_signers_count += 1
+                    
+                    # Verifica se todos assinaram
+                    all_signed = signature.signed_signers_count >= signature.total_signers
+                    
+                    if all_signed:
+                        # Todos assinaram - processar PDF final com todas as assinaturas
+                        try:
+                            add_all_signatures_to_pdf(signature)
+                            signature.status = 'completed'
+                            signature.verification_status = 'verified'
+                            signature.signature_method = 'drawing'
+                        except Exception as pdf_err:
+                            print(f"Erro ao processar PDF final: {pdf_err}")
+                            # Continua mesmo se falhar processamento do PDF
+                    else:
+                        # Ainda há assinantes pendentes - mantém status pending
+                        signature.status = 'pending'
+                    
+                    signature.updated_at = datetime.now()
+                    
+                else:
+                    # Compatibilidade: documento sem múltiplos assinantes
                     # Resolve caminho do PDF original
                     original_path = signature.pdf_file_path or os.path.join(TEMP_DIR, f"{signature.file_id}_{signature.original_filename}")
                     if not os.path.exists(original_path):
@@ -2570,9 +2800,6 @@ def register_routes(app):
                                 print(f"Hash calculado APÓS carimbo + metadados: {signature.signature_hash[:16]}...")
                     else:
                         return jsonify({'success': False, 'message': 'Arquivo original não encontrado. Refaça o upload.'})
-                except Exception as gen_err:
-                    # Não falha a assinatura por erro ao gerar arquivo; apenas registra e segue
-                    print(f"Erro ao gerar PDF assinado para cliente: {gen_err}")
 
                 db.session.commit()
                 
@@ -2611,7 +2838,7 @@ def register_routes(app):
             except Exception as e:
                 return jsonify({'success': False, 'message': f'Erro ao assinar: {str(e)}'})
         
-        return render_template('client/sign.html', signature=signature)
+        return render_template('client/sign.html', signature=signature, signer=signer)
     
     @app.route('/client/success')
     def client_success():
@@ -3111,6 +3338,206 @@ def create_logo_image():
         img.save(logo_path)
     
     return logo_path
+
+def add_all_signatures_to_pdf(signature):
+    """Processa PDF final com todas as assinaturas quando todos os assinantes assinaram"""
+    from models import SignatureSigner
+    import hashlib
+    
+    try:
+        # Resolve caminho do PDF original
+        original_path = signature.pdf_file_path or os.path.join(TEMP_DIR, f"{signature.file_id}_{signature.original_filename}")
+        if not os.path.exists(original_path):
+            # Tenta encontrar arquivo por file_id
+            try:
+                for name in os.listdir(TEMP_DIR):
+                    if name.startswith(signature.file_id) and name.lower().endswith('.pdf'):
+                        original_path = os.path.join(TEMP_DIR, name)
+                        break
+            except Exception:
+                pass
+        
+        if not os.path.exists(original_path):
+            raise Exception('Arquivo original não encontrado')
+        
+        # Busca todos os assinantes que assinaram
+        signers = SignatureSigner.query.filter_by(
+            signature_id=signature.id,
+            status='signed'
+        ).order_by(SignatureSigner.signed_at.asc()).all()
+        
+        if not signers:
+            raise Exception('Nenhum assinante encontrado')
+        
+        # Lê o PDF original
+        with open(original_path, 'rb') as file:
+            pdf_reader = PyPDF2.PdfReader(file)
+            pdf_writer = PyPDF2.PdfWriter()
+            temp_page_buffers = []
+            
+            # Cria logo se não existir
+            logo_path = create_logo_image()
+            
+            # Para cada página do PDF
+            for page_num, page in enumerate(pdf_reader.pages):
+                # Cria um PDF temporário para a página atual
+                temp_buffer = io.BytesIO()
+                
+                # Usa o tamanho REAL da página
+                try:
+                    page_width = float(page.mediabox.width)
+                    page_height = float(page.mediabox.height)
+                except Exception:
+                    page_width, page_height = A4
+                
+                # Cria um canvas com o tamanho da página original
+                c = canvas.Canvas(temp_buffer, pagesize=(page_width, page_height))
+                width, height = page_width, page_height
+                
+                # Define margem e espaçamento entre assinaturas
+                margin_cm = 1.2*cm
+                signature_height = 1.6*cm
+                spacing_cm = 0.5*cm  # Espaçamento entre assinaturas
+                
+                # Calcula posições iniciais (assinaturas empilhadas verticalmente no canto direito)
+                base_x = max(margin_cm, width - (8*cm))
+                current_y = margin_cm
+                
+                # Adiciona cada assinatura (da primeira à última)
+                for idx, signer in enumerate(signers):
+                    if signer.signature_image:
+                        try:
+                            # Salva a imagem da assinatura temporariamente
+                            fd, signature_temp = tempfile.mkstemp(suffix='.png')
+                            os.close(fd)
+                            with open(signature_temp, 'wb') as f:
+                                f.write(base64.b64decode(signer.signature_image.split(',')[1]))
+                            
+                            # Adiciona a assinatura desenhada
+                            signature_img = RLImage(signature_temp)
+                            signature_img.drawHeight = signature_height
+                            signature_img.drawWidth = 2.5*cm
+                            
+                            # Calcula posição Y (empilhado de baixo para cima)
+                            signature_y = current_y + (len(signers) - idx - 1) * (signature_height + spacing_cm + 1.5*cm)
+                            
+                            # Logo e dados do assinante
+                            logo_height = signature_height
+                            logo_width = logo_height * 1.5
+                            logo_x = base_x
+                            logo_y = signature_y
+                            
+                            # Adiciona logo
+                            if os.path.exists(logo_path):
+                                try:
+                                    logo_img = RLImage(logo_path)
+                                    logo_img.drawHeight = logo_height
+                                    logo_img.drawWidth = logo_width
+                                    logo_img.drawOn(c, logo_x, logo_y)
+                                except:
+                                    pass
+                            
+                            # Adiciona informações do assinante
+                            info_x = logo_x + logo_width + 0.3*cm
+                            info_y = logo_y + 0.9*cm
+                            c.setFont("Helvetica-Bold", 8)
+                            c.setFillColor(colors.darkblue)
+                            
+                            if signer.signer_name:
+                                c.drawString(info_x, info_y, f"Nome: {signer.signer_name}")
+                                info_y -= 0.3*cm
+                            if signer.signer_cpf:
+                                c.drawString(info_x, info_y, f"CPF: {signer.signer_cpf}")
+                                info_y -= 0.3*cm
+                            
+                            # Adiciona a assinatura
+                            signature_img_x = base_x + logo_width + 1*cm
+                            signature_img_y = signature_y + 1.7*cm
+                            signature_img.drawOn(c, signature_img_x, signature_img_y)
+                            
+                            # Adiciona timestamp da assinatura
+                            if signer.signed_at:
+                                timestamp = signer.signed_at.strftime("%d/%m/%Y %H:%M:%S")
+                                c.setFont("Helvetica", 6)
+                                c.setFillColor(colors.grey)
+                                c.drawString(base_x, signature_y - 0.5*cm, f"Assinado em: {timestamp}")
+                            
+                            # Limpa arquivo temporário
+                            os.remove(signature_temp)
+                        except Exception as e:
+                            print(f"Erro ao adicionar assinatura do assinante {signer.signer_name}: {e}")
+                
+                c.save()
+                
+                # Garante que o buffer esteja no início para leitura
+                temp_buffer.seek(0)
+                temp_reader = PyPDF2.PdfReader(temp_buffer)
+                temp_page = temp_reader.pages[0]
+                
+                # Mescla a página original com as assinaturas
+                page.merge_page(temp_page)
+                pdf_writer.add_page(page)
+                
+                # Mantém o buffer vivo até terminar a escrita do PDF final
+                temp_page_buffers.append(temp_buffer)
+            
+            # Salva PDF intermediário temporário
+            temp_output = tempfile.mktemp(suffix='.pdf')
+            with open(temp_output, 'wb') as output_file:
+                pdf_writer.write(output_file)
+            
+            # Libera buffers
+            for b in temp_page_buffers:
+                try:
+                    b.close()
+                except:
+                    pass
+            
+            # Política de retenção
+            from models import AppSetting
+            setting = AppSetting.query.filter_by(key='store_pdfs').first()
+            keep_pdfs = setting and setting.value.lower() == 'true'
+            retention_tag = 'KEEP' if keep_pdfs else 'TEMP'
+            clean_final_filename = signature.original_filename.replace('.pdf', '_assinado.pdf')
+            stored_final_filename = f"{signature.file_id}_{clean_final_filename.replace('.pdf', f'_{retention_tag}.pdf')}"
+            final_path = os.path.join(PDF_SIGNED_DIR, stored_final_filename)
+            
+            # Move arquivo temporário para local final
+            shutil.move(temp_output, final_path)
+            
+            # Lê o PDF final
+            with open(final_path, 'rb') as f:
+                final_content = f.read()
+            
+            # Embute metadados
+            signature_info = {
+                'hash': '',  # Será calculado depois
+                'timestamp': datetime.now().isoformat(),
+                'algorithm': 'PENDING'
+            }
+            embed_signature_metadata(final_path, signature_info)
+            
+            # Lê o PDF final (com metadados)
+            with open(final_path, 'rb') as f:
+                final_content = f.read()
+            
+            # Assina o PDF final usando o certificado X.509 do sistema
+            signature_info = certificate_manager.sign_pdf_with_certificate(final_content)
+            if not signature_info:
+                raise Exception('Falha ao assinar com certificado do sistema')
+            
+            # Atualiza o registro com dados da assinatura via certificado
+            signature.signature_hash = signature_info.get('hash')
+            signature.signature_algorithm = signature_info.get('signature_format', 'RSA-SHA256')
+            signature.signature_data = signature_info.get('signature_data')
+            signature.signature_valid = True
+            signature.file_size = len(final_content)
+            
+            print(f"PDF final gerado com {len(signers)} assinatura(s): {final_path}")
+            
+    except Exception as e:
+        print(f"Erro ao processar PDF final com múltiplas assinaturas: {e}")
+        raise
 
 def add_signature_to_all_pages(pdf_file, signature_text, output_path, signature_image=None, personal_info=None, logo_path=None):
     """Adiciona assinatura digital a todas as páginas do PDF no canto inferior direito"""

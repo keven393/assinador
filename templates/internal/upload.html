@@ -93,11 +93,11 @@
                  </div>
             </div>
 
-            <!-- Dados do Cliente -->
+            <!-- Tipo de Documento -->
             <div class="upload-card">
                 <h4 class="mb-4">
-                    <i class="fas fa-user me-2 text-primary"></i>
-                    Dados do Cliente
+                    <i class="fas fa-tags me-2 text-primary"></i>
+                    Tipo de Documento
                 </h4>
                 
                 <div class="row">
@@ -113,56 +113,35 @@
                         </select>
                     </div>
                 </div>
+            </div>
 
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label for="client_name" class="form-label">
-                            Nome Completo <span class="required">*</span>
-                        </label>
-                        <input type="text" class="form-control" id="client_name" name="client_name" 
-                               value="{{ client_info.nome if client_info else '' }}" required>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label for="client_cpf" class="form-label">
-                            CPF <span class="required">*</span>
-                        </label>
-                        <input type="text" class="form-control" id="client_cpf" name="client_cpf" 
-                               value="{{ client_info.cpf if client_info else '' }}" 
-                               placeholder="000.000.000-00" required>
-                        <div class="invalid-feedback" id="cpfError"></div>
-                    </div>
+            <!-- Assinantes -->
+            <div class="upload-card">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 class="mb-0">
+                        <i class="fas fa-users me-2 text-primary"></i>
+                        Assinantes
+                    </h4>
+                    <button type="button" class="btn btn-primary btn-sm" id="addSignerBtn">
+                        <i class="fas fa-plus me-1"></i>Adicionar Assinante
+                    </button>
                 </div>
                 
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label for="client_email" class="form-label">Email</label>
-                        <input type="email" class="form-control" id="client_email" name="client_email" 
-                               value="{{ client_info.email if client_info else '' }}">
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label for="client_phone" class="form-label">Telefone</label>
-                        <input type="tel" class="form-control" id="client_phone" name="client_phone" 
-                               value="{{ client_info.telefone if client_info else '' }}">
-                    </div>
+                <div id="signersList">
+                    <!-- Assinantes serão adicionados aqui dinamicamente -->
                 </div>
                 
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label for="client_birth_date" class="form-label">Data de Nascimento</label>
-                        <input type="date" class="form-control" id="client_birth_date" name="client_birth_date" 
-                               value="{{ client_info.data_nascimento if client_info else '' }}">
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label for="client_address" class="form-label">Endereço</label>
-                        <input type="text" class="form-control" id="client_address" name="client_address" 
-                               value="{{ client_info.endereco if client_info else '' }}">
-                    </div>
+                <div class="alert alert-info mt-3" id="signersInfo" style="display: none;">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <span id="signersCount">0</span> assinante(s) adicionado(s)
                 </div>
-                
+            </div>
+            
+            <div class="upload-card">
                 <div class="mb-3">
                     <label for="client_notes" class="form-label">Observações</label>
                     <textarea class="form-control" id="client_notes" name="client_notes" rows="3" 
-                              placeholder="Informações adicionais sobre o cliente ou documento">{{ client_info.observacoes if client_info else '' }}</textarea>
+                              placeholder="Informações adicionais sobre o documento">{{ client_info.observacoes if client_info else '' }}</textarea>
                 </div>
             </div>
 
@@ -220,31 +199,166 @@
             return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
         }
         
-        // Validação em tempo real do CPF
-        document.getElementById('client_cpf').addEventListener('input', function(e) {
-            let cpf = e.target.value.replace(/[^\d]/g, '');
-            if (cpf.length <= 11) {
-                e.target.value = formatarCPF(cpf);
-            }
+        // Contador de assinantes
+        let signerCounter = 0;
+        const signersList = document.getElementById('signersList');
+        const addSignerBtn = document.getElementById('addSignerBtn');
+        const signersInfo = document.getElementById('signersInfo');
+        const signersCount = document.getElementById('signersCount');
+        
+        // Função para adicionar um novo assinante
+        function addSigner() {
+            signerCounter++;
+            const signerId = `signer_${signerCounter}`;
             
-            const cpfError = document.getElementById('cpfError');
-            if (cpf.length === 11) {
-                if (validarCPF(cpf)) {
-                    e.target.classList.remove('is-invalid');
-                    e.target.classList.add('is-valid');
-                    cpfError.style.display = 'none';
-                } else {
-                    e.target.classList.remove('is-valid');
-                    e.target.classList.add('is-invalid');
-                    cpfError.textContent = 'CPF inválido';
-                    cpfError.style.display = 'block';
+            const signerCard = document.createElement('div');
+            signerCard.className = 'card mb-3 signer-card';
+            signerCard.id = `signerCard_${signerCounter}`;
+            signerCard.innerHTML = `
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-user me-2"></i>Assinante ${signerCounter}</h6>
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-signer-btn" data-signer-id="${signerCounter}">
+                        <i class="fas fa-times"></i> Remover
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Nome Completo <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control signer-name" name="signer_name[]" 
+                                   placeholder="Nome completo" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">CPF <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control signer-cpf" name="signer_cpf[]" 
+                                   placeholder="000.000.000-00" required>
+                            <div class="invalid-feedback signer-cpf-error"></div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control signer-email" name="signer_email[]" 
+                                   placeholder="email@exemplo.com">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Telefone</label>
+                            <input type="tel" class="form-control signer-phone" name="signer_phone[]" 
+                                   placeholder="(00) 00000-0000">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Data de Nascimento</label>
+                            <input type="date" class="form-control signer-birth-date" name="signer_birth_date[]">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Endereço</label>
+                            <input type="text" class="form-control signer-address" name="signer_address[]" 
+                                   placeholder="Endereço completo">
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            signersList.appendChild(signerCard);
+            updateSignersInfo();
+            
+            // Adicionar validação de CPF em tempo real
+            const cpfInput = signerCard.querySelector('.signer-cpf');
+            cpfInput.addEventListener('input', function(e) {
+                let cpf = e.target.value.replace(/[^\d]/g, '');
+                if (cpf.length <= 11) {
+                    e.target.value = formatarCPF(cpf);
                 }
-            } else {
-                e.target.classList.remove('is-valid', 'is-invalid');
-                cpfError.style.display = 'none';
-            }
+                
+                const errorDiv = signerCard.querySelector('.signer-cpf-error');
+                if (cpf.length === 11) {
+                    if (validarCPF(cpf)) {
+                        // Verificar se CPF já existe
+                        if (isCPFDuplicated(cpf, signerCounter)) {
+                            e.target.classList.remove('is-valid');
+                            e.target.classList.add('is-invalid');
+                            errorDiv.textContent = 'CPF já adicionado';
+                            errorDiv.style.display = 'block';
+                        } else {
+                            e.target.classList.remove('is-invalid');
+                            e.target.classList.add('is-valid');
+                            errorDiv.style.display = 'none';
+                        }
+                    } else {
+                        e.target.classList.remove('is-valid');
+                        e.target.classList.add('is-invalid');
+                        errorDiv.textContent = 'CPF inválido';
+                        errorDiv.style.display = 'block';
+                    }
+                } else {
+                    e.target.classList.remove('is-valid', 'is-invalid');
+                    errorDiv.style.display = 'none';
+                }
+                
+                validarFormulario();
+            });
             
-            validarFormulario();
+            // Adicionar listener para campos obrigatórios
+            signerCard.querySelector('.signer-name').addEventListener('input', validarFormulario);
+        }
+        
+        // Função para remover assinante
+        function removeSigner(signerId) {
+            const signerCard = document.getElementById(`signerCard_${signerId}`);
+            if (signerCard) {
+                signerCard.remove();
+                updateSignersInfo();
+                validarFormulario();
+            }
+        }
+        
+        // Função para verificar se CPF está duplicado
+        function isCPFDuplicated(cpf, currentSignerId) {
+            const allCpfInputs = document.querySelectorAll('.signer-cpf');
+            for (let input of allCpfInputs) {
+                const cardId = input.closest('.signer-card').id;
+                const cardNumber = parseInt(cardId.replace('signerCard_', ''));
+                if (cardNumber !== currentSignerId) {
+                    const otherCpf = input.value.replace(/[^\d]/g, '');
+                    if (otherCpf === cpf && otherCpf.length === 11) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+        
+        // Função para atualizar informações de assinantes
+        function updateSignersInfo() {
+            const count = document.querySelectorAll('.signer-card').length;
+            if (count > 0) {
+                signersInfo.style.display = 'block';
+                signersCount.textContent = count;
+            } else {
+                signersInfo.style.display = 'none';
+            }
+        }
+        
+        // Adicionar primeiro assinante por padrão
+        addSigner();
+        
+        // Event listener para botão adicionar assinante
+        addSignerBtn.addEventListener('click', addSigner);
+        
+        // Event listener para botões remover assinante (delegation)
+        signersList.addEventListener('click', function(e) {
+            if (e.target.closest('.remove-signer-btn')) {
+                const btn = e.target.closest('.remove-signer-btn');
+                const signerId = btn.getAttribute('data-signer-id');
+                // Não permitir remover se só houver 1 assinante
+                if (document.querySelectorAll('.signer-card').length > 1) {
+                    removeSigner(signerId);
+                } else {
+                    alert('É necessário pelo menos 1 assinante.');
+                }
+            }
         });
         
         // Upload de arquivos
@@ -494,45 +608,78 @@
         
         // Validação do formulário
         function validarFormulario() {
-            const nome = document.getElementById('client_name').value.trim();
-            const cpf = document.getElementById('client_cpf').value.replace(/[^\d]/g, '');
             const docType = document.getElementById('document_type_id').value;
             const files = allSelectedFiles;
             
-            const isValid = nome.length > 0 && cpf.length === 11 && validarCPF(cpf) && files.length > 0 && docType !== '';
+            // Validar assinantes - validação básica (apenas verificar se há assinantes adicionados)
+            // A validação completa será feita no submit
+            const signerCards = document.querySelectorAll('.signer-card');
+            
+            // O formulário é válido se:
+            // 1. Há pelo menos um assinante adicionado
+            // 2. Há pelo menos um arquivo selecionado
+            // 3. Tipo de documento foi selecionado
+            // A validação completa dos dados (nome, CPF válido, etc.) será feita no submit
+            const isValid = signerCards.length > 0 && files.length > 0 && docType !== '';
+            
+            // Garantir que o botão sempre seja visível e habilitado quando básico é válido
+            submitBtn.style.display = 'block';
+            submitBtn.style.visibility = 'visible';
             submitBtn.disabled = !isValid;
             
-            // Atualiza texto do botão baseado no número de arquivos
-            if (files.length > 0) {
-                submitBtn.innerHTML = `<i class="fas fa-paper-plane me-2"></i>Enviar ${files.length} Documento(s) para Assinatura`;
+            // Atualiza texto do botão baseado no número de arquivos e assinantes
+            if (files.length > 0 && signerCards.length > 0) {
+                const signersText = signerCards.length > 1 ? `${signerCards.length} assinantes` : '1 assinante';
+                submitBtn.innerHTML = `<i class="fas fa-paper-plane me-2"></i>Enviar ${files.length} Documento(s) para ${signersText}`;
             } else {
                 submitBtn.innerHTML = `<i class="fas fa-paper-plane me-2"></i>Enviar para Assinatura`;
             }
         }
         
-        // Validação em tempo real dos campos obrigatórios
-        document.getElementById('client_name').addEventListener('input', validarFormulario);
-        
         // Validação do formulário antes do envio
         document.getElementById('uploadForm').addEventListener('submit', function(e) {
-            const nome = document.getElementById('client_name').value.trim();
-            const cpf = document.getElementById('client_cpf').value.replace(/[^\d]/g, '');
             const files = allSelectedFiles;
+            const docType = document.getElementById('document_type_id').value;
+            const signerCards = document.querySelectorAll('.signer-card');
             
             console.log('=== ENVIO DO FORMULÁRIO ===');
-            console.log('Nome:', nome);
-            console.log('CPF:', cpf);
-            console.log('Arquivos no array global:', files.length);
-            console.log('Nomes dos arquivos:', files.map(f => f.name));
+            console.log('Arquivos:', files.length);
+            console.log('Assinantes:', signerCards.length);
             
-            if (!nome || !cpf || !validarCPF(cpf) || files.length === 0 || document.getElementById('document_type_id').value === '') {
+            // Validação
+            const issues = [];
+            if (files.length === 0) {
+                issues.push('Selecione pelo menos um arquivo PDF.');
+            }
+            if (docType === '') {
+                issues.push('Selecione o tipo de documento.');
+            }
+            if (signerCards.length === 0) {
+                issues.push('Adicione pelo menos um assinante.');
+            }
+            
+            // Validar cada assinante
+            const cpfList = [];
+            signerCards.forEach((card, index) => {
+                const name = card.querySelector('.signer-name').value.trim();
+                const cpf = card.querySelector('.signer-cpf').value.replace(/[^\d]/g, '');
+                
+                if (!name) {
+                    issues.push(`Assinante ${index + 1}: Nome é obrigatório.`);
+                }
+                if (!cpf || cpf.length !== 11) {
+                    issues.push(`Assinante ${index + 1}: CPF é obrigatório.`);
+                } else if (!validarCPF(cpf)) {
+                    issues.push(`Assinante ${index + 1}: CPF inválido.`);
+                } else if (cpfList.includes(cpf)) {
+                    issues.push(`Assinante ${index + 1}: CPF duplicado.`);
+                } else {
+                    cpfList.push(cpf);
+                }
+            });
+            
+            if (issues.length > 0) {
                 e.preventDefault();
-                // Preenche e abre o HUD de validação
-                const issues = [];
-                if (!nome) issues.push('Nome do cliente é obrigatório.');
-                if (!cpf || !validarCPF(cpf)) issues.push('CPF válido é obrigatório.');
-                if (files.length === 0) issues.push('Selecione pelo menos um arquivo PDF.');
-                if (document.getElementById('document_type_id').value === '') issues.push('Selecione o tipo de documento.');
                 document.getElementById('validationIssues').innerHTML = issues.map(t => `<li>${t}</li>`).join('');
                 new bootstrap.Modal(document.getElementById('validationModal')).show();
                 return;
@@ -540,7 +687,15 @@
             
             // Confirmação final via HUD
             const fileNames = files.map(f => f.name).join('<br>• ');
-            document.getElementById('confirmText').innerHTML = `Confirmar envio de ${files.length} documento(s) para assinatura do cliente <strong>${nome}</strong>?<br><br><strong>Documentos:</strong><br>• ${fileNames}`;
+            const signerNames = Array.from(signerCards).map((card, i) => {
+                return `${i + 1}. ${card.querySelector('.signer-name').value.trim()}`;
+            }).join('<br>');
+            
+            document.getElementById('confirmText').innerHTML = `
+                Confirmar envio de <strong>${files.length}</strong> documento(s) para <strong>${signerCards.length}</strong> assinante(s)?<br><br>
+                <strong>Documentos:</strong><br>• ${fileNames}<br><br>
+                <strong>Assinantes:</strong><br>${signerNames}
+            `;
             
             e.preventDefault();
             const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
@@ -555,10 +710,6 @@
                 e.target.submit();
             };
             document.getElementById('confirmBtn').addEventListener('click', onConfirm);
-            
-            // Desabilita botão para evitar duplo envio
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Enviando...';
             
             console.log('Formulário enviado com sucesso!');
         });

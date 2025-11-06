@@ -125,12 +125,65 @@ class Signature(db.Model):
     # Status da assinatura
     status = db.Column(db.String(20), default='pending')  # pending, completed, cancelled
     
+    # Campos para múltiplos assinantes
+    is_multi_signer = db.Column(db.Boolean, default=False)  # Indica se tem múltiplos assinantes
+    total_signers = db.Column(db.Integer, default=1)  # Total de assinantes
+    signed_signers_count = db.Column(db.Integer, default=0)  # Quantos já assinaram
+    
+    # Auditoria
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+    
+    # Relacionamento com assinantes
+    signers = db.relationship('SignatureSigner', backref='signature', lazy='dynamic', cascade='all, delete-orphan')
+    
+    def __repr__(self):
+        return f'<Signature {self.file_id} by {self.client_name}>'
+
+class SignatureSigner(db.Model):
+    __tablename__ = 'signature_signers'
+    
+    __table_args__ = (
+        db.Index('idx_signature_signers_signature_id', 'signature_id'),
+        db.Index('idx_signature_signers_signer_cpf', 'signer_cpf'),
+        db.Index('idx_signature_signers_status', 'status'),
+    )
+    
+    id = db.Column(db.Integer, primary_key=True)
+    signature_id = db.Column(db.Integer, db.ForeignKey('signatures.id'), nullable=False)
+    
+    # Dados do Assinante
+    signer_name = db.Column(db.String(255), nullable=False)
+    signer_cpf = db.Column(db.String(14), nullable=False)
+    signer_email = db.Column(db.String(255))
+    signer_phone = db.Column(db.String(20))
+    signer_birth_date = db.Column(db.Date)
+    signer_address = db.Column(db.Text)
+    
+    # Status da assinatura deste assinante
+    status = db.Column(db.String(20), default='pending')  # pending, signed, cancelled
+    
+    # Dados da assinatura (quando assinado)
+    signed_at = db.Column(db.DateTime)
+    signature_image = db.Column(db.Text)  # Assinatura em base64
+    signature_hash = db.Column(db.String(64))  # Hash da assinatura
+    
+    # Informações do dispositivo (quando assinado)
+    ip_address = db.Column(db.String(45))
+    user_agent = db.Column(db.Text)
+    browser_name = db.Column(db.String(50))
+    browser_version = db.Column(db.String(20))
+    operating_system = db.Column(db.String(100))
+    device_type = db.Column(db.String(20))
+    screen_resolution = db.Column(db.String(20))
+    timezone = db.Column(db.String(50))
+    
     # Auditoria
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     
     def __repr__(self):
-        return f'<Signature {self.file_id} by {self.client_name}>'
+        return f'<SignatureSigner {self.signer_name} ({self.signer_cpf}) - {self.status}>'
 
 class DocumentType(db.Model):
     __tablename__ = 'document_types'

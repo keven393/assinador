@@ -48,6 +48,12 @@
                     <div>
                         <div class="fw-semibold">{{ doc.original_filename }}</div>
                         <small class="text-muted">Enviado em {{ doc.timestamp.strftime('%d/%m/%Y %H:%M') }}</small>
+                        {% if doc.is_multi_signer %}
+                        <br><small class="text-info">
+                            <i class="fas fa-users me-1"></i>
+                            {{ doc.signed_signers_count }} de {{ doc.total_signers }} assinante(s)
+                        </small>
+                        {% endif %}
                     </div>
                     <span class="badge badge-pending client-list-badge-pending">Pendente</span>
                 </a>
