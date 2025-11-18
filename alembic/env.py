@@ -35,6 +35,28 @@ target_metadata = db.metadata
 # ... etc.
 
 
+def get_database_url():
+    """Obtém a URL do banco de dados da configuração da aplicação"""
+    # Tenta obter da variável de ambiente primeiro
+    database_url = os.environ.get('DATABASE_URL')
+    
+    if not database_url:
+        # Se não estiver no ambiente, cria a app para obter do config
+        app = create_app()
+        database_url = app.config.get('SQLALCHEMY_DATABASE_URI')
+    
+    # Alembic precisa usar psycopg2, não asyncpg
+    if database_url and '+asyncpg' in database_url:
+        database_url = database_url.replace('+asyncpg', '+psycopg2')
+    elif database_url and database_url.startswith('postgresql://'):
+        # Se não tem driver especificado, adiciona psycopg2
+        database_url = database_url.replace('postgresql://', 'postgresql+psycopg2://', 1)
+    elif database_url and database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql+psycopg2://', 1)
+    
+    return database_url
+
+
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
 
@@ -47,7 +69,8 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = config.get_main_option("sqlalchemy.url")
+    # Usa a URL do banco da aplicação em vez do alembic.ini
+    url = get_database_url() or config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -70,6 +93,13 @@ def run_migrations_online() -> None:
     app = create_app()
     
     with app.app_context():
+        # Obtém a URL do banco da configuração da aplicação
+        database_url = get_database_url()
+        
+        if database_url:
+            # Configura a URL no config do Alembic
+            config.set_main_option('sqlalchemy.url', database_url)
+        
         connectable = engine_from_config(
             config.get_section(config.config_ini_section, {}),
             prefix="sqlalchemy.",

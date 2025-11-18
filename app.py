@@ -2533,27 +2533,35 @@ def register_routes(app):
         
         # Buscar documentos pendentes onde o cliente tem um SignatureSigner pendente
         from models import SignatureSigner
-        pending_signers = SignatureSigner.query.filter_by(
-            signer_cpf=client_cpf_clean,
-            status='pending'
-        ).all()
-        
-        # Obter IDs dos signatures correspondentes
-        pending_signature_ids = [s.signature_id for s in pending_signers]
-        
-        # Buscar documentos pendentes (tanto com múltiplos assinantes quanto sem)
-        pending_docs = Signature.query.filter(
-            db.or_(
-                # Documentos com múltiplos assinantes (via SignatureSigner)
-                Signature.id.in_(pending_signature_ids),
-                # Documentos sem múltiplos assinantes (compatibilidade)
+        signer_alias = db.aliased(SignatureSigner)
+
+        pending_docs = (
+            Signature.query
+            .outerjoin(
+                signer_alias,
                 db.and_(
-                    Signature.client_cpf == client_cpf_clean,
-                    Signature.is_multi_signer == False,
-                    Signature.status == 'pending'
+                    signer_alias.signature_id == Signature.id,
+                    signer_alias.signer_cpf == client_cpf_clean
                 )
             )
-        ).order_by(Signature.timestamp.asc()).all()
+            .filter(
+                db.or_(
+                    db.and_(
+                        signer_alias.id.isnot(None),
+                        signer_alias.status == 'pending'
+                    ),
+                    db.and_(
+                        signer_alias.id.is_(None),
+                        Signature.is_multi_signer == False,
+                        Signature.client_cpf == client_cpf_clean,
+                        Signature.status == 'pending'
+                    )
+                )
+            )
+            .order_by(Signature.timestamp.asc())
+            .distinct()
+            .all()
+        )
         
         # Buscar documentos concluídos onde o cliente assinou
         completed_signers = SignatureSigner.query.filter_by(
@@ -2665,6 +2673,28 @@ def register_routes(app):
                 signer = SignatureSigner.query.filter_by(id=signer_id, signature_id=signature_id).first()
                 if not signer or signer.status != 'pending':
                     flash('Assinante não encontrado ou já assinado', 'error')
+                    return redirect(url_for('client_select_document'))
+            else:
+                # Fallback: resolver assinante pela sessão do CPF quando signer_id não estiver presente
+                try:
+                    client_cpf_session = session.get('client_cpf', '') or ''
+                    client_cpf_clean = re.sub(r'[^\d]', '', client_cpf_session)
+                except Exception:
+                    client_cpf_clean = ''
+                if client_cpf_clean:
+                    signer = SignatureSigner.query.filter_by(
+                        signature_id=signature_id,
+                        signer_cpf=client_cpf_clean,
+                        status='pending'
+                    ).first()
+                    if signer:
+                        # Guarda em sessão para os próximos requests desta assinatura
+                        session['signer_id'] = signer.id
+                    else:
+                        flash('Assinante não encontrado ou já processado', 'error')
+                        return redirect(url_for('client_select_document'))
+                else:
+                    flash('Sessão expirada. Por favor, informe seu CPF novamente.', 'error')
                     return redirect(url_for('client_select_document'))
         
         if request.method == 'POST':
@@ -2795,6 +2825,33 @@ def register_routes(app):
                             
                             # Atualiza no banco de dados
                             signature.file_size = len(final_content)
+                            
+                            # Também atualiza o registro do SignatureSigner (compatibilidade)
+                            try:
+                                from models import SignatureSigner
+                                cpf_clean = re.sub(r'[^\d]', '', signature.client_cpf or '')
+                                signer_row = SignatureSigner.query.filter_by(
+                                    signature_id=signature.id,
+                                    signer_cpf=cpf_clean
+                                ).first()
+                                if signer_row and signer_row.status != 'signed':
+                                    signer_row.signature_image = signature_image
+                                    signer_row.signed_at = datetime.now()
+                                    signer_row.status = 'signed'
+                                    signer_row.ip_address = device_info['ip_address']
+                                    signer_row.user_agent = device_info['user_agent']
+                                    signer_row.browser_name = device_info['browser_name']
+                                    signer_row.browser_version = device_info['browser_version']
+                                    signer_row.operating_system = device_info['operating_system']
+                                    signer_row.device_type = device_info['device_type']
+                                    signer_row.screen_resolution = request.headers.get('X-Screen-Resolution', '')
+                                    signer_row.timezone = request.headers.get('X-Timezone', '')
+                                    signer_row.updated_at = datetime.now()
+                                    # Ajusta contadores básicos
+                                    signature.total_signers = 1
+                                    signature.signed_signers_count = 1
+                            except Exception as _:
+                                pass
                             
                             if signature.signature_hash:
                                 print(f"Hash calculado APÓS carimbo + metadados: {signature.signature_hash[:16]}...")

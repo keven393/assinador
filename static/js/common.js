@@ -1,3 +1,5 @@
+const isDebugMode = Boolean(window.APP_DEBUG);
+
 // Funções comuns para o sistema de assinatura
 function signAll() {
     window.location.href = "/client/sign-all";
@@ -18,7 +20,9 @@ function copyClientInfo(clientName, clientCpf) {
         navigator.clipboard.writeText(text).then(function() {
             alert('Dados copiados para a área de transferência!');
         }).catch(function(err) {
-            console.error('Erro ao copiar: ', err);
+            if (isDebugMode) {
+                console.error('Erro ao copiar: ', err);
+            }
             fallbackCopyTextToClipboard(text);
         });
     } else {
@@ -45,107 +49,21 @@ function fallbackCopyTextToClipboard(text) {
             alert('Erro ao copiar dados. Tente selecionar e copiar manualmente.');
         }
     } catch (err) {
-        console.error('Fallback: Oops, unable to copy', err);
+        if (isDebugMode) {
+            console.error('Fallback: unable to copy', err);
+        }
         alert('Erro ao copiar dados. Tente selecionar e copiar manualmente.');
     }
     
     document.body.removeChild(textArea);
 }
 
-function showInstructions(filename, clientName) {
-    const instructions = `
-INSTRUÇÕES PARA ASSINATURA DIGITAL
-
-Arquivo: ${filename}
-Cliente: ${clientName}
-
-1. Clique em "Assinar" para abrir o documento
-2. Desenhe sua assinatura no campo apropriado
-3. Confirme os dados e finalize a assinatura
-4. O documento assinado será baixado automaticamente
-
-IMPORTANTE: Certifique-se de que os dados estão corretos antes de confirmar.
-    `;
-    
-    alert(instructions);
-}
-
 function confirmCancelSignature(signatureId, filename, clientName) {
     const message = `Deseja realmente cancelar a assinatura do documento "${filename}" para o cliente "${clientName}"?`;
     
     if (confirm(message)) {
-        // Redirecionar para a rota de cancelamento
         window.location.href = `/internal/signatures/${signatureId}/cancel`;
     }
-}
-
-function showSignatureDetails(signatureId) {
-    // Implementar modal de detalhes da assinatura
-    console.log('Mostrar detalhes da assinatura:', signatureId);
-}
-
-function showDocumentDetails(filename, clientName, timestamp) {
-    const details = `
-DETALHES DO DOCUMENTO
-
-Arquivo: ${filename}
-Cliente: ${clientName}
-Data/Hora: ${timestamp}
-
-Status: Cancelado
-    `;
-    
-    alert(details);
-}
-
-function addMoreFiles() {
-    // Implementar funcionalidade de adicionar mais arquivos
-    console.log('Adicionar mais arquivos');
-}
-
-function debugFiles() {
-    // Implementar debug de arquivos
-    console.log('Debug de arquivos');
-}
-
-function testFormSubmission() {
-    // Implementar teste de envio de formulário
-    console.log('Testar envio de formulário');
-}
-
-function clearAllFiles() {
-    // Implementar limpeza de todos os arquivos
-    console.log('Limpar todos os arquivos');
-}
-
-function removeFile(index) {
-    // Implementar remoção de arquivo específico
-    console.log('Remover arquivo:', index);
-}
-
-function applyFilters() {
-    // Implementar aplicação de filtros
-    console.log('Aplicar filtros');
-}
-
-function exportToCSV() {
-    // Implementar exportação para CSV
-    console.log('Exportar para CSV');
-}
-
-function resetUpload() {
-    // Implementar reset do upload
-    console.log('Reset do upload');
-}
-
-function clearFile() {
-    // Implementar limpeza de arquivo
-    console.log('Limpar arquivo');
-}
-
-function clearAllFiles() {
-    // Implementar limpeza de todos os arquivos
-    console.log('Limpar todos os arquivos');
 }
 
 // Função para mostrar instruções detalhadas
@@ -251,7 +169,7 @@ function showDocumentDetails(filename, clientName, createdDate) {
 // Auto-refresh para verificar atualizações
 function startAutoRefresh() {
     setInterval(function() {
-        if (document.visibilityState === 'visible') {
+        if (document.visibilityState === 'visible' && isDebugMode) {
             console.log('Verificando atualizações...');
         }
     }, 30000);
@@ -272,9 +190,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 return false;
             }
         }
+        if (form) {
+            form.addEventListener('submit', function() {
+                if (isDebugMode) {
+                    console.log('Formulário de remoção submetido');
+                }
+            });
+        }
     });
     
-    // Event listener para botões com data-action
+    const callIfExists = (fnName, ...args) => {
+        const fn = window[fnName];
+        if (typeof fn === 'function') {
+            return fn(...args);
+        }
+        if (isDebugMode) {
+            console.warn(`Função não encontrada: ${fnName}`);
+        }
+        return undefined;
+    };
+
     document.addEventListener('click', function(e) {
         const button = e.target.closest('[data-action]');
         if (!button) return;
@@ -303,22 +238,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 
             case 'details':
                 const signatureId2 = button.getAttribute('data-signature-id');
-                showSignatureDetails(signatureId2);
+                callIfExists('showSignatureDetails', signatureId2);
                 break;
                 
             case 'document-details':
                 const filename3 = button.getAttribute('data-filename');
                 const clientName4 = button.getAttribute('data-client-name');
                 const timestamp = button.getAttribute('data-timestamp');
-                showDocumentDetails(filename3, clientName4, timestamp);
+                callIfExists('showDocumentDetails', filename3, clientName4, timestamp);
                 break;
                 
             case 'apply-filters':
-                applyFilters();
+                callIfExists('applyFilters');
                 break;
                 
             case 'export-csv':
-                exportToCSV();
+                callIfExists('exportToCSV');
                 break;
                 
             case 'delete':
@@ -336,36 +271,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 break;
                 
             case 'reset-upload':
-                resetUpload();
+                callIfExists('resetUpload');
                 break;
                 
             case 'add-more-files':
-                addMoreFiles();
-                break;
-                
-            case 'debug-files':
-                debugFiles();
-                break;
-                
-            case 'test-form':
-                testFormSubmission();
+                callIfExists('addMoreFiles');
                 break;
                 
             case 'clear-all-files':
-                clearAllFiles();
+                callIfExists('clearAllFiles');
                 break;
                 
             case 'remove-file':
                 const index = button.getAttribute('data-index');
-                removeFile(index);
+                callIfExists('removeFile', index);
                 break;
                 
             case 'select-file':
-                document.getElementById('pdfFile').click();
+                const pdfInput = document.getElementById('pdfFile');
+                if (pdfInput) {
+                    pdfInput.click();
+                }
                 break;
                 
             case 'clear-file':
-                clearFile();
+                callIfExists('clearFile');
                 break;
                 
             case 'sign-all':

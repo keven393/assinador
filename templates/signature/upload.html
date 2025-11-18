@@ -212,6 +212,15 @@
             uploadBtn.disabled = true;
         }
 
+        // Event listener para botão de remover arquivo
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('[data-action="clear-file"]')) {
+                e.preventDefault();
+                e.stopPropagation();
+                clearFile();
+            }
+        });
+
         // Form submission
         document.getElementById('uploadForm').addEventListener('submit', function(e) {
             if (!fileInput.files[0]) {

@@ -78,12 +78,6 @@
                              <button type="button" class="btn btn-sm btn-outline-primary me-2" data-action="add-more-files">
                                  <i class="fas fa-plus me-1"></i>Adicionar Mais
                              </button>
-                             <button type="button" class="btn btn-sm btn-outline-info me-2" data-action="debug-files">
-                                 <i class="fas fa-bug me-1"></i>Debug
-                             </button>
-                             <button type="button" class="btn btn-sm btn-outline-warning me-2" data-action="test-form">
-                                 <i class="fas fa-test me-1"></i>Testar Envio
-                             </button>
                              <button type="button" class="btn btn-sm btn-outline-secondary" data-action="clear-all-files">
                                  <i class="fas fa-trash me-1"></i>Limpar Todos
                              </button>
@@ -131,7 +125,7 @@
                     <!-- Assinantes serão adicionados aqui dinamicamente -->
                 </div>
                 
-                <div class="alert alert-info mt-3" id="signersInfo" style="display: none;">
+                <div class="alert alert-info mt-3 hidden-element" id="signersInfo">
                     <i class="fas fa-info-circle me-2"></i>
                     <span id="signersCount">0</span> assinante(s) adicionado(s)
                 </div>
@@ -205,6 +199,19 @@
         const addSignerBtn = document.getElementById('addSignerBtn');
         const signersInfo = document.getElementById('signersInfo');
         const signersCount = document.getElementById('signersCount');
+        const HIDDEN_CLASS = 'hidden-element';
+
+        const showElement = (el) => {
+            if (el) {
+                el.classList.remove(HIDDEN_CLASS);
+            }
+        };
+
+        const hideElement = (el) => {
+            if (el && !el.classList.contains(HIDDEN_CLASS)) {
+                el.classList.add(HIDDEN_CLASS);
+            }
+        };
         
         // Função para adicionar um novo assinante
         function addSigner() {
@@ -280,21 +287,19 @@
                             e.target.classList.remove('is-valid');
                             e.target.classList.add('is-invalid');
                             errorDiv.textContent = 'CPF já adicionado';
-                            errorDiv.style.display = 'block';
                         } else {
                             e.target.classList.remove('is-invalid');
                             e.target.classList.add('is-valid');
-                            errorDiv.style.display = 'none';
+                            errorDiv.textContent = '';
                         }
                     } else {
                         e.target.classList.remove('is-valid');
                         e.target.classList.add('is-invalid');
                         errorDiv.textContent = 'CPF inválido';
-                        errorDiv.style.display = 'block';
                     }
                 } else {
                     e.target.classList.remove('is-valid', 'is-invalid');
-                    errorDiv.style.display = 'none';
+                    errorDiv.textContent = '';
                 }
                 
                 validarFormulario();
@@ -334,10 +339,10 @@
         function updateSignersInfo() {
             const count = document.querySelectorAll('.signer-card').length;
             if (count > 0) {
-                signersInfo.style.display = 'block';
+                showElement(signersInfo);
                 signersCount.textContent = count;
             } else {
-                signersInfo.style.display = 'none';
+                hideElement(signersInfo);
             }
         }
         
@@ -398,214 +403,146 @@
             fileInput.click();
         });
         
-        // Adiciona suporte para seleção de múltiplos arquivos
         fileInput.addEventListener('change', function() {
             const selectedFiles = Array.from(this.files);
-            if (selectedFiles.length > 0) {
-                // Filtra apenas arquivos PDF
-                const pdfFiles = selectedFiles.filter(file => {
-                    return file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-                });
-                
-                if (pdfFiles.length === 0) {
-                    alert('Por favor, selecione apenas arquivos PDF.');
-                    return;
-                }
-                
-                // Adiciona novos arquivos ao array global
-                allSelectedFiles = [...allSelectedFiles, ...pdfFiles];
-                
-                // Remove duplicatas baseado no nome
-                allSelectedFiles = allSelectedFiles.filter((file, index, self) => 
-                    index === self.findIndex(f => f.name === file.name)
-                );
-                
-                // Atualiza o input de arquivos e a lista visual
-                updateFileInput(allSelectedFiles);
-                updateFileList();
-                
-                console.log('Arquivos selecionados:', selectedFiles.length);
-                console.log('Total no array global:', allSelectedFiles.length);
-                console.log('Nomes dos arquivos únicos:', allSelectedFiles.map(f => f.name));
-            }
+            handleFiles(selectedFiles);
         });
         
-        // Clique na área de upload (sem o botão)
-        uploadArea.addEventListener('click', function(e) {
-            // Não abre o seletor se clicou no botão
-            if (e.target.closest('#selectFilesBtn')) {
-                return;
-            }
-            fileInput.click();
-        });
         
-        // Event listener removido para evitar conflito - agora está acima
-        
+        // Validação do formulário
         function handleFiles(files) {
-            // Filtra apenas arquivos PDF
-            const pdfFiles = Array.from(files).filter(file => {
-                return file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-            });
-            
+            const pdfFiles = Array.from(files).filter(file => 
+                file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+            );
+
             if (pdfFiles.length === 0) {
                 alert('Por favor, selecione apenas arquivos PDF.');
                 return;
             }
-            
-            // Adiciona novos arquivos ao array global
+
             allSelectedFiles = [...allSelectedFiles, ...pdfFiles];
-            
-            // Remove duplicatas baseado no nome
-            allSelectedFiles = allSelectedFiles.filter((file, index, self) => 
+            allSelectedFiles = allSelectedFiles.filter((file, index, self) =>
                 index === self.findIndex(f => f.name === file.name)
             );
-            
-            // Atualiza o input de arquivos e a lista visual
+
             updateFileInput(allSelectedFiles);
             updateFileList();
-            
-            console.log('Arquivos recebidos via drag and drop:', pdfFiles.length);
-            console.log('Total no array global:', allSelectedFiles.length);
         }
-        
-        // Função para remover arquivo específico
-        function removeFile(index) {
-            // Remove o arquivo do array global
-            allSelectedFiles.splice(index, 1);
-            
-            // Atualiza o input de arquivos
-            updateFileInput(allSelectedFiles);
-            
-            // Atualiza a lista visual
-            updateFileList();
-            
-            console.log('Arquivo removido. Total restante:', allSelectedFiles.length);
-        }
-        
-        // Função para atualizar apenas a lista visual (sem validação)
-        function updateFileList(files = null) {
-            // Usa o array global para garantir sincronização
-            const currentFiles = allSelectedFiles;
-            
-            if (currentFiles.length === 0) {
-                fileItems.innerHTML = '';
-                fileList.style.display = 'none';
-            } else {
-                fileItems.innerHTML = '';
-                currentFiles.forEach((file, index) => {
-                    const fileItem = document.createElement('div');
-                    fileItem.className = 'file-item';
-                    fileItem.innerHTML = `
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <i class="fas fa-file-pdf me-2 text-danger"></i>
-                                <strong>${file.name}</strong>
-                                <br>
-                                <small class="text-muted">${(file.size / 1024).toFixed(1)} KB</small>
-                                <br>
-                                <small class="text-muted">Posição: ${index + 1} de ${currentFiles.length}</small>
-                            </div>
-                            <div>
-                                <span class="button-group">
-                                    <span class="badge bg-success me-2">PDF Válido</span>
-                                    <button type="button" class="btn btn-sm btn-outline-danger" data-action="remove-file" data-index="${index}">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </span>
-                            </div>
-                        </div>
-                    `;
-                    fileItems.appendChild(fileItem);
-                });
-                fileList.style.display = 'block';
-                
-                // Atualiza o contador no cabeçalho
-                const headerElement = document.querySelector('#fileList h6');
-                if (headerElement) {
-                    headerElement.textContent = `Arquivos Selecionados: ${currentFiles.length}`;
-                }
+
+        // Funções locais (não globais) para evitar conflito com common.js em produção
+        function pageRemoveFile(index) {
+            const numericIndex = parseInt(index, 10);
+            if (!Number.isInteger(numericIndex) || numericIndex < 0 || numericIndex >= allSelectedFiles.length) {
+                return;
             }
-            
+
+            allSelectedFiles.splice(numericIndex, 1);
+            updateFileInput(allSelectedFiles);
+            updateFileList();
+        }
+
+        function pageClearAllFiles() {
+            allSelectedFiles = [];
+            const dt = new DataTransfer();
+            fileInput.files = dt.files;
+            fileItems.innerHTML = '';
+            hideElement(fileList);
             validarFormulario();
         }
-        
-        // Função para atualizar o input de arquivos
+
+        function pageAddMoreFiles() {
+            fileInput.click();
+        }
+
+        function updateFileList() {
+            if (allSelectedFiles.length === 0) {
+                fileItems.innerHTML = '';
+                hideElement(fileList);
+                validarFormulario();
+                return;
+            }
+
+            fileItems.innerHTML = '';
+            allSelectedFiles.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-file-pdf me-2 text-danger"></i>
+                            <strong>${file.name}</strong>
+                            <br>
+                            <small class="text-muted">${(file.size / 1024).toFixed(1)} KB</small>
+                            <br>
+                            <small class="text-muted">Posição: ${index + 1} de ${allSelectedFiles.length}</small>
+                        </div>
+                        <div>
+                            <span class="button-group">
+                                <span class="badge bg-success me-2">PDF Válido</span>
+                                <button type="button" class="btn btn-sm btn-outline-danger" data-action="remove-file" data-index="${index}">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </span>
+                        </div>
+                    </div>
+                `;
+                fileItems.appendChild(fileItem);
+            });
+
+            showElement(fileList);
+
+            const headerElement = document.querySelector('#fileList h6');
+            if (headerElement) {
+                headerElement.textContent = `Arquivos Selecionados: ${allSelectedFiles.length}`;
+            }
+
+            validarFormulario();
+        }
+
         function updateFileInput(files) {
             try {
                 const dt = new DataTransfer();
                 files.forEach(file => dt.items.add(file));
                 fileInput.files = dt.files;
-                console.log('Arquivos atualizados:', fileInput.files.length, 'arquivos');
-                console.log('Nomes dos arquivos:', Array.from(fileInput.files).map(f => f.name));
-                
-                // Verifica se a atualização foi bem-sucedida
+
                 if (fileInput.files.length !== files.length) {
-                    console.error('Erro: Número de arquivos não corresponde');
-                    console.error('Esperado:', files.length, 'Atual:', fileInput.files.length);
+                    alert('Não foi possível atualizar a lista de arquivos. Por favor, tente novamente.');
                 }
             } catch (error) {
-                console.error('Erro ao atualizar input de arquivos:', error);
+                alert('Ocorreu um erro ao atualizar os arquivos selecionados. Por favor, tente novamente.');
             }
         }
-        
-        // Função para limpar todos os arquivos
-        function clearAllFiles() {
-            // Limpa o array global
-            allSelectedFiles = [];
-            
-            // Limpa o input de arquivos
-            const dt = new DataTransfer();
-            fileInput.files = dt.files;
-            
-            // Limpa a lista visual
-            fileItems.innerHTML = '';
-            fileList.style.display = 'none';
-            
-            // Revalida o formulário
-            validarFormulario();
-            
-            console.log('Todos os arquivos foram removidos');
-        }
-        
-        // Função para adicionar mais arquivos
-        function addMoreFiles() {
-            fileInput.click();
-        }
-        
-        // Função para debug - verificar estado dos arquivos
-        function debugFiles() {
-            console.log('=== DEBUG ARQUIVOS ===');
-            console.log('Input files:', fileInput.files);
-            console.log('Input files length:', fileInput.files.length);
-            console.log('Array from files:', Array.from(fileInput.files));
-            console.log('Array global:', allSelectedFiles);
-            console.log('Array global length:', allSelectedFiles.length);
-            console.log('=====================');
-        }
-        
-        // Função para testar o envio do formulário
-        function testFormSubmission() {
-            console.log('=== TESTE DE ENVIO ===');
-            console.log('Formulário:', document.getElementById('uploadForm'));
-            console.log('Input de arquivos:', fileInput);
-            console.log('Arquivos no array global:', allSelectedFiles.length);
-            console.log('Nomes dos arquivos:', allSelectedFiles.map(f => f.name));
-            console.log('Tamanho dos arquivos:', allSelectedFiles.map(f => f.size));
-            console.log('Tipo dos arquivos:', allSelectedFiles.map(f => f.type));
-            
-            // Simula o envio do formulário
-            const formData = new FormData();
-            allSelectedFiles.forEach((file, index) => {
-                formData.append('pdf_files', file);
-                console.log(`Arquivo ${index + 1}:`, file.name, file.size, file.type);
-            });
-            
-            console.log('FormData criado:', formData);
-            console.log('=====================');
-        }
-        
 
-        
+        // Delegação local (independente de common.js)
+        fileItems.addEventListener('click', function(e) {
+            const btn = e.target.closest('button[data-action="remove-file"]');
+            if (!btn) return;
+            e.preventDefault();
+            e.stopPropagation();
+            const idx = parseInt(btn.getAttribute('data-index'), 10);
+            if (!Number.isNaN(idx)) {
+                pageRemoveFile(idx);
+            }
+        });
+
+        // Botões "Adicionar Mais" e "Limpar Todos" controlados localmente
+        const headerAddBtn = document.querySelector('#fileList [data-action="add-more-files"]');
+        if (headerAddBtn) {
+            headerAddBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                pageAddMoreFiles();
+            });
+        }
+        const headerClearBtn = document.querySelector('#fileList [data-action="clear-all-files"]');
+        if (headerClearBtn) {
+            headerClearBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                pageClearAllFiles();
+            });
+        }
+
         // Validação do formulário
         function validarFormulario() {
             const docType = document.getElementById('document_type_id').value;
@@ -623,8 +560,6 @@
             const isValid = signerCards.length > 0 && files.length > 0 && docType !== '';
             
             // Garantir que o botão sempre seja visível e habilitado quando básico é válido
-            submitBtn.style.display = 'block';
-            submitBtn.style.visibility = 'visible';
             submitBtn.disabled = !isValid;
             
             // Atualiza texto do botão baseado no número de arquivos e assinantes
@@ -642,9 +577,6 @@
             const docType = document.getElementById('document_type_id').value;
             const signerCards = document.querySelectorAll('.signer-card');
             
-            console.log('=== ENVIO DO FORMULÁRIO ===');
-            console.log('Arquivos:', files.length);
-            console.log('Assinantes:', signerCards.length);
             
             // Validação
             const issues = [];
@@ -710,8 +642,6 @@
                 e.target.submit();
             };
             document.getElementById('confirmBtn').addEventListener('click', onConfirm);
-            
-            console.log('Formulário enviado com sucesso!');
         });
 </script>
     </div>
@@ -721,3 +651,4 @@
 {% block extra_js %}
 <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/common.js') }}"></script>
 {% endblock %}
+

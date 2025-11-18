@@ -10,67 +10,89 @@
     <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/common.js') }}"></script>
 </head>
 <body class="client-list-body">
-<div class="container py-4">
-    <div class="card mb-4 client-list-card">
-        <div class="header client-list-header">
-            <div class="d-flex justify-content-between align-items-center">
+<div class="container py-4 client-list-wrapper">
+    <div class="client-list-card position-relative">
+        <div class="client-list-header">
+            <div class="client-list-badge">
+                <i class="fas fa-id-card me-2"></i>CPF: {{ client_cpf|cpf }}
+            </div>
+            <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
                 <div>
-                    <h4 class="mb-1"><i class="fas fa-file-signature me-2"></i>Meus Documentos</h4>
-                    <small>CPF: {{ client_cpf|cpf }}</small>
+                    <h1 class="client-list-title mb-1">
+                        <i class="fas fa-file-signature me-2"></i>Meus Documentos
+                    </h1>
+                    <p class="client-list-subtitle mb-0">Acompanhe os arquivos pendentes e finalize suas assinaturas com segurança.</p>
                 </div>
-                <div>
-                    {% if pending_docs and pending_docs|length > 0 %}
-                    <button class="btn btn-light" data-action="sign-all">
-                        <i class="fas fa-pen-fancy me-2"></i>Assinar todos
-                    </button>
-                    {% endif %}
-                </div>
+                {% if pending_docs and pending_docs|length > 0 %}
+                <button class="btn btn-light client-list-cta" data-action="sign-all">
+                    <i class="fas fa-pen-nib me-2"></i>Assinar todos
+                </button>
+                {% endif %}
             </div>
         </div>
-        <div class="card-body">
+
+        <div class="client-list-content">
             {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show client-list-alert" role="alert">
+                        <i class="fas fa-info-circle me-2"></i>{{ message }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 {% endfor %}
             {% endif %}
             {% endwith %}
 
-            <h6 class="text-muted mb-2">Pendentes</h6>
-            {% if pending_docs and pending_docs|length > 0 %}
-            <div class="list-group mb-4">
-                {% for doc in pending_docs %}
-                <a class="list-group-item list-group-item-action d-flex justify-content-between align-items-center doc-item client-list-doc-item"
-                   href="{{ url_for('client_confirm_document', signature_id=doc.id) }}">
-                    <div>
-                        <div class="fw-semibold">{{ doc.original_filename }}</div>
-                        <small class="text-muted">Enviado em {{ doc.timestamp.strftime('%d/%m/%Y %H:%M') }}</small>
-                        {% if doc.is_multi_signer %}
-                        <br><small class="text-info">
-                            <i class="fas fa-users me-1"></i>
-                            {{ doc.signed_signers_count }} de {{ doc.total_signers }} assinante(s)
-                        </small>
-                        {% endif %}
+            <div class="client-list-section">
+                <div class="client-list-section-header">
+                    <span class="client-list-section-title">
+                        <i class="fas fa-hourglass-half me-2"></i>Documentos pendentes
+                    </span>
+                    {% if pending_docs and pending_docs|length > 0 %}
+                    <span class="client-list-counter">
+                        {{ pending_docs|length }} {{ 'documento' if pending_docs|length == 1 else 'documentos' }} aguardando assinatura
+                    </span>
+                    {% endif %}
+                </div>
+
+                {% if pending_docs and pending_docs|length > 0 %}
+                <div class="client-list-items">
+                    {% for doc in pending_docs %}
+                    <a class="client-list-item" href="{{ url_for('client_confirm_document', signature_id=doc.id) }}">
+                        <div class="client-list-item-icon">
+                            <i class="fas fa-file-pdf"></i>
+                        </div>
+                        <div class="client-list-item-content">
+                            <div class="client-list-item-title">{{ doc.original_filename }}</div>
+                            <div class="client-list-item-meta">
+                                <span><i class="far fa-calendar-alt me-1"></i>Enviado em {{ doc.timestamp.strftime('%d/%m/%Y %H:%M') }}</span>
+                                {% if doc.is_multi_signer %}
+                                <span><i class="fas fa-users me-1"></i>{{ doc.signed_signers_count }} de {{ doc.total_signers }} assinatura(s) concluída(s)</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <span class="client-list-status client-list-status-pending">Pendente</span>
+                        <i class="fas fa-chevron-right client-list-item-arrow"></i>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="client-list-empty-state">
+                    <div class="client-list-empty-icon">
+                        <i class="fas fa-check-circle"></i>
                     </div>
-                    <span class="badge badge-pending client-list-badge-pending">Pendente</span>
-                </a>
-                {% endfor %}
+                    <h3 class="client-list-empty-title">Nenhum documento pendente 🎉</h3>
+                    <p class="client-list-empty-text">Assim que novos documentos forem enviados para assinatura, eles aparecerão aqui.</p>
+                </div>
+                {% endif %}
             </div>
-            {% else %}
-            <div class="alert alert-success">Nenhum documento pendente no momento.</div>
-            {% endif %}
-
-            
         </div>
-    </div>
 
-    <div class="text-center">
-        <a href="{{ url_for('client_select_document') }}" class="btn btn-link">
-            <i class="fas fa-arrow-left me-1"></i> Voltar
-        </a>
+        <div class="client-list-footer">
+            <a href="{{ url_for('client_select_document') }}" class="client-list-back">
+                <i class="fas fa-arrow-left me-2"></i> Voltar para o início
+            </a>
+        </div>
     </div>
 </div>
 
