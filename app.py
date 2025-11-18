@@ -464,7 +464,8 @@ def create_app(config_name=None):
                 minute = int(minute_str)
             except Exception:
                 hour, minute = 2, 0
-            t = threading.Thread(target=run_daily_cleanup, kwargs={'hour': hour, 'minute': minute, 'tz_name': cleanup_tz}, daemon=True)
+            # Passa a instância do app para a thread de limpeza
+            t = threading.Thread(target=run_daily_cleanup, kwargs={'app_instance': app, 'hour': hour, 'minute': minute, 'tz_name': cleanup_tz}, daemon=True)
             t.start()
             SCHEDULER_STARTED = True
         except Exception as e:
@@ -766,13 +767,15 @@ def register_routes(app):
                 cleanup_old_files()
                 flash('Limpeza de arquivos antigos executada.', 'success')
             elif action == 'cleanup_database':
-                cleanup_old_files_by_database()
+                from flask import current_app
+                cleanup_old_files_by_database(app_instance=current_app._get_current_object())
                 flash('Limpeza baseada no banco de dados executada.', 'success')
             elif action == 'cleanup_all':
+                from flask import current_app
                 cleanup_temp_files_all()  # Remove TODOS os arquivos temporários
                 cleanup_signed_pdfs_temp()
                 cleanup_old_files()
-                cleanup_old_files_by_database()
+                cleanup_old_files_by_database(app_instance=current_app._get_current_object())
                 flash('Limpeza completa executada.', 'success')
             
             return redirect(url_for('admin_settings'))
@@ -3237,50 +3240,69 @@ def cleanup_old_files():
     except Exception as e:
         print(f"Erro durante limpeza de arquivos antigos: {e}")
 
-def cleanup_old_files_by_database():
+def cleanup_old_files_by_database(app_instance=None):
     """Remove arquivos baseado nos registros do banco de dados (mais preciso)"""
     try:
         from models import Signature
         from datetime import timedelta
         from config import config
         
+        # Se não houver app_instance, tenta usar o contexto atual
+        if app_instance is None:
+            from flask import current_app
+            try:
+                app_instance = current_app._get_current_object()
+            except RuntimeError:
+                print("Erro: Não há contexto de aplicação disponível para limpeza por banco de dados")
+                return
+        
         # Usa configuração do ambiente ou padrão (7 dias)
         retention_days = getattr(config.get('default'), 'FILE_RETENTION_DAYS', 7)
         cutoff_date = datetime.now() - timedelta(days=retention_days)
-        old_signatures = Signature.query.filter(
-            Signature.timestamp < cutoff_date
-        ).all()
         
-        removed_count = 0
-        
-        for signature in old_signatures:
-            # Remove arquivo da pasta pdf_assinados
-            if signature.file_id:
-                # Procura arquivos com o file_id
-                for directory in [PDF_SIGNED_DIR, TEMP_DIR]:
-                    if os.path.exists(directory):
-                        for filename in os.listdir(directory):
-                            if filename.startswith(signature.file_id):
-                                file_path = os.path.join(directory, filename)
-                                if os.path.isfile(file_path):
-                                    try:
-                                        os.remove(file_path)
-                                        removed_count += 1
-                                        print(f"Arquivo removido por idade no BD: {filename}")
-                                    except Exception as e:
-                                        print(f"Falha ao remover {file_path}: {e}")
-        
-        if removed_count > 0:
-            print(f"Limpeza por banco de dados concluída: {removed_count} arquivos removidos")
-        else:
-            print(f"ℹNenhum arquivo antigo encontrado no banco de dados")
+        # Executa dentro do contexto da aplicação
+        with app_instance.app_context():
+            old_signatures = Signature.query.filter(
+                Signature.timestamp < cutoff_date
+            ).all()
+            
+            removed_count = 0
+            
+            for signature in old_signatures:
+                # Remove arquivo da pasta pdf_assinados
+                if signature.file_id:
+                    # Procura arquivos com o file_id
+                    for directory in [PDF_SIGNED_DIR, TEMP_DIR]:
+                        if os.path.exists(directory):
+                            for filename in os.listdir(directory):
+                                if filename.startswith(signature.file_id):
+                                    file_path = os.path.join(directory, filename)
+                                    if os.path.isfile(file_path):
+                                        try:
+                                            os.remove(file_path)
+                                            removed_count += 1
+                                            print(f"Arquivo removido por idade no BD: {filename}")
+                                        except Exception as e:
+                                            print(f"Falha ao remover {file_path}: {e}")
+            
+            if removed_count > 0:
+                print(f"Limpeza por banco de dados concluída: {removed_count} arquivos removidos")
+            else:
+                print(f"ℹNenhum arquivo antigo encontrado no banco de dados")
             
     except Exception as e:
         print(f"Erro durante limpeza por banco de dados: {e}")
 
-def run_daily_cleanup(hour: int = 2, minute: int = 0, tz_name: str = 'America/Sao_Paulo'):
+def run_daily_cleanup(app_instance, hour: int = 2, minute: int = 0, tz_name: str = 'America/Sao_Paulo'):
     """Loop em background que executa a limpeza diariamente no horário configurado.
-    Se não houver base de timezones (tzdata), usa horário local sem timezone."""
+    Se não houver base de timezones (tzdata), usa horário local sem timezone.
+    
+    Args:
+        app_instance: Instância da aplicação Flask (necessária para contexto do banco)
+        hour: Hora do dia para executar a limpeza (padrão: 2)
+        minute: Minuto do dia para executar a limpeza (padrão: 0)
+        tz_name: Nome do timezone (padrão: 'America/Sao_Paulo')
+    """
     tz = None
     try:
         tz = ZoneInfo(tz_name)
@@ -3313,7 +3335,8 @@ def run_daily_cleanup(hour: int = 2, minute: int = 0, tz_name: str = 'America/Sa
             cleanup_old_files()
             
             # Limpeza de arquivos antigos (7 dias) - baseada no banco de dados
-            cleanup_old_files_by_database()
+            # Passa a instância do app para ter acesso ao contexto
+            cleanup_old_files_by_database(app_instance=app_instance)
             
             print(f"Rotina diária de limpeza concluída - {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
         except Exception as e:

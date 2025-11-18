@@ -38,7 +38,7 @@ class Config:
     """Configurações da aplicação - Todas as configurações vêm do arquivo .env"""
     
     # Configurações básicas
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'assinador_pdf_secret_key_2024'
+    SECRET_KEY = os.environ.get('SECRET_KEY') 
     DEBUG = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
     FLASK_ENV = os.environ.get('FLASK_ENV', 'development')
     
