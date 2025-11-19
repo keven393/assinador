@@ -141,22 +141,14 @@ class PDFValidator:
                 if current_hash == signature_record.signature_hash:
                     result['hash_match'] = True
                 else:
-                    # Hash diferente - tenta sincronizar automaticamente
-                    print(f"⚠️  Hash diferente detectado. Sincronizando automaticamente...")
+                    # Hash diferente - arquivo foi adulterado ou corrompido
+                    # SECURITY: Não sincronizamos automaticamente para evitar aceitar arquivos adulterados
+                    print(f"⚠️  ALERTA DE SEGURANÇA: Hash diferente detectado - possível adulteração!")
                     print(f"   Hash armazenado: {signature_record.signature_hash[:16]}...")
                     print(f"   Hash atual:      {current_hash[:16]}...")
-                    
-                    # Atualiza o hash no banco de dados
-                    try:
-                        from app import db
-                        signature_record.signature_hash = current_hash
-                        signature_record.file_size = len(pdf_content)
-                        db.session.commit()
-                        print(f"✅ Hash sincronizado automaticamente!")
-                        result['hash_match'] = True
-                    except Exception as e:
-                        print(f"❌ Erro ao sincronizar hash: {e}")
-                        result['hash_match'] = False
+                    print(f"   Arquivo marcado como INVÁLIDO por violação de integridade.")
+                    result['hash_match'] = False
+                    result['errors'].append('Hash mismatch: arquivo pode ter sido adulterado')
                 
                 # Tenta verificar assinatura digital
                 try:

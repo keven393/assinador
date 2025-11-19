@@ -142,6 +142,10 @@ class DigitalSignatureManager:
         self.private_key_path = os.path.join(self.keys_dir, "private_key.pem")
         self.public_key_path = os.path.join(self.keys_dir, "public_key.pem")
         
+        # SECURITY: Suporte para chave privada criptografada com passphrase
+        # Use PRIVATE_KEY_PASSPHRASE em produção para proteger a chave privada
+        self.key_passphrase = os.environ.get('PRIVATE_KEY_PASSPHRASE', '').encode('utf-8') if os.environ.get('PRIVATE_KEY_PASSPHRASE') else None
+        
         # Cria diretório de chaves se não existir
         if not os.path.exists(self.keys_dir):
             os.makedirs(self.keys_dir, mode=0o700)
@@ -166,12 +170,19 @@ class DigitalSignatureManager:
         # Gera chave pública
         public_key = private_key.public_key()
         
+        # SECURITY: Salva chave privada com criptografia se passphrase fornecida
+        if self.key_passphrase:
+            encryption_algorithm = serialization.BestAvailableEncryption(self.key_passphrase)
+        else:
+            # AVISO: Chave privada sem criptografia - use PRIVATE_KEY_PASSPHRASE em produção
+            encryption_algorithm = serialization.NoEncryption()
+        
         # Salva chave privada
         with open(self.private_key_path, "wb") as f:
             f.write(private_key.private_bytes(
                 encoding=serialization.Encoding.PEM,
                 format=serialization.PrivateFormat.PKCS8,
-                encryption_algorithm=serialization.NoEncryption()
+                encryption_algorithm=encryption_algorithm
             ))
         
         # Salva chave pública
@@ -191,11 +202,11 @@ class DigitalSignatureManager:
     
     def sign_data(self, data):
         """Assina os dados com a chave privada"""
-        # Carrega chave privada
+        # Carrega chave privada (com suporte para passphrase)
         with open(self.private_key_path, "rb") as f:
             private_key = serialization.load_pem_private_key(
                 f.read(),
-                password=None,
+                password=self.key_passphrase,
                 backend=default_backend()
             )
         

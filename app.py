@@ -192,32 +192,66 @@ def detect_device_info(user_agent, request_obj):
     return device_info
 
 def scan_pdf_safeness(file_path: str):
-    """Retorna (ok, mensagem). Bloqueia PDFs com JavaScript/ações perigosas."""
+    """
+    Retorna (ok, mensagem). Bloqueia PDFs com JavaScript/ações perigosas.
+    SECURITY: Implementa limites de páginas e timeouts para prevenir DoS.
+    """
+    import signal
+    
+    # Limites de segurança para prevenir DoS
+    MAX_PAGES = 1000  # Limite máximo de páginas processadas
+    TIMEOUT_SECONDS = 30  # Timeout para processamento
+    
+    def timeout_handler(signum, frame):
+        raise TimeoutError("Timeout ao processar PDF")
+    
     try:
-        with open(file_path, 'rb') as f:
-            reader = PyPDF2.PdfReader(f)
-            try:
-                num_pages = len(reader.pages)
-            except Exception:
-                num_pages = 0
-            if num_pages == 0:
-                return False, 'PDF sem páginas'
-            tokens = ['/JavaScript', '/JS', '/AA', '/OpenAction']
-            # Verifica trailer/catalog
-            try:
-                root_str = str(reader.trailer)
-                if any(tok in root_str for tok in tokens):
-                    return False, 'PDF contém ações/scripts'
-            except Exception:
-                pass
-            # Varre páginas
-            try:
-                for p in reader.pages:
-                    if any(tok in str(p) for tok in tokens):
-                        return False, 'PDF contém ações/scripts em páginas'
-            except Exception:
-                pass
-            return True, 'OK'
+        # Configura timeout (apenas em Unix/Linux)
+        if hasattr(signal, 'SIGALRM'):
+            signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(TIMEOUT_SECONDS)
+        
+        try:
+            with open(file_path, 'rb') as f:
+                reader = PyPDF2.PdfReader(f)
+                try:
+                    num_pages = len(reader.pages)
+                except Exception:
+                    num_pages = 0
+                
+                if num_pages == 0:
+                    return False, 'PDF sem páginas'
+                
+                # SECURITY: Limita número de páginas processadas para prevenir DoS
+                if num_pages > MAX_PAGES:
+                    return False, f'PDF excede limite de {MAX_PAGES} páginas (encontrado: {num_pages})'
+                
+                tokens = ['/JavaScript', '/JS', '/AA', '/OpenAction']
+                # Verifica trailer/catalog
+                try:
+                    root_str = str(reader.trailer)
+                    if any(tok in root_str for tok in tokens):
+                        return False, 'PDF contém ações/scripts'
+                except Exception:
+                    pass
+                
+                # Varre páginas (limitado a MAX_PAGES)
+                try:
+                    pages_to_check = min(num_pages, MAX_PAGES)
+                    for i, p in enumerate(reader.pages[:pages_to_check]):
+                        if any(tok in str(p) for tok in tokens):
+                            return False, 'PDF contém ações/scripts em páginas'
+                except Exception:
+                    pass
+                
+                return True, 'OK'
+        finally:
+            # Cancela timeout
+            if hasattr(signal, 'SIGALRM'):
+                signal.alarm(0)
+                
+    except TimeoutError:
+        return False, f'Timeout ao processar PDF (limite: {TIMEOUT_SECONDS}s)'
     except Exception as e:
         return False, f'Falha ao abrir PDF: {e}'
 
@@ -2761,8 +2795,9 @@ def register_routes(app):
                             pass
 
                     if os.path.exists(original_path):
-                        # Cria saída temporária
-                        output_path = tempfile.mktemp(suffix='.pdf')
+                        # Cria saída temporária de forma segura (evita race condition)
+                        fd, output_path = tempfile.mkstemp(suffix='.pdf')
+                        os.close(fd)  # Fecha o descritor, mantém o arquivo para uso posterior
                         # Dados do cliente para inserir no PDF
                         client_info = {
                             'nome': signature.client_name,
@@ -3561,8 +3596,9 @@ def add_all_signatures_to_pdf(signature):
                 # Mantém o buffer vivo até terminar a escrita do PDF final
                 temp_page_buffers.append(temp_buffer)
             
-            # Salva PDF intermediário temporário
-            temp_output = tempfile.mktemp(suffix='.pdf')
+            # Salva PDF intermediário temporário de forma segura (evita race condition)
+            fd, temp_output = tempfile.mkstemp(suffix='.pdf')
+            os.close(fd)  # Fecha o descritor, mantém o arquivo para uso posterior
             with open(temp_output, 'wb') as output_file:
                 pdf_writer.write(output_file)
             

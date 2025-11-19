@@ -36,6 +36,11 @@ TEMP_FILES_DIR=/app/temp_files
 KEYS_DIR=/app/keys
 CERTIFICATES_DIR=/app/certificates
 
+# SECURITY: Chave privada criptografada (recomendado para produção)
+# Se definida, a chave privada será criptografada com esta passphrase
+# Use uma passphrase forte e armazene de forma segura (ex: gerenciador de senhas)
+# PRIVATE_KEY_PASSPHRASE=your_strong_passphrase_here
+
 
 
 

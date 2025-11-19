@@ -5,6 +5,7 @@ Implements the Single Responsibility Principle by handling only LDAP authenticat
 from typing import Optional, Dict, Any, List
 from ldap3 import Server, Connection, ALL, SUBTREE
 from ldap3.core.exceptions import LDAPException
+from ldap3.utils.conv import escape_filter_chars
 import logging
 import os
 
@@ -135,7 +136,9 @@ class LDAPAuthenticator:
         """
         try:
             connection = self._get_connection()
-            search_filter = self.user_search_filter.format(username=username)
+            # Escape LDAP filter characters to prevent injection attacks
+            escaped_username = escape_filter_chars(username)
+            search_filter = self.user_search_filter.format(username=escaped_username)
             
             connection.search(
                 search_base=self.base_dn,
