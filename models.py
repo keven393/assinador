@@ -2,8 +2,13 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from datetime import datetime
 import bcrypt
+from ulid import ULID
 
 db = SQLAlchemy()
+
+def generate_ulid():
+    """Gera um novo ULID como string"""
+    return str(ULID())
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
@@ -14,7 +19,7 @@ class User(UserMixin, db.Model):
         db.Index('idx_users_role', 'role'),
     )
     
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String(26), primary_key=True, default=generate_ulid)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=True)  # Nullable para usuários LDAP
@@ -72,8 +77,8 @@ class Signature(db.Model):
         db.Index('idx_signatures_hash', 'signature_hash'),
     )
     
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    id = db.Column(db.String(26), primary_key=True, default=generate_ulid)
+    user_id = db.Column(db.String(26), db.ForeignKey('users.id'), nullable=False)
     file_id = db.Column(db.String(255), nullable=False)
     original_filename = db.Column(db.String(255), nullable=False)
     signature_hash = db.Column(db.String(64), nullable=False)  # SHA-256 hex = 64 chars
@@ -89,7 +94,7 @@ class Signature(db.Model):
     pdf_file_path = db.Column(db.String(500))  # Caminho do PDF no filesystem
     
     # Tipo de Documento
-    document_type_id = db.Column(db.Integer, db.ForeignKey('document_types.id'))
+    document_type_id = db.Column(db.String(26), db.ForeignKey('document_types.id'))
     
     # Informações do Cliente/Assinante
     client_name = db.Column(db.String(255))
@@ -149,8 +154,8 @@ class SignatureSigner(db.Model):
         db.Index('idx_signature_signers_status', 'status'),
     )
     
-    id = db.Column(db.Integer, primary_key=True)
-    signature_id = db.Column(db.Integer, db.ForeignKey('signatures.id'), nullable=False)
+    id = db.Column(db.String(26), primary_key=True, default=generate_ulid)
+    signature_id = db.Column(db.String(26), db.ForeignKey('signatures.id'), nullable=False)
     
     # Dados do Assinante
     signer_name = db.Column(db.String(255), nullable=False)
@@ -188,7 +193,7 @@ class SignatureSigner(db.Model):
 class DocumentType(db.Model):
     __tablename__ = 'document_types'
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String(26), primary_key=True, default=generate_ulid)
     name = db.Column(db.String(120), unique=True, nullable=False)
     description = db.Column(db.String(255))
     active = db.Column(db.Boolean, default=True)
@@ -203,7 +208,7 @@ class DocumentType(db.Model):
 class AppSetting(db.Model):
     __tablename__ = 'app_settings'
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String(26), primary_key=True, default=generate_ulid)
     key = db.Column(db.String(100), unique=True, nullable=False)
     value = db.Column(db.String(500), nullable=False)
 
@@ -219,8 +224,8 @@ class UserSession(db.Model):
         db.Index('idx_sessions_session_id', 'session_id'),
     )
     
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    id = db.Column(db.String(26), primary_key=True, default=generate_ulid)
+    user_id = db.Column(db.String(26), db.ForeignKey('users.id'), nullable=False)
     session_id = db.Column(db.String(255), unique=True, nullable=False)
     ip_address = db.Column(db.String(45))
     user_agent = db.Column(db.Text)

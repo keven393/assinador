@@ -195,6 +195,7 @@ def scan_pdf_safeness(file_path: str):
     """
     Retorna (ok, mensagem). Bloqueia PDFs com JavaScript/ações perigosas.
     SECURITY: Implementa limites de páginas e timeouts para prevenir DoS.
+    Detecta múltiplos vetores de ataque incluindo scripts, ações maliciosas e embedded files.
     """
     import signal
     
@@ -204,6 +205,80 @@ def scan_pdf_safeness(file_path: str):
     
     def timeout_handler(signum, frame):
         raise TimeoutError("Timeout ao processar PDF")
+    
+    # SECURITY: Lista expandida de tokens perigosos em PDFs
+    dangerous_tokens = [
+        # JavaScript e scripts
+        '/JavaScript', '/JS', '/S', '/JS ', '/JavaScript ',
+        # Ações automáticas
+        '/AA', '/OpenAction', '/AcroForm', '/XFA',
+        # Ações de execução
+        '/Launch', '/GoToR', '/GoToE', '/URI', '/SubmitForm', '/ImportData',
+        # RichMedia e embedded content
+        '/RichMedia', '/EmbeddedFiles', '/EmbeddedFile', '/FileAttachment',
+        # Ações de formulário perigosas
+        '/ResetForm', '/ImportData', '/ExportData',
+        # Annotations perigosas
+        '/Movie', '/Sound', '/3D', '/RichMediaAnnotation',
+        # Outros vetores
+        '/JavaScript ', '/JS ', '/AcroForm', '/XFAForm'
+    ]
+    
+    def check_object_for_dangerous_content(obj, context=""):
+        """Verifica recursivamente um objeto PDF por conteúdo perigoso"""
+        if obj is None:
+            return False, None
+        
+        obj_str = str(obj)
+        obj_repr = repr(obj)
+        
+        # Verifica tokens perigosos
+        for token in dangerous_tokens:
+            if token in obj_str or token in obj_repr:
+                return True, f'Token perigoso encontrado: {token}'
+        
+        # Verifica padrões de JavaScript
+        js_patterns = [
+            'javascript:', 'js:', 'eval(', 'unescape(', 'fromCharCode(',
+            'app.alert', 'app.execMenuItem', 'this.', 'event.',
+            'AFSimple_Calculate', 'AFDate_Format', 'AFTime_Format'
+        ]
+        obj_lower = obj_str.lower()
+        for pattern in js_patterns:
+            if pattern.lower() in obj_lower:
+                return True, f'Padrão JavaScript suspeito: {pattern}'
+        
+        # Verifica URLs suspeitas em ações
+        if '/URI' in obj_str or '/Launch' in obj_str:
+            uri_patterns = ['http://', 'https://', 'file://', 'ftp://', 'javascript:']
+            for pattern in uri_patterns:
+                if pattern in obj_str.lower():
+                    return True, f'Ação com URI suspeita: {pattern}'
+        
+        # Verifica objetos aninhados
+        if hasattr(obj, 'get_object'):
+            try:
+                nested = obj.get_object()
+                if nested != obj:
+                    return check_object_for_dangerous_content(nested, context)
+            except:
+                pass
+        
+        # Verifica dicionários e listas
+        if isinstance(obj, dict):
+            for key, value in obj.items():
+                if isinstance(key, str) and any(token in key for token in dangerous_tokens):
+                    return True, f'Chave perigosa no objeto: {key}'
+                is_dangerous, reason = check_object_for_dangerous_content(value, f"{context}.{key}")
+                if is_dangerous:
+                    return True, reason
+        elif isinstance(obj, (list, tuple)):
+            for item in obj:
+                is_dangerous, reason = check_object_for_dangerous_content(item, context)
+                if is_dangerous:
+                    return True, reason
+        
+        return False, None
     
     try:
         # Configura timeout (apenas em Unix/Linux)
@@ -226,21 +301,66 @@ def scan_pdf_safeness(file_path: str):
                 if num_pages > MAX_PAGES:
                     return False, f'PDF excede limite de {MAX_PAGES} páginas (encontrado: {num_pages})'
                 
-                tokens = ['/JavaScript', '/JS', '/AA', '/OpenAction']
-                # Verifica trailer/catalog
+                # Verifica trailer/catalog (raiz do documento)
                 try:
-                    root_str = str(reader.trailer)
-                    if any(tok in root_str for tok in tokens):
-                        return False, 'PDF contém ações/scripts'
+                    if reader.trailer:
+                        is_dangerous, reason = check_object_for_dangerous_content(reader.trailer, "trailer")
+                        if is_dangerous:
+                            return False, f'PDF contém conteúdo perigoso no trailer: {reason}'
+                except Exception:
+                    pass
+                
+                # Verifica catalog (metadados do documento)
+                try:
+                    if hasattr(reader, 'trailer') and reader.trailer:
+                        catalog = reader.trailer.get('/Root')
+                        if catalog:
+                            is_dangerous, reason = check_object_for_dangerous_content(catalog, "catalog")
+                            if is_dangerous:
+                                return False, f'PDF contém conteúdo perigoso no catalog: {reason}'
+                except Exception:
+                    pass
+                
+                # Verifica metadados
+                try:
+                    if reader.metadata:
+                        is_dangerous, reason = check_object_for_dangerous_content(reader.metadata, "metadata")
+                        if is_dangerous:
+                            return False, f'PDF contém conteúdo perigoso nos metadados: {reason}'
                 except Exception:
                     pass
                 
                 # Varre páginas (limitado a MAX_PAGES)
                 try:
                     pages_to_check = min(num_pages, MAX_PAGES)
-                    for i, p in enumerate(reader.pages[:pages_to_check]):
-                        if any(tok in str(p) for tok in tokens):
-                            return False, 'PDF contém ações/scripts em páginas'
+                    for i, page in enumerate(reader.pages[:pages_to_check]):
+                        # Verifica a página completa
+                        is_dangerous, reason = check_object_for_dangerous_content(page, f"page_{i}")
+                        if is_dangerous:
+                            return False, f'PDF contém conteúdo perigoso na página {i+1}: {reason}'
+                        
+                        # Verifica annotations da página
+                        if '/Annots' in page:
+                            try:
+                                annots = page['/Annots']
+                                if annots:
+                                    is_dangerous, reason = check_object_for_dangerous_content(annots, f"page_{i}_annotations")
+                                    if is_dangerous:
+                                        return False, f'PDF contém anotações perigosas na página {i+1}: {reason}'
+                            except Exception:
+                                pass
+                        
+                        # Verifica AA (Additional Actions) da página
+                        if '/AA' in page:
+                            return False, f'PDF contém ações automáticas na página {i+1}'
+                except Exception as e:
+                    # Se houver erro ao processar páginas, rejeita por segurança
+                    return False, f'Erro ao processar páginas: {str(e)}'
+                
+                # Verifica embedded files
+                try:
+                    if hasattr(reader, 'attachments') or '/EmbeddedFiles' in str(reader.trailer):
+                        return False, 'PDF contém arquivos embutidos (potencialmente perigoso)'
                 except Exception:
                     pass
                 
@@ -409,7 +529,8 @@ def create_app(config_name=None):
     
     @login_manager.user_loader
     def load_user(user_id):
-        return User.query.get(int(user_id))
+        # ULID é string, não precisa converter para int
+        return User.query.get(user_id)
 
     # Healthcheck simples para infraestrutura
     @app.route('/healthz')
@@ -2044,10 +2165,22 @@ def register_routes(app):
             if pdf_file.filename == '':
                 return jsonify({'success': False, 'message': 'Nenhum arquivo selecionado'})
             
+            if not pdf_file.filename.lower().endswith('.pdf'):
+                return jsonify({'success': False, 'message': 'Apenas arquivos PDF são permitidos'})
+            
             # Salva o arquivo temporariamente
             fd, temp_file = tempfile.mkstemp(suffix='.pdf')
             os.close(fd)
             pdf_file.save(temp_file)
+            
+            # SECURITY: Valida segurança do PDF antes de processar
+            ok_pdf, msg_pdf = scan_pdf_safeness(temp_file)
+            if not ok_pdf:
+                try:
+                    os.remove(temp_file)
+                except Exception:
+                    pass
+                return jsonify({'success': False, 'message': f'PDF rejeitado: {msg_pdf}'})
             
             # Processa verificação
             return jsonify({'success': True, 'message': 'Verificação implementada'})
