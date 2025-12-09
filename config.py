@@ -43,12 +43,44 @@ class Config:
     FLASK_ENV = os.environ.get('FLASK_ENV', 'development')
     
     # Configurações do banco de dados
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///assinador.db'
+    # Usa instance/assinador.db como padrão para SQLite (padrão Flask)
+    # Garante que o diretório instance existe antes de configurar o banco
+    db_url = os.environ.get('DATABASE_URL')
+    
+    # Obtém o diretório base do projeto (onde está config.py)
+    # config.py está na raiz, então __file__ já aponta para a raiz
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    if not db_url:
+        instance_dir = os.path.join(base_dir, 'instance')
+        # Cria o diretório se não existir
+        os.makedirs(instance_dir, exist_ok=True)
+        # Caminho absoluto do banco
+        db_path = os.path.join(instance_dir, 'assinador.db')
+        # SQLite no Windows: usa caminho absoluto com barras normais
+        # Formato: sqlite:///C:/caminho/completo/para/banco.db
+        db_path_normalized = os.path.abspath(db_path).replace('\\', '/')
+        SQLALCHEMY_DATABASE_URI = f'sqlite:///{db_path_normalized}'
+    elif db_url.startswith('sqlite:///'):
+        # Se vem do .env e é SQLite, converte para caminho absoluto
+        # Remove sqlite:/// do início
+        db_path = db_url.replace('sqlite:///', '')
+        # Se for caminho relativo (não começa com / ou C:), converte para absoluto
+        if not os.path.isabs(db_path) and not db_path.startswith('/') and ':' not in db_path:
+            db_path = os.path.join(base_dir, db_path)
+        # Garante que o diretório existe
+        os.makedirs(os.path.dirname(db_path), exist_ok=True)
+        # Normaliza o caminho para Windows
+        db_path_normalized = os.path.abspath(db_path).replace('\\', '/')
+        SQLALCHEMY_DATABASE_URI = f'sqlite:///{db_path_normalized}'
+    else:
+        # Para outros bancos (PostgreSQL, etc), usa como está
+        SQLALCHEMY_DATABASE_URI = db_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Async database URI
     ASYNC_SQLALCHEMY_DATABASE_URI = os.environ.get('ASYNC_DATABASE_URL') or \
-        _convert_to_async_url(os.environ.get('DATABASE_URL', 'sqlite:///assinador.db'))
+        _convert_to_async_url(os.environ.get('DATABASE_URL', 'sqlite:///instance/assinador.db'))
     
     # Configurações de segurança
     WTF_CSRF_ENABLED = os.environ.get('WTF_CSRF_ENABLED', 'True').lower() == 'true'

@@ -1,3 +1,7 @@
+# IMPORTANTE: Carregar .env ANTES de qualquer importação que use configurações
+from dotenv import load_dotenv
+load_dotenv()
+
 from flask import Flask, render_template, request, jsonify, send_file, session, flash, redirect, url_for, g
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_caching import Cache
@@ -18,6 +22,7 @@ import os
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 import threading
+from queue import Queue
 import time
 import tempfile
 import base64
@@ -197,22 +202,20 @@ def scan_pdf_safeness(file_path: str):
     SECURITY: Implementa limites de páginas e timeouts para prevenir DoS.
     Detecta múltiplos vetores de ataque incluindo scripts, ações maliciosas e embedded files.
     """
-    import signal
-    
     # Limites de segurança para prevenir DoS
     MAX_PAGES = 1000  # Limite máximo de páginas processadas
     TIMEOUT_SECONDS = 30  # Timeout para processamento
-    
-    def timeout_handler(signum, frame):
-        raise TimeoutError("Timeout ao processar PDF")
+    MAX_RECURSION_DEPTH = 10  # Limite de profundidade recursiva
     
     # SECURITY: Lista expandida de tokens perigosos em PDFs
+    # Nota: /S, /AcroForm e /OpenAction foram removidos pois são comuns em PDFs legítimos
+    # Serão detectados apenas em contexto de JavaScript ou ações de execução
     dangerous_tokens = [
-        # JavaScript e scripts
-        '/JavaScript', '/JS', '/S', '/JS ', '/JavaScript ',
-        # Ações automáticas
-        '/AA', '/OpenAction', '/AcroForm', '/XFA',
-        # Ações de execução
+        # JavaScript e scripts (completos)
+        '/JavaScript', '/JS',
+        # Ações automáticas perigosas (sem contexto)
+        '/AA', '/XFA',
+        # Ações de execução (sempre perigosas)
         '/Launch', '/GoToR', '/GoToE', '/URI', '/SubmitForm', '/ImportData',
         # RichMedia e embedded content
         '/RichMedia', '/EmbeddedFiles', '/EmbeddedFile', '/FileAttachment',
@@ -221,21 +224,45 @@ def scan_pdf_safeness(file_path: str):
         # Annotations perigosas
         '/Movie', '/Sound', '/3D', '/RichMediaAnnotation',
         # Outros vetores
-        '/JavaScript ', '/JS ', '/AcroForm', '/XFAForm'
+        '/JavaScript ', '/JS ', '/XFAForm'
     ]
     
-    def check_object_for_dangerous_content(obj, context=""):
+    # Tokens que só são perigosos em contexto específico
+    context_dangerous_tokens = {
+        '/S': ['/JavaScript', '/JS'],  # /S só é perigoso quando relacionado a JavaScript
+        '/AcroForm': ['/JavaScript', '/JS', '/AA', '/OpenAction', '/XFA'],  # /AcroForm só é perigoso quando tem JavaScript ou ações automáticas
+        '/OpenAction': ['/JavaScript', '/JS', '/Launch', '/URI', '/SubmitForm'],  # /OpenAction só é perigoso quando tem JavaScript ou ações de execução
+    }
+    
+    def check_object_for_dangerous_content(obj, context="", depth=0):
         """Verifica recursivamente um objeto PDF por conteúdo perigoso"""
+        # Limita profundidade recursiva para prevenir DoS
+        if depth > MAX_RECURSION_DEPTH:
+            return False, None
+        
         if obj is None:
             return False, None
         
-        obj_str = str(obj)
-        obj_repr = repr(obj)
+        try:
+            obj_str = str(obj)
+            obj_repr = repr(obj)
+            obj_lower = obj_str.lower()
+        except Exception:
+            # Se não conseguir converter para string, ignora
+            return False, None
         
-        # Verifica tokens perigosos
+        # Verifica tokens perigosos diretos
         for token in dangerous_tokens:
             if token in obj_str or token in obj_repr:
                 return True, f'Token perigoso encontrado: {token}'
+        
+        # Verifica tokens que só são perigosos em contexto específico
+        for token, required_contexts in context_dangerous_tokens.items():
+            if token in obj_str or token in obj_repr:
+                # Verifica se está em contexto perigoso
+                for ctx in required_contexts:
+                    if ctx in obj_str or ctx in obj_repr:
+                        return True, f'Token perigoso encontrado: {token} (em contexto de {ctx})'
         
         # Verifica padrões de JavaScript
         js_patterns = [
@@ -243,7 +270,6 @@ def scan_pdf_safeness(file_path: str):
             'app.alert', 'app.execMenuItem', 'this.', 'event.',
             'AFSimple_Calculate', 'AFDate_Format', 'AFTime_Format'
         ]
-        obj_lower = obj_str.lower()
         for pattern in js_patterns:
             if pattern.lower() in obj_lower:
                 return True, f'Padrão JavaScript suspeito: {pattern}'
@@ -252,40 +278,40 @@ def scan_pdf_safeness(file_path: str):
         if '/URI' in obj_str or '/Launch' in obj_str:
             uri_patterns = ['http://', 'https://', 'file://', 'ftp://', 'javascript:']
             for pattern in uri_patterns:
-                if pattern in obj_str.lower():
+                if pattern in obj_lower:
                     return True, f'Ação com URI suspeita: {pattern}'
         
-        # Verifica objetos aninhados
+        # Verifica objetos aninhados (com limite de profundidade)
         if hasattr(obj, 'get_object'):
             try:
                 nested = obj.get_object()
                 if nested != obj:
-                    return check_object_for_dangerous_content(nested, context)
-            except:
+                    return check_object_for_dangerous_content(nested, context, depth + 1)
+            except Exception:
                 pass
         
-        # Verifica dicionários e listas
+        # Verifica dicionários e listas (com limite de itens para prevenir DoS)
         if isinstance(obj, dict):
-            for key, value in obj.items():
+            # Limita verificação a primeiros 100 itens
+            items_to_check = list(obj.items())[:100]
+            for key, value in items_to_check:
                 if isinstance(key, str) and any(token in key for token in dangerous_tokens):
                     return True, f'Chave perigosa no objeto: {key}'
-                is_dangerous, reason = check_object_for_dangerous_content(value, f"{context}.{key}")
+                is_dangerous, reason = check_object_for_dangerous_content(value, f"{context}.{key}", depth + 1)
                 if is_dangerous:
                     return True, reason
         elif isinstance(obj, (list, tuple)):
-            for item in obj:
-                is_dangerous, reason = check_object_for_dangerous_content(item, context)
+            # Limita verificação a primeiros 100 itens
+            items_to_check = list(obj)[:100]
+            for item in items_to_check:
+                is_dangerous, reason = check_object_for_dangerous_content(item, context, depth + 1)
                 if is_dangerous:
                     return True, reason
         
         return False, None
     
-    try:
-        # Configura timeout (apenas em Unix/Linux)
-        if hasattr(signal, 'SIGALRM'):
-            signal.signal(signal.SIGALRM, timeout_handler)
-            signal.alarm(TIMEOUT_SECONDS)
-        
+    def _scan_pdf_worker(file_path, result_queue):
+        """Worker function que executa a varredura do PDF"""
         try:
             with open(file_path, 'rb') as f:
                 reader = PyPDF2.PdfReader(f)
@@ -295,18 +321,21 @@ def scan_pdf_safeness(file_path: str):
                     num_pages = 0
                 
                 if num_pages == 0:
-                    return False, 'PDF sem páginas'
+                    result_queue.put((False, 'PDF sem páginas'))
+                    return
                 
                 # SECURITY: Limita número de páginas processadas para prevenir DoS
                 if num_pages > MAX_PAGES:
-                    return False, f'PDF excede limite de {MAX_PAGES} páginas (encontrado: {num_pages})'
+                    result_queue.put((False, f'PDF excede limite de {MAX_PAGES} páginas (encontrado: {num_pages})'))
+                    return
                 
                 # Verifica trailer/catalog (raiz do documento)
                 try:
                     if reader.trailer:
                         is_dangerous, reason = check_object_for_dangerous_content(reader.trailer, "trailer")
                         if is_dangerous:
-                            return False, f'PDF contém conteúdo perigoso no trailer: {reason}'
+                            result_queue.put((False, f'PDF contém conteúdo perigoso no trailer: {reason}'))
+                            return
                 except Exception:
                     pass
                 
@@ -317,7 +346,8 @@ def scan_pdf_safeness(file_path: str):
                         if catalog:
                             is_dangerous, reason = check_object_for_dangerous_content(catalog, "catalog")
                             if is_dangerous:
-                                return False, f'PDF contém conteúdo perigoso no catalog: {reason}'
+                                result_queue.put((False, f'PDF contém conteúdo perigoso no catalog: {reason}'))
+                                return
                 except Exception:
                     pass
                 
@@ -326,7 +356,8 @@ def scan_pdf_safeness(file_path: str):
                     if reader.metadata:
                         is_dangerous, reason = check_object_for_dangerous_content(reader.metadata, "metadata")
                         if is_dangerous:
-                            return False, f'PDF contém conteúdo perigoso nos metadados: {reason}'
+                            result_queue.put((False, f'PDF contém conteúdo perigoso nos metadados: {reason}'))
+                            return
                 except Exception:
                     pass
                 
@@ -337,7 +368,8 @@ def scan_pdf_safeness(file_path: str):
                         # Verifica a página completa
                         is_dangerous, reason = check_object_for_dangerous_content(page, f"page_{i}")
                         if is_dangerous:
-                            return False, f'PDF contém conteúdo perigoso na página {i+1}: {reason}'
+                            result_queue.put((False, f'PDF contém conteúdo perigoso na página {i+1}: {reason}'))
+                            return
                         
                         # Verifica annotations da página
                         if '/Annots' in page:
@@ -346,34 +378,52 @@ def scan_pdf_safeness(file_path: str):
                                 if annots:
                                     is_dangerous, reason = check_object_for_dangerous_content(annots, f"page_{i}_annotations")
                                     if is_dangerous:
-                                        return False, f'PDF contém anotações perigosas na página {i+1}: {reason}'
+                                        result_queue.put((False, f'PDF contém anotações perigosas na página {i+1}: {reason}'))
+                                        return
                             except Exception:
                                 pass
                         
                         # Verifica AA (Additional Actions) da página
                         if '/AA' in page:
-                            return False, f'PDF contém ações automáticas na página {i+1}'
+                            result_queue.put((False, f'PDF contém ações automáticas na página {i+1}'))
+                            return
                 except Exception as e:
                     # Se houver erro ao processar páginas, rejeita por segurança
-                    return False, f'Erro ao processar páginas: {str(e)}'
+                    result_queue.put((False, f'Erro ao processar páginas: {str(e)}'))
+                    return
                 
                 # Verifica embedded files
                 try:
                     if hasattr(reader, 'attachments') or '/EmbeddedFiles' in str(reader.trailer):
-                        return False, 'PDF contém arquivos embutidos (potencialmente perigoso)'
+                        result_queue.put((False, 'PDF contém arquivos embutidos (potencialmente perigoso)'))
+                        return
                 except Exception:
                     pass
                 
-                return True, 'OK'
-        finally:
-            # Cancela timeout
-            if hasattr(signal, 'SIGALRM'):
-                signal.alarm(0)
+                result_queue.put((True, 'OK'))
+        except Exception as e:
+            result_queue.put((False, f'Falha ao abrir PDF: {e}'))
+    
+    try:
+        # Usa threading para timeout que funciona em Windows e Unix
+        result_queue = Queue()
+        scan_thread = threading.Thread(target=_scan_pdf_worker, args=(file_path, result_queue))
+        scan_thread.daemon = True
+        scan_thread.start()
+        scan_thread.join(timeout=TIMEOUT_SECONDS)
+        
+        if scan_thread.is_alive():
+            # Thread ainda está rodando = timeout
+            return False, f'Timeout ao processar PDF (limite: {TIMEOUT_SECONDS}s)'
+        
+        # Verifica resultado
+        if result_queue.empty():
+            return False, 'Erro ao processar PDF (sem resultado)'
+        
+        return result_queue.get()
                 
-    except TimeoutError:
-        return False, f'Timeout ao processar PDF (limite: {TIMEOUT_SECONDS}s)'
     except Exception as e:
-        return False, f'Falha ao abrir PDF: {e}'
+        return False, f'Falha ao processar PDF: {e}'
 
 def get_client_ip(request_obj):
     """Obtém o IP real do cliente, considerando proxies"""
@@ -530,7 +580,8 @@ def create_app(config_name=None):
     @login_manager.user_loader
     def load_user(user_id):
         # ULID é string, não precisa converter para int
-        return User.query.get(user_id)
+        # Usa db.session.get() (API moderna do SQLAlchemy 2.0) em vez de query.get()
+        return db.session.get(User, user_id)
 
     # Healthcheck simples para infraestrutura
     @app.route('/healthz')
@@ -1272,7 +1323,7 @@ def register_routes(app):
         
         return render_template('admin/new_user.html', form=form)
 
-    @app.route('/admin/users/<int:user_id>/edit', methods=['GET', 'POST'])
+    @app.route('/admin/users/<user_id>/edit', methods=['GET', 'POST'])
     @login_required
     @admin_required
     def admin_edit_user(user_id):
@@ -1344,7 +1395,7 @@ def register_routes(app):
         
         return render_template('admin/edit_user.html', form=form, user=user)
 
-    @app.route('/admin/users/<int:user_id>/delete', methods=['POST'])
+    @app.route('/admin/users/<user_id>/delete', methods=['POST'])
     @login_required
     @admin_required
     def admin_delete_user(user_id):
@@ -1441,12 +1492,12 @@ def register_routes(app):
         if cached_users:
             form.user_id.choices = cached_users
         else:
-            users_list = [(0, 'Todos os usuários')] + [(u.id, u.username) for u in User.query.all()]
+            users_list = [('', 'Todos os usuários')] + [(u.id, u.username) for u in User.query.all()]
             form.user_id.choices = users_list
             app.cache.set(cache_key_users, users_list, timeout=3600)
         # Carrega tipos de documento
         from models import DocumentType
-        type_choices = [(0, 'Todos os tipos')] + [(t.id, t.name) for t in DocumentType.query.order_by(DocumentType.name.asc()).all()]
+        type_choices = [('', 'Todos os tipos')] + [(t.id, t.name) for t in DocumentType.query.order_by(DocumentType.name.asc()).all()]
         form.document_type_id.choices = type_choices
         
         # Inicia a query base (sem limit ainda)
@@ -1454,7 +1505,7 @@ def register_routes(app):
         
         # Aplica filtros se o formulário foi submetido
         if form.validate_on_submit():
-            if form.user_id.data and form.user_id.data != 0:
+            if form.user_id.data and form.user_id.data != '':
                 signatures = signatures.filter(Signature.user_id == form.user_id.data)
             
             if form.date_from.data:
@@ -1471,7 +1522,7 @@ def register_routes(app):
                 except ValueError:
                     pass
             
-            if form.document_type_id.data and form.document_type_id.data != 0:
+            if form.document_type_id.data and form.document_type_id.data != '':
                 signatures = signatures.filter(Signature.document_type_id == form.document_type_id.data)
         
         # Aplica order_by e limit por último (depois de todos os filtros)
@@ -1489,7 +1540,7 @@ def register_routes(app):
         type_counts_query = type_counts_query.filter(Signature.status == 'completed')
         
         # Aplicar mesmos filtros de período/usuário ao agrupamento
-        if form.user_id.data and form.user_id.data != 0:
+        if form.user_id.data and form.user_id.data != '':
             type_counts_query = type_counts_query.filter(Signature.user_id == form.user_id.data)
         if form.date_from.data:
             try:
@@ -1503,7 +1554,7 @@ def register_routes(app):
                 type_counts_query = type_counts_query.filter(Signature.timestamp < date_to)
             except ValueError:
                 pass
-        if form.document_type_id.data and form.document_type_id.data != 0:
+        if form.document_type_id.data and form.document_type_id.data != '':
             type_counts_query = type_counts_query.filter(Signature.document_type_id == form.document_type_id.data)
         type_counts = type_counts_query.group_by(DocumentType.name).order_by(DocumentType.name.asc()).all()
         
@@ -1551,10 +1602,10 @@ def register_routes(app):
         type_counts_query = type_counts_query.filter(Signature.status == 'completed')
 
         # Filtros simples por querystring (opcional)
-        user_id = request.args.get('user_id', type=int)
+        user_id = request.args.get('user_id', type=str)
         if user_id:
             type_counts_query = type_counts_query.filter(Signature.user_id == user_id)
-        document_type_id = request.args.get('document_type_id', type=int)
+        document_type_id = request.args.get('document_type_id', type=str)
         if document_type_id:
             type_counts_query = type_counts_query.filter(Signature.document_type_id == document_type_id)
         date_from = request.args.get('date_from')
@@ -1606,7 +1657,7 @@ def register_routes(app):
         q = request.args.get('q', '', type=str).strip().lower()
         action_filter = request.args.get('action', '', type=str).strip()
         status_filter = request.args.get('status', '', type=str).strip()
-        user_id_filter = request.args.get('user_id', type=int)
+        user_id_filter = request.args.get('user_id', type=str)
         date_from = request.args.get('date_from', type=str)
         date_to = request.args.get('date_to', type=str)
 
@@ -1632,7 +1683,7 @@ def register_routes(app):
                 return False
             if status_filter and (e.get('status') or '') != status_filter:
                 return False
-            if user_id_filter is not None and (e.get('actor_user_id') != user_id_filter):
+            if user_id_filter and (e.get('actor_user_id') != user_id_filter):
                 return False
             if date_from:
                 try:
@@ -1672,10 +1723,10 @@ def register_routes(app):
                 if target_id:
                     user_ids.add(target_id)
             if user_ids:
-                users = User.query.filter(User.id.in_(sorted(user_ids))).all()
+                users = User.query.filter(User.id.in_(list(user_ids))).all()
                 id_to_username = {u.id: u.username for u in users}
         except Exception:
-            pass
+                pass
 
         # Ações disponíveis para filtro rápido
         actions_available = sorted(list({e.get('action') for e in entries if e.get('action')}))
@@ -1714,7 +1765,7 @@ def register_routes(app):
         q = request.args.get('q', '', type=str).strip().lower()
         action_filter = request.args.get('action', '', type=str).strip()
         status_filter = request.args.get('status', '', type=str).strip()
-        user_id_filter = request.args.get('user_id', type=int)
+        user_id_filter = request.args.get('user_id', type=str)
         date_from = request.args.get('date_from', type=str)
         date_to = request.args.get('date_to', type=str)
 
@@ -1738,7 +1789,7 @@ def register_routes(app):
                 return False
             if status_filter and (e.get('status') or '') != status_filter:
                 return False
-            if user_id_filter is not None and (e.get('actor_user_id') != user_id_filter):
+            if user_id_filter and (e.get('actor_user_id') != user_id_filter):
                 return False
             if date_from:
                 try:
@@ -1774,10 +1825,10 @@ def register_routes(app):
                 if target_id:
                     user_ids.add(target_id)
             if user_ids:
-                users = User.query.filter(User.id.in_(sorted(user_ids))).all()
+                users = User.query.filter(User.id.in_(list(user_ids))).all()
                 id_to_username = {u.id: u.username for u in users}
         except Exception:
-            pass
+                pass
 
         # Montar CSV
         import io, csv
@@ -2291,10 +2342,7 @@ def register_routes(app):
             
             # Tipo de Documento (obrigatório)
             document_type_id_raw = request.form.get('document_type_id', '').strip()
-            try:
-                document_type_id = int(document_type_id_raw)
-            except Exception:
-                document_type_id = None
+            document_type_id = document_type_id_raw if document_type_id_raw else None
             if not document_type_id:
                 flash('Tipo de documento é obrigatório', 'error')
                 return render_template('internal/upload.html', document_types=document_types)
@@ -2487,7 +2535,7 @@ def register_routes(app):
         
         return render_template('internal/pending.html', clients=clients)
     
-    @app.route('/internal/signature/edit/<int:signature_id>', methods=['GET', 'POST'])
+    @app.route('/internal/signature/edit/<signature_id>', methods=['GET', 'POST'])
     @login_required
     def internal_edit_signature(signature_id):
         """Tela interna: Edição de assinatura pendente"""
@@ -2516,10 +2564,7 @@ def register_routes(app):
 
             # Tipo de documento
             dt_raw = request.form.get('document_type_id', '').strip()
-            try:
-                signature.document_type_id = int(dt_raw) if dt_raw else None
-            except Exception:
-                signature.document_type_id = None
+            signature.document_type_id = dt_raw if dt_raw else None
             
             # Converte a data de nascimento se fornecida
             birth_date_str = request.form.get('client_birth_date', '').strip()
@@ -2537,7 +2582,7 @@ def register_routes(app):
         
         return render_template('internal/edit_signature.html', signature=signature, document_types=document_types)
     
-    @app.route('/internal/signature/cancel/<int:signature_id>', methods=['POST'])
+    @app.route('/internal/signature/cancel/<signature_id>', methods=['POST'])
     @login_required
     def internal_cancel_signature(signature_id):
         """Tela interna: Cancelamento de assinatura pendente"""
@@ -2555,7 +2600,7 @@ def register_routes(app):
             return redirect(url_for('internal_pending_signatures'))
         
         # Verifica se é cancelamento de assinante específico ou documento inteiro
-        signer_id = request.form.get('signer_id', type=int)
+        signer_id = request.form.get('signer_id', type=str)
         
         try:
             if signature.is_multi_signer and signer_id:
@@ -2761,7 +2806,7 @@ def register_routes(app):
                                pending_docs=pending_docs,
                                completed_docs=completed_docs)
     
-    @app.route('/client/confirm/<int:signature_id>', methods=['GET', 'POST'])
+    @app.route('/client/confirm/<signature_id>', methods=['GET', 'POST'])
     def client_confirm_document(signature_id):
         """Tela cliente: Confirmação de dados e aceite de termos"""
         if 'client_cpf' not in session:
@@ -2821,7 +2866,7 @@ def register_routes(app):
                             client_data=client_data,
                             documents=[signature])
     
-    @app.route('/client/sign/<int:signature_id>', methods=['GET', 'POST'])
+    @app.route('/client/sign/<signature_id>', methods=['GET', 'POST'])
     def client_sign_document(signature_id):
         """Tela cliente: Assinatura do documento"""
         if 'signature_confirmed' not in session or session['signature_confirmed'] != signature_id:
@@ -3074,7 +3119,7 @@ def register_routes(app):
         current_time = datetime.now().strftime('%d/%m/%Y %H:%M')
         return render_template('client/success.html', current_time=current_time)
     
-    @app.route('/client/download/<int:signature_id>')
+    @app.route('/client/download/<signature_id>')
     def client_download_signed(signature_id):
         """Download do PDF assinado pelo cliente"""
         try:

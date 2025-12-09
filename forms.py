@@ -103,8 +103,8 @@ class ReportFilterForm(FlaskForm):
     date_to = DateField('Data Final', validators=[Optional()])
     
     # Filtros de Usuário e Cliente
-    user_id = SelectField('Atendente', coerce=int, validators=[Optional()])
-    document_type_id = SelectField('Tipo de Documento', coerce=int, validators=[Optional()])
+    user_id = SelectField('Atendente', coerce=str, validators=[Optional()])
+    document_type_id = SelectField('Tipo de Documento', coerce=str, validators=[Optional()])
     client_name = StringField('Nome do Cliente', validators=[Optional(), Length(max=255)])
     client_cpf = StringField('CPF do Cliente', validators=[Optional(), Length(max=14)])
     
